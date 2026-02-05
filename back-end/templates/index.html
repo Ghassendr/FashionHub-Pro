@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>360° Precision AI - Plateforme Morphologique</title>
+    <meta name="description" content="Extraction morphologique intelligente pour maisons de couture">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+    <!-- Plotly -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #D4AF37;
+            --primary-dark: #B8962E;
+            --secondary: #5A0F1B;
+            --accent: #D4AF37;
+            --background: #FFFFFF;
+            --surface: #F5F7FA;
+            --surface-light: #E8ECF1;
+            --text: #0D1B2A;
+            --text-muted: #5A6B7D;
+            --border: #D1D9E6;
+            --error: #CF6679;
+            --success: #4CAF50;
+            --warning: #D4AF37;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--background);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--surface) 0%, var(--background) 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .logo-text h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-text span {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Main Layout */
+        .main-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 2rem;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-header h2 {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .card-header .icon {
+            display: none;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        select.form-control {
+            cursor: pointer;
+        }
+
+        /* Upload Zone */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .upload-zone:hover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .upload-zone.dragover {
+            border-color: var(--secondary);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .upload-zone .icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .upload-zone p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .upload-zone .file-name {
+            margin-top: 1rem;
+            padding: 0.5rem 1rem;
+            background: var(--surface-light);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: var(--secondary);
+        }
+
+        /* Button */
+        .btn {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Results Area */
+        .results-area {
+            display: none;
+        }
+
+        .results-area.active {
+            display: block;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        /* 3D Viewer */
+        .viewer-3d {
+            background: var(--surface);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            height: 500px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .viewer-3d canvas {
+            display: block;
+        }
+
+        .viewer-controls {
+            position: absolute;
+            bottom: 1rem;
+            left: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .viewer-btn {
+            padding: 0.5rem 1rem;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            cursor: pointer;
+            font-size: 0.8rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .viewer-btn:hover {
+            background: var(--primary);
+        }
+
+        /* Measurements Panel */
+        .measurements-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .measurement-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            background: var(--surface-light);
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+
+        .measurement-item:hover {
+            transform: translateX(5px);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .measurement-name {
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .measurement-value {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .confidence-bar {
+            width: 50px;
+            height: 4px;
+            background: var(--surface-light);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-left: 10px;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: var(--secondary);
+            border-radius: 2px;
+            transition: width 0.5s ease-out;
+        }
+
+        /* Charts */
+        .chart-container {
+            background: var(--surface);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 1rem;
+            min-height: 350px;
+        }
+
+        /* Recommendations */
+        .recommendation-card {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
+            border: 1px solid var(--primary);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .recommendation-card h4 {
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .size-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 50%;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-right: 1rem;
+        }
+
+        /* Alerts */
+        .alert {
+            padding: 1rem 1.25rem;
+            border-radius: 10px;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid var(--warning);
+            color: var(--warning);
+        }
+
+        .alert-info {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid var(--primary);
+            color: var(--text);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        .tab-btn {
+            padding: 0.75rem 1.25rem;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            color: var(--text);
+            background: var(--surface-light);
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Loading */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--surface-light);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .progress-bar {
+            width: 300px;
+            height: 6px;
+            background: var(--surface-light);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 3px;
+            animation: progress 2s ease-in-out infinite;
+        }
+
+        @keyframes progress {
+            0% {
+                width: 0%;
+            }
+
+            50% {
+                width: 70%;
+            }
+
+            100% {
+                width: 100%;
+            }
+        }
+
+        /* Morphology Section */
+        .morphology-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        .morphology-card {
+            background: var(--surface-light);
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-align: center;
+        }
+
+        .morphology-card .icon {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .morphology-card h4 {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+        }
+
+        .morphology-card .value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .morphology-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">360°</div>
+                <div class="logo-text">
+                    <h1>360° Precision AI</h1>
+                    <span>Plateforme Morphologique pour Couture</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-container">
+        <!-- Sidebar - Input Form -->
+        <aside class="sidebar">
+            <!-- Upload Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Vidéo 360°</h2>
+                </div>
+                <div class="card-body">
+                    <div class="upload-zone" id="uploadZone">
+                        <p>Glissez votre vidéo 360° ici<br>ou cliquez pour sélectionner</p>
+                        <input type="file" id="videoInput" accept="video/*" hidden>
+                        <div class="file-name" id="fileName" style="display: none;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Data Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Informations Client</h2>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Taille (cm)</label>
+                            <input type="number" class="form-control" id="heightInput" value="175" min="100" max="250"
+                                step="0.1">
+                        </div>
+                        <div class="form-group">
+                            <label>Poids (kg)</label>
+                            <input type="number" class="form-control" id="weightInput" value="75" min="30" max="200"
+                                step="0.1">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Âge (optionnel)</label>
+                            <input type="number" class="form-control" id="ageInput" placeholder="Ex: 35" min="10"
+                                max="100">
+                        </div>
+                        <div class="form-group">
+                            <label>Genre</label>
+                            <select class="form-control" id="genderInput">
+                                <option value="men">Homme</option>
+                                <option value="women">Femme</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Préférence de coupe</label>
+                        <select class="form-control" id="cutInput">
+                            <option value="">Automatique (IA)</option>
+                            <option value="ajusté">Ajusté / Slim</option>
+                            <option value="normal">Normal / Regular</option>
+                            <option value="large">Ample / Loose</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button class="btn btn-primary" id="submitBtn" disabled>
+                <span>Lancer l'Analyse</span>
+            </button>
+
+            <!-- Quality Score (after processing) -->
+            <div class="card" id="qualityCard" style="display: none;">
+                <div class="card-header">
+                    <h2>Qualité de l'Analyse</h2>
+                </div>
+                <div class="card-body">
+                    <div id="qualityGauge"></div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Results Area -->
+        <section class="results-area" id="resultsArea">
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="viewer">Visualisation 3D</button>
+                <button class="tab-btn" data-tab="measurements">Mensurations</button>
+                <button class="tab-btn" data-tab="morphology">Morphologie</button>
+                <button class="tab-btn" data-tab="recommendations">Recommandations</button>
+                <button class="tab-btn" data-tab="charts">Graphiques</button>
+            </div>
+
+            <!-- Tab: 3D Viewer -->
+            <div class="tab-content active" id="tab-viewer">
+                <div class="viewer-3d" id="viewer3d">
+                    <div class="viewer-controls">
+                        <button class="viewer-btn" onclick="resetCamera()">Reset</button>
+                        <button class="viewer-btn" onclick="toggleWireframe()">Wireframe</button>
+                        <button class="viewer-btn" onclick="toggleSkeleton()">Squelette</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Measurements -->
+            <div class="tab-content" id="tab-measurements">
+                <div class="results-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Tours (Périmètres)</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="measurements-list" id="basicsMeasurements"></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Longueurs</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="measurements-list" id="heightsMeasurements"></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Largeurs</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="measurements-list" id="widthsMeasurements"></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Fonctionnelles</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="measurements-list" id="functionalMeasurements"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Morphology -->
+            <div class="tab-content" id="tab-morphology">
+                <div class="morphology-grid" id="morphologyGrid">
+                    <!-- Filled by JS -->
+                </div>
+                <div class="card" style="margin-top: 1.5rem;">
+                    <div class="card-header">
+                        <h2>Profil Morphologique</h2>
+                    </div>
+                    <div class="card-body">
+                        <div id="morphologyRadar" style="height: 400px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Recommendations -->
+            <div class="tab-content" id="tab-recommendations">
+                <div class="results-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Tailles Recommandées</h2>
+                        </div>
+                        <div class="card-body" id="sizeRecommendations">
+                            <!-- Filled by JS -->
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Style de Coupe</h2>
+                        </div>
+                        <div class="card-body" id="cutRecommendations">
+
+                        </div>
+                    </div>
+                </div>
+                <div class="card" style="margin-top: 1.5rem;">
+                    <div class="card-header">
+                        <h2>Points d'Attention Couturier</h2>
+                    </div>
+                    <div class="card-body" id="morphologicalAlerts">
+
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="tab-content" id="tab-charts">
+                <div class="results-grid">
+                    <div class="chart-container" id="measurementsBarChart"></div>
+                    <div class="chart-container" id="betaParamsChart"></div>
+                    <div class="chart-container" id="confidenceTimeline"></div>
+                    <div class="chart-container" id="proportionsChart"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <h3>Analyse en cours...</h3>
+            <p id="loadingStatus">Extraction des frames vidéo</p>
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let currentResult = null;
+        let scene, camera, renderer, controls, bodyMesh;
+        let wireframeMode = false;
+
+        // DOM Elements
+        const uploadZone = document.getElementById('uploadZone');
+        const videoInput = document.getElementById('videoInput');
+        const fileName = document.getElementById('fileName');
+        const submitBtn = document.getElementById('submitBtn');
+        const resultsArea = document.getElementById('resultsArea');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
+        // Upload handling
+        uploadZone.addEventListener('click', () => videoInput.click());
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+        uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                videoInput.files = e.dataTransfer.files;
+                handleFileSelect();
+            }
+        });
+        videoInput.addEventListener('change', handleFileSelect);
+
+        function handleFileSelect() {
+            if (videoInput.files.length) {
+                fileName.textContent = videoInput.files[0].name;
+                fileName.style.display = 'block';
+                submitBtn.disabled = false;
+            }
+        }
+
+        // Tab handling
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+            });
+        });
+
+        // Submit form
+        submitBtn.addEventListener('click', async () => {
+            const formData = new FormData();
+            formData.append('video', videoInput.files[0]);
+            formData.append('height', document.getElementById('heightInput').value);
+            formData.append('weight', document.getElementById('weightInput').value);
+            formData.append('age', document.getElementById('ageInput').value || '');
+            formData.append('gender', document.getElementById('genderInput').value);
+            formData.append('cut_preference', document.getElementById('cutInput').value);
+
+            showLoading(true);
+
+            try {
+                const response = await fetch('/process', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error('Erreur traitement');
+
+                currentResult = await response.json();
+                displayResults(currentResult);
+
+            } catch (error) {
+                alert('Erreur: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        function showLoading(show) {
+            loadingOverlay.classList.toggle('active', show);
+        }
+
+        function displayResults(result) {
+            resultsArea.classList.add('active');
+            document.getElementById('qualityCard').style.display = 'block';
+
+            // Display measurements
+            displayMeasurements(result.measurements);
+
+            // Display morphology
+            displayMorphology(result.morphology);
+
+            // Display recommendations
+            displayRecommendations(result.fashion_recommendations);
+
+            // Display charts
+            displayCharts(result);
+
+            // Load 3D model
+            if (result.mesh_path) {
+                load3DModel(result.mesh_path);
+            }
+
+            // Scroll to results
+            resultsArea.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function displayMeasurements(measurements) {
+            const categories = {
+                basics: 'basicsMeasurements',
+                heights: 'heightsMeasurements',
+                widths: 'widthsMeasurements',
+                functional: 'functionalMeasurements'
+            };
+
+            for (const [cat, elementId] of Object.entries(categories)) {
+                const container = document.getElementById(elementId);
+                const items = measurements[cat] || [];
+
+                container.innerHTML = items.map(m => `
+                    <div class="measurement-item">
+                        <span class="measurement-name">
+                            ${m.name}
+                        </span>
+                        <div style="display: flex; align-items: center;">
+                            <span class="measurement-value">${m.value_cm} cm</span>
+                            <div class="confidence-bar">
+                                <div class="confidence-fill" style="width: ${(m.confidence || 0.8) * 100}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('') || '<p style="color: var(--text-muted);">Aucune mesure disponible</p>';
+            }
+        }
+
+        function displayMorphology(morphology) {
+            const grid = document.getElementById('morphologyGrid');
+            const silhouette = morphology?.silhouette || {};
+            const proportions = morphology?.proportions || {};
+            const posture = morphology?.posture || {};
+
+            grid.innerHTML = `
+                <div class="morphology-card">
+                    <h4>Silhouette</h4>
+                    <div class="value">${silhouette.type_fr || 'Normal'}</div>
+                </div>
+                <div class="morphology-card">
+                    <h4>IMC</h4>
+                    <div class="value">${silhouette.bmi || '22'}</div>
+                </div>
+                <div class="morphology-card">
+                    <h4>Proportions</h4>
+                    <div class="value">${proportions.proportion_type?.fr || 'Équilibré'}</div>
+                </div>
+                <div class="morphology-card">
+                    <h4>Posture</h4>
+                    <div class="value">${posture.type_fr || 'Droite'}</div>
+                </div>
+                <div class="morphology-card">
+                    <h4>Ratio Torse/Jambes</h4>
+                    <div class="value">${(proportions.torso_to_legs_ratio || 0.65).toFixed(2)}</div>
+                </div>
+                <div class="morphology-card">
+                    <h4>Confiance</h4>
+                    <div class="value">${Math.round((morphology.quality_score || 0.7) * 100)}%</div>
+                </div>
+            `;
+        }
+
+        function displayRecommendations(recommendations) {
+            // Size recommendations
+            const sizeContainer = document.getElementById('sizeRecommendations');
+            const sizes = recommendations?.size_recommendations || {};
+
+            let sizeHtml = '';
+            for (const [system, data] of Object.entries(sizes)) {
+                sizeHtml += `
+                    <div class="recommendation-card">
+                        <h4>Taille ${system}</h4>
+                        <div style="display: flex; align-items: center;">
+                            <div class="size-badge">${data.recommended_size}</div>
+                            <div>
+                                <div style="font-weight: 600;">Taille recommandée</div>
+                                <div style="color: var(--text-muted); font-size: 0.85rem;">
+                                    Confiance: ${Math.round((data.confidence || 0.8) * 100)}%
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            sizeContainer.innerHTML = sizeHtml || '<p>Aucune recommandation</p>';
+
+            // Cut recommendations
+            const cutContainer = document.getElementById('cutRecommendations');
+            const cut = recommendations?.cut_recommendations?.primary_recommendation;
+
+            if (cut) {
+                cutContainer.innerHTML = `
+                    <div class="recommendation-card">
+                        <h4>${cut.name_fr}</h4>
+                        <p>${cut.description || ''}</p>
+                        ${cut.reasons ? `<ul style="margin-top: 0.5rem; color: var(--text-muted);">
+                            ${cut.reasons.map(r => `<li>${r}</li>`).join('')}
+                        </ul>` : ''}
+                    </div>
+                `;
+            }
+
+            // Alerts
+            const alertsContainer = document.getElementById('morphologicalAlerts');
+            const alerts = recommendations?.morphological_alerts || [];
+
+            if (alerts.length > 0) {
+                alertsContainer.innerHTML = alerts.map(alert => `
+                    <div class="alert alert-${alert.severity === 'warning' ? 'warning' : 'info'}">
+                        <div>
+                            <strong>${alert.fr}</strong>
+                            <p style="margin-top: 0.25rem; font-size: 0.9rem;">${alert.recommendation}</p>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                alertsContainer.innerHTML = '<p style="color: var(--text-muted);">Aucun point d\'attention particulier</p>';
+            }
+        }
+
+        function displayCharts(result) {
+            // Measurements bar chart
+            const measurements = [];
+            ['basics', 'heights', 'widths', 'functional'].forEach(cat => {
+                (result.measurements[cat] || []).forEach(m => measurements.push(m));
+            });
+
+            Plotly.newPlot('measurementsBarChart', [{
+                x: measurements.map(m => m.name),
+                y: measurements.map(m => m.value_cm),
+                type: 'bar',
+                marker: {
+                    color: measurements.map((m, i) =>
+                        `hsl(${40 + i * 5}, 70%, 50%)`
+                    )
+                },
+                text: measurements.map(m => m.value_cm + ' cm'),
+                textposition: 'outside'
+            }], {
+                title: 'Mesures Corporelles',
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#0D1B2A' },
+                xaxis: { tickangle: -45 },
+                margin: { b: 120 }
+            }, { responsive: true });
+
+            // Beta parameters
+            Plotly.newPlot('betaParamsChart', [{
+                x: result.beta_parameters.map((_, i) => `β${i}`),
+                y: result.beta_parameters,
+                type: 'bar',
+                marker: {
+                    color: result.beta_parameters.map(v => v >= 0 ? '#D4AF37' : '#5A0F1B')
+                }
+            }], {
+                title: 'Paramètres de Forme',
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#0D1B2A' }
+            }, { responsive: true });
+
+            // Confidence timeline
+            if (result.frames_data && result.frames_data.length > 0) {
+                Plotly.newPlot('confidenceTimeline', [{
+                    x: result.frames_data.map(f => f.frame_number),
+                    y: result.frames_data.map(f => f.confidence * 100),
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    line: { color: '#D4AF37', width: 2 },
+                    marker: { size: 6 }
+                }], {
+                    title: 'Confiance par Frame',
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: { color: '#0D1B2A' },
+                    xaxis: { title: 'Frame' },
+                    yaxis: { title: 'Confiance (%)', range: [0, 100] }
+                }, { responsive: true });
+            }
+
+            // Morphology radar
+            const radarData = measurements.slice(0, 6);
+            if (radarData.length >= 3) {
+                const maxVal = Math.max(...radarData.map(m => m.value_cm));
+                Plotly.newPlot('morphologyRadar', [{
+                    type: 'scatterpolar',
+                    r: radarData.map(m => (m.value_cm / maxVal) * 100),
+                    theta: radarData.map(m => m.name),
+                    fill: 'toself',
+                    fillcolor: 'rgba(212, 175, 55, 0.3)',
+                    line: { color: '#D4AF37' }
+                }], {
+                    title: 'Profil Morphologique',
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: { color: '#0D1B2A' },
+                    polar: {
+                        radialaxis: { visible: true, range: [0, 100] }
+                    }
+                }, { responsive: true });
+            }
+
+            // Quality gauge
+            Plotly.newPlot('qualityGauge', [{
+                type: 'indicator',
+                mode: 'gauge+number',
+                value: result.quality_score * 100,
+                gauge: {
+                    axis: { range: [0, 100] },
+                    bar: { color: '#D4AF37' },
+                    steps: [
+                        { range: [0, 50], color: '#5A0F1B' },
+                        { range: [50, 75], color: '#9BA4B5' },
+                        { range: [75, 100], color: '#4CAF50' }
+                    ]
+                }
+            }], {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#0D1B2A' },
+                margin: { t: 20, b: 20, l: 30, r: 30 },
+                height: 200
+            }, { responsive: true });
+        }
+
+        // 3D Viewer
+        function init3DViewer() {
+            const container = document.getElementById('viewer3d');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xF5F7FA);
+
+            camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
+            camera.position.set(0, 1, 3);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.target.set(0, 0.8, 0);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 10, 7);
+            scene.add(directionalLight);
+
+            const backLight = new THREE.DirectionalLight(0xffffff, 0.3);
+            backLight.position.set(-5, 5, -7);
+            scene.add(backLight);
+
+            // Grid
+            const gridHelper = new THREE.GridHelper(4, 20, 0xD1D9E6, 0xE8ECF1);
+            scene.add(gridHelper);
+
+            // Create default mannequin
+            createDefaultMannequin();
+
+            animate();
+        }
+
+        function createDefaultMannequin() {
+            // Create a simple humanoid shape as placeholder
+            const material = new THREE.MeshStandardMaterial({
+                color: 0xD4AF37,
+                metalness: 0.2,
+                roughness: 0.7,
+                transparent: true,
+                opacity: 0.9
+            });
+
+            const mannequin = new THREE.Group();
+
+            // Head
+            const headGeom = new THREE.SphereGeometry(0.12, 32, 32);
+            const head = new THREE.Mesh(headGeom, material);
+            head.position.y = 1.6;
+            mannequin.add(head);
+
+            // Neck
+            const neckGeom = new THREE.CylinderGeometry(0.05, 0.06, 0.1, 16);
+            const neck = new THREE.Mesh(neckGeom, material);
+            neck.position.y = 1.45;
+            mannequin.add(neck);
+
+            // Torso (upper)
+            const torsoGeom = new THREE.CylinderGeometry(0.2, 0.15, 0.4, 16);
+            const torso = new THREE.Mesh(torsoGeom, material);
+            torso.position.y = 1.2;
+            mannequin.add(torso);
+
+            // Torso (lower/waist)
+            const waistGeom = new THREE.CylinderGeometry(0.15, 0.18, 0.3, 16);
+            const waist = new THREE.Mesh(waistGeom, material);
+            waist.position.y = 0.85;
+            mannequin.add(waist);
+
+            // Hips
+            const hipsGeom = new THREE.CylinderGeometry(0.18, 0.12, 0.2, 16);
+            const hips = new THREE.Mesh(hipsGeom, material);
+            hips.position.y = 0.65;
+            mannequin.add(hips);
+
+            // Left arm
+            const armGeom = new THREE.CylinderGeometry(0.04, 0.03, 0.5, 12);
+            const leftArm = new THREE.Mesh(armGeom, material);
+            leftArm.position.set(-0.3, 1.1, 0);
+            leftArm.rotation.z = Math.PI / 6;
+            mannequin.add(leftArm);
+
+            // Right arm
+            const rightArm = new THREE.Mesh(armGeom, material);
+            rightArm.position.set(0.3, 1.1, 0);
+            rightArm.rotation.z = -Math.PI / 6;
+            mannequin.add(rightArm);
+
+            // Left leg
+            const legGeom = new THREE.CylinderGeometry(0.06, 0.04, 0.8, 12);
+            const leftLeg = new THREE.Mesh(legGeom, material);
+            leftLeg.position.set(-0.1, 0.2, 0);
+            mannequin.add(leftLeg);
+
+            // Right leg
+            const rightLeg = new THREE.Mesh(legGeom, material);
+            rightLeg.position.set(0.1, 0.2, 0);
+            mannequin.add(rightLeg);
+
+            bodyMesh = mannequin;
+            scene.add(mannequin);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function load3DModel(path) {
+            console.log('Loading 3D model from:', path);
+
+            // Remove existing mesh
+            if (bodyMesh) {
+                scene.remove(bodyMesh);
+                bodyMesh = null;
+            }
+
+            // Check file extension
+            const isGLB = path.toLowerCase().includes('.glb') || path.toLowerCase().includes('.gltf');
+            const isOBJ = path.toLowerCase().includes('.obj');
+
+            if (isGLB) {
+                const loader = new THREE.GLTFLoader();
+                loader.load(path, (gltf) => {
+                    bodyMesh = gltf.scene;
+                    setupLoadedMesh(bodyMesh);
+                }, (progress) => {
+                    console.log('Loading progress:', (progress.loaded / progress.total * 100) + '%');
+                }, (error) => {
+                    console.error('Error loading GLB model:', error);
+                    createDefaultMannequin();
+                });
+            } else if (isOBJ) {
+                // Load OBJ directly using fetch and create geometry
+                fetch(path)
+                    .then(response => response.text())
+                    .then(objText => {
+                        const geometry = parseOBJ(objText);
+                        const material = new THREE.MeshStandardMaterial({
+                            color: 0xD4AF37,
+                            metalness: 0.2,
+                            roughness: 0.7
+                        });
+                        bodyMesh = new THREE.Mesh(geometry, material);
+                        setupLoadedMesh(bodyMesh);
+                    })
+                    .catch(error => {
+                        console.error('Error loading OBJ model:', error);
+                        createDefaultMannequin();
+                    });
+            } else {
+                // Try GLTF loader as default
+                const loader = new THREE.GLTFLoader();
+                loader.load(path, (gltf) => {
+                    bodyMesh = gltf.scene;
+                    setupLoadedMesh(bodyMesh);
+                }, undefined, (error) => {
+                    console.error('Error loading model:', error);
+                    createDefaultMannequin();
+                });
+            }
+        }
+
+        function parseOBJ(objText) {
+            // Simple OBJ parser
+            const vertices = [];
+            const indices = [];
+            const lines = objText.split('\n');
+
+            for (const line of lines) {
+                const parts = line.trim().split(/\s+/);
+                if (parts[0] === 'v') {
+                    vertices.push(
+                        parseFloat(parts[1]),
+                        parseFloat(parts[2]),
+                        parseFloat(parts[3])
+                    );
+                } else if (parts[0] === 'f') {
+                    // Handle faces (assuming triangles)
+                    const face = parts.slice(1).map(p => parseInt(p.split('/')[0]) - 1);
+                    if (face.length >= 3) {
+                        indices.push(face[0], face[1], face[2]);
+                        if (face.length === 4) {
+                            indices.push(face[0], face[2], face[3]);
+                        }
+                    }
+                }
+            }
+
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            if (indices.length > 0) {
+                geometry.setIndex(indices);
+            }
+            geometry.computeVertexNormals();
+            return geometry;
+        }
+
+        function setupLoadedMesh(mesh) {
+            // Center and scale
+            const box = new THREE.Box3().setFromObject(mesh);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const scale = 1.8 / maxDim;
+            mesh.scale.setScalar(scale);
+
+            mesh.position.x = -center.x * scale;
+            mesh.position.y = -box.min.y * scale;
+            mesh.position.z = -center.z * scale;
+
+            // Apply material if needed
+            mesh.traverse((child) => {
+                if (child.isMesh) {
+                    if (!child.material || child.material.type === 'MeshBasicMaterial') {
+                        child.material = new THREE.MeshStandardMaterial({
+                            color: 0xD4AF37,
+                            metalness: 0.2,
+                            roughness: 0.7
+                        });
+                    }
+                }
+            });
+
+            scene.add(mesh);
+            console.log('3D model loaded successfully');
+        }
+
+        function resetCamera() {
+            camera.position.set(0, 1, 3);
+            controls.target.set(0, 0.8, 0);
+            controls.update();
+        }
+
+        function toggleWireframe() {
+            wireframeMode = !wireframeMode;
+            if (bodyMesh) {
+                bodyMesh.traverse((child) => {
+                    if (child.isMesh) {
+                        child.material.wireframe = wireframeMode;
+                    }
+                });
+            }
+        }
+
+        function toggleSkeleton() {
+            // Toggle between solid and skeleton view
+            if (bodyMesh) {
+                bodyMesh.traverse((child) => {
+                    if (child.isMesh) {
+                        child.material.transparent = !child.material.transparent;
+                        child.material.opacity = child.material.transparent ? 0.3 : 1.0;
+                    }
+                });
+            }
+        }
+
+        // Initialize
+        window.addEventListener('load', init3DViewer);
+        window.addEventListener('resize', () => {
+            const container = document.getElementById('viewer3d');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        });
+    </script>
+</body>
+
+</html>
