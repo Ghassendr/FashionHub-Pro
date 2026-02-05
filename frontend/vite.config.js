@@ -9,5 +9,8 @@ export default defineConfig({
       '/process': 'http://127.0.0.1:5000',
       '/results': 'http://127.0.0.1:5000'
     }
+  },
+  define: {
+    global: 'window',
   }
 })

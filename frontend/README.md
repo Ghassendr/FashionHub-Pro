@@ -1,16 +1,31 @@
-# React + Vite
+# Frontend - 360° Precision AI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+a React + Vite application for the 360° Precision AI interface.
 
-Currently, two official plugins are available:
+## Quick Start
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Prerequisites
+- Node.js (v18+)
+- npm
 
-## React Compiler
+### Installation (First Run / Clean Start)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+If you are running this for the first time or encountering issues, run this command to clean install dependencies and start the server:
 
-## Expanding the ESLint configuration
+**Windows (PowerShell):**
+```powershell
+Remove-Item -Recurse -Force node_modules, package-lock.json -ErrorAction SilentlyContinue; npm install; npm run dev
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Regular Startup
+
+Once installed, you can simply run:
+
+```powershell
+npm run dev
+```
+
+## Troubleshooting
+
+- **Blank Page?** Ensure `tailwindcss` related dependencies are installed and `vite.config.js` defines `global: 'window'`.
+- **Port Conflict?** Vite will automatically switch to the next available port (e.g., 5174, 5175). Check the terminal output for the correct URL.
