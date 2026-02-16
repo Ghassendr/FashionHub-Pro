@@ -15,12 +15,19 @@ function Model({ url }) {
 export default function Viewer3D({ url }) {
     return (
         <div className="h-[500px] w-full bg-gray-50 rounded-xl overflow-hidden border border-gray-200">
-            <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 0, 4], fov: 50 }}>
-                <Stage environment="city" intensity={0.6}>
-                    <Model url={url} />
-                </Stage>
-                <OrbitControls autoRotate />
-            </Canvas>
+            {url ? (
+                <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 0, 4], fov: 50 }}>
+                    <Stage environment="city" intensity={0.6}>
+                        <Model url={url} />
+                    </Stage>
+                    <OrbitControls autoRotate />
+                </Canvas>
+            ) : (
+                <div className="flex flex-col items-center justify-center h-full text-gray-400 p-6 text-center">
+                    <p className="mb-2 font-medium">Modèle 3D non disponible</p>
+                    <p className="text-sm">Le modèle 3D sera généré après une analyse réussie.</p>
+                </div>
+            )}
         </div>
     );
 }

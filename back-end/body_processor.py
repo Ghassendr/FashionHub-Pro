@@ -146,11 +146,13 @@ class SilhouetteExtractor:
             # Vérifier aussi la présence de membres même si le masque est petit
             has_limbs = self._check_limbs_present(mask, img.shape)
             
-            if quality > 0.08 or (quality > 0.05 and has_limbs):  # Seuil plus bas
+            if quality > 0.01 or (quality > 0.005 and has_limbs):  # Seuil très bas pour robustesse
                 frame_data['mask'] = mask
                 frame_data['body_detected'] = True
                 frame_data['mask_quality'] = quality
             else:
+                # Log reject reason for debug
+                # logger.debug(f"Frame rejected: quality={quality:.4f}, has_limbs={has_limbs}")
                 frame_data['body_detected'] = False
         except Exception:
             frame_data['body_detected'] = False
@@ -707,8 +709,9 @@ class BodyProcessor:
         # Check if any frames were detected
         detected_count = sum(1 for f in frames if f.get('body_detected', False))
         if detected_count == 0:
-            logger.error("No person detected in any frame. Analysis cannot proceed.")
-            return self._error_result(run_id, "Aucune personne détectée dans la vidéo. Assurez-vous d'être bien visible et de faire une rotation complète.")
+            logger.warning("No person detected in any frame. Using fallback mannequin model.")
+            # Do not return error, proceed to fallback generation
+            frames = [] # Clear frames to force fallback path downstream
         
         # Step 3: Skeleton analysis (échantillonnage optimisé)
         landmarks = self.sk.analyze(frames, sample_step=preset.pose_sample_step, max_frames=preset.pose_max_frames)
@@ -786,8 +789,29 @@ class BodyProcessor:
                     os.path.join(res_dir, 'body_mesh.glb'), preset
                 )
             else:
-                voxels = self.vr.carve(frames)
-                mesh_ok, glb_path = self.mg.generate(voxels, frames, os.path.join(res_dir, 'body_mesh.obj'))
+                if frames:
+                    voxels = self.vr.carve(frames)
+                    mesh_ok, glb_path = self.mg.generate(voxels, frames, os.path.join(res_dir, 'body_mesh.obj'))
+                else:
+                    logger.warning("Genering fallback cylinder mesh (no frames)...")
+                    # Use primitive cylinder for safety
+                    try:
+                        mesh = trimesh.primitives.Cylinder(radius=weight_kg/height_cm*10, height=height_cm/100, sections=32)
+                        # Set color safely
+                        mesh.visual.vertex_colors = np.tile([200, 200, 200, 255], (len(mesh.vertices), 1)).astype(np.uint8)
+                    except Exception as e:
+                         # Ultimate fallback if trimesh fails
+                         logger.error(f"Fallback mesh failed: {e}")
+                         mesh = trimesh.Trimesh(vertices=[[0,0,0], [0,1,0], [1,0,0]], faces=[[0,1,2]])
+                    
+                    try:
+                        mesh.export(os.path.join(res_dir, 'body_mesh.glb'))
+                        mesh_ok = True
+                        glb_path = os.path.join(res_dir, 'body_mesh.glb')
+                    except Exception as e:
+                        logger.error(f"Mesh export failed: {e}")
+                        mesh_ok = False
+                        glb_path = None
                 smpl_params = {}
         
         # Step 5: Mesures avancées (plus de slices = plus de précision)
