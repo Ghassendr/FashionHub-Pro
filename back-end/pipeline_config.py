@@ -50,16 +50,16 @@ PRESET_BALANCED = PipelinePreset(
 
 PRESET_HIGH = PipelinePreset(
     name="high",
-    target_frames=0,            # 0 = All frames (no subsampling)
+    target_frames=120,
     max_image_height=640,
-    segment_workers=8,
-    pose_sample_step=1,         # Analyze every frame
-    pose_max_frames=0,          # 0 = Unlimited pose analysis
-    mesh_resolution_height=300,
-    mesh_resolution_radial=128,
-    mesh_smooth_iterations=8,
-    geodesic_slices=300,
-    front_side_frames=0,        # 0 = Use all valid frames for sizing
+    segment_workers=4,
+    pose_sample_step=1,
+    pose_max_frames=80,
+    mesh_resolution_height=150,
+    mesh_resolution_radial=96,
+    mesh_smooth_iterations=5,
+    geodesic_slices=200,
+    front_side_frames=24,
 )
 
 def get_preset(quality: Optional[str] = None) -> PipelinePreset:

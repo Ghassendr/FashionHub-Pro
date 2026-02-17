@@ -50,10 +50,9 @@ class FrameExtractor:
         logger.info(f"Vidéo: {total_frames} frames, {fps:.1f} fps, {width}x{height}, {duration:.1f}s")
         
         # Sélection uniforme sur 360° pour toute longueur de vidéo
-        # Sélection uniforme sur 360° pour toute longueur de vidéo
         if self.target_frames <= 0:
             step = 1
-            target_limit = total_frames  # Use actual total frames
+            target_limit = min(total_frames, 150)  # plafond même en mode "tous"
         else:
             target_limit = self.target_frames
             step = max(1, total_frames // target_limit) if total_frames > target_limit else 1
@@ -146,13 +145,11 @@ class SilhouetteExtractor:
             # Vérifier aussi la présence de membres même si le masque est petit
             has_limbs = self._check_limbs_present(mask, img.shape)
             
-            if quality > 0.01 or (quality > 0.005 and has_limbs):  # Seuil très bas pour robustesse
+            if quality > 0.08 or (quality > 0.05 and has_limbs):  # Seuil plus bas
                 frame_data['mask'] = mask
                 frame_data['body_detected'] = True
                 frame_data['mask_quality'] = quality
             else:
-                # Log reject reason for debug
-                # logger.debug(f"Frame rejected: quality={quality:.4f}, has_limbs={has_limbs}")
                 frame_data['body_detected'] = False
         except Exception:
             frame_data['body_detected'] = False
@@ -177,40 +174,151 @@ class SilhouetteExtractor:
                         valid_count += 1
         logger.info("Silhouettes valides: %d/%d", valid_count, len(frames))
         self._save_debug_grid(frames)
-        self._save_debug_video(frames)
         return frames
-
-    def _save_debug_video(self, frames: List[Dict]):
-        """Sauvegarde une vidéo avec le masque superposé pour debug."""
-        try:
-            debug_frames = [f for f in frames if f.get('body_detected')]
-            if not debug_frames: return
-
-            # Setup video writer
-            first_frame = debug_frames[0]
-            height, width = first_frame['height'], first_frame['width']
-            run_dir = os.path.dirname(frames[0]['path'])
-            output_path = os.path.join(os.path.dirname(run_dir), 'segmentation_debug.mp4')
+    
+    def _enhance_mask(self, mask: np.ndarray) -> np.ndarray:
+        """
+        Advanced mask post-processing pour détection complète du corps:
+        - Préserve les membres (bras, jambes) même s'ils sont partiellement détectés
+        - Multi-scale morphological closing (fill holes)
+        - Extension vers les membres si landmarks détectés
+        - Contour smoothing
+        """
+        original_mask = mask.copy()
+        
+        # Step 1: Dilatation légère pour connecter les membres au torse
+        kernel_dilate = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
+        mask_dilated = cv2.dilate(mask, kernel_dilate, iterations=1)
+        
+        # Step 2: Multi-scale morphological closing pour remplir les trous
+        for kernel_size in [5, 9, 13]:
+            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
+            mask_dilated = cv2.morphologyEx(mask_dilated, cv2.MORPH_CLOSE, kernel)
+        
+        # Step 3: Garder le plus grand composant MAIS préserver les membres
+        # Au lieu de garder seulement le plus grand, on garde tous les composants connectés au corps principal
+        mask = self._keep_body_with_limbs(mask_dilated, original_mask)
+        
+        # Step 4: Remplir les trous internes
+        mask = self._fill_holes(mask)
+        
+        # Step 5: Lissage des contours (moins agressif pour préserver les membres)
+        mask_smooth = cv2.GaussianBlur(mask, (5, 5), 0)
+        _, mask = cv2.threshold(mask_smooth, 100, 255, cv2.THRESH_BINARY)  # Seuil plus bas
+        
+        return mask
+    
+    def _keep_body_with_limbs(self, mask: np.ndarray, original_mask: np.ndarray) -> np.ndarray:
+        """
+        Garde le corps principal ET les membres même s'ils sont séparés.
+        Utilise une approche de connexion basée sur la distance.
+        """
+        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask, connectivity=8)
+        
+        if num_labels <= 1:
+            return mask
+        
+        # Trouver le composant principal (le plus grand, généralement le torse)
+        areas = stats[1:, cv2.CC_STAT_AREA]
+        main_label = 1 + np.argmax(areas)
+        main_centroid = centroids[main_label]
+        
+        # Créer le masque résultat avec le composant principal
+        result = np.zeros_like(mask)
+        result[labels == main_label] = 255
+        
+        # Ajouter les composants qui sont proches du corps principal (membres)
+        h, w = mask.shape
+        max_distance = min(h, w) * 0.15  # Distance max pour considérer comme membre
+        
+        for label in range(1, num_labels):
+            if label == main_label:
+                continue
             
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            out = cv2.VideoWriter(output_path, fourcc, 15.0, (width, height))
+            component_area = stats[label, cv2.CC_STAT_AREA]
+            component_centroid = centroids[label]
             
-            for f in debug_frames:
-                img = cv2.imread(f['path'])
-                if img is None: continue
-                
-                # Overlay mask (Red with 50% opacity)
-                mask = f['mask']
-                overlay = img.copy()
-                overlay[mask > 0] = [0, 0, 255] # Red BGR
-                cv2.addWeighted(overlay, 0.5, img, 0.5, 0, img)
-                
-                out.write(img)
+            # Distance du composant au corps principal
+            distance = np.sqrt(
+                (component_centroid[0] - main_centroid[0])**2 +
+                (component_centroid[1] - main_centroid[1])**2
+            )
             
-            out.release()
-            logger.info(f"Vidéo debug sauvegardée: {output_path}")
-        except Exception as e:
-            logger.error(f"Erreur sauvegarde vidéo debug: {e}")
+            # Si le composant est proche ET a une taille raisonnable (membre)
+            if distance < max_distance and component_area > 100:
+                result[labels == label] = 255
+        
+        # Si le masque original avait des pixels dans des zones non incluses, les ajouter
+        # (pour préserver les membres fins qui pourraient être perdus)
+        diff = original_mask - result
+        diff[diff < 0] = 0
+        
+        # Dilater légèrement le résultat et ajouter les pixels originaux proches
+        kernel_small = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+        result_dilated = cv2.dilate(result, kernel_small, iterations=1)
+        
+        # Ajouter les pixels originaux qui sont proches du résultat
+        result = cv2.bitwise_or(result, cv2.bitwise_and(original_mask, result_dilated))
+        
+        return result
+    
+    def _keep_largest_component(self, mask: np.ndarray) -> np.ndarray:
+        """Keep only the largest connected component."""
+        num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
+        
+        if num_labels <= 1:
+            return mask
+        
+        # Find largest component (excluding background label 0)
+        largest_label = 1 + np.argmax(stats[1:, cv2.CC_STAT_AREA])
+        
+        # Create mask with only largest component
+        result = np.zeros_like(mask)
+        result[labels == largest_label] = 255
+        
+        return result
+    
+    def _fill_holes(self, mask: np.ndarray) -> np.ndarray:
+        """Fill internal holes in the mask using contour filling."""
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        if contours:
+            # Fill the external contour to close all internal holes
+            filled = np.zeros_like(mask)
+            cv2.drawContours(filled, contours, -1, 255, -1)  # -1 fills the contour
+            return filled
+        
+        return mask
+    
+    def _calculate_mask_quality(self, mask: np.ndarray, img_shape: tuple) -> float:
+        """Calculate mask quality as ratio of body pixels to image."""
+        body_pixels = np.sum(mask > 0)
+        total_pixels = img_shape[0] * img_shape[1]
+        return body_pixels / total_pixels
+    
+    def _check_limbs_present(self, mask: np.ndarray, img_shape: tuple) -> bool:
+        """
+        Vérifie si des membres sont présents dans le masque.
+        Détecte les extensions du masque vers les bords (bras levés, jambes).
+        """
+        h, w = img_shape[:2]
+        
+        # Vérifier les bords de l'image pour détecter les membres
+        # Haut (bras levés)
+        top_region = mask[:h//4, :]
+        top_body_pixels = np.sum(top_region > 0)
+        
+        # Côtés (bras étendus)
+        left_region = mask[:, :w//6]
+        right_region = mask[:, -w//6:]
+        side_body_pixels = np.sum(left_region > 0) + np.sum(right_region > 0)
+        
+        # Bas (jambes)
+        bottom_region = mask[-h//4:, :]
+        bottom_body_pixels = np.sum(bottom_region > 0)
+        
+        # Si on a des pixels dans les régions de membres, considérer comme valide
+        return (top_body_pixels > 50 or side_body_pixels > 100 or bottom_body_pixels > 100)
 
     def _save_debug_grid(self, frames: List[Dict]):
         try:
@@ -222,14 +330,9 @@ class SilhouetteExtractor:
             for idx in indices:
                 f = debug_frames[idx]
                 img = cv2.imread(f['path'])
-                
-                # Overlay mask (Red with 50% opacity) for grid too
-                mask = f['mask']
                 overlay = img.copy()
-                overlay[mask > 0] = [0, 0, 255] # Red BGR
-                cv2.addWeighted(overlay, 0.5, img, 0.5, 0, img)
-                
-                thumbnails.append(cv2.resize(img, (200, 300)))
+                overlay[f['mask'] == 0] = [0, 0, 255]
+                thumbnails.append(cv2.resize(overlay, (200, 300)))
             
             while len(thumbnails) < 9:
                 thumbnails.append(np.zeros((300, 200, 3), dtype=np.uint8))
@@ -265,10 +368,7 @@ class SkeletonExtractor:
         logger.info("Analyse du squelette...")
         try:
             valid = [f for f in frames if f.get('body_detected')]
-            if max_frames > 0:
-                samples = valid[::sample_step][:max_frames] if valid else []
-            else:
-                samples = valid[::sample_step] if valid else []
+            samples = valid[::sample_step][:max_frames] if valid else []
             y_sh, y_hi, y_kn, y_an = [], [], [], []
             
             for f in samples:
@@ -321,10 +421,8 @@ class VoxelReconstructor:
         xv, yv, zv = np.meshgrid(lin, lin, lin, indexing='ij')
         coords = np.stack((xv.flatten(), yv.flatten(), zv.flatten()), axis=1)
         
-        valid = [f for f in frames if f.get('body_detected', False) and 'mask' in f]
-        if not valid:
-            logger.warning("No valid silhouettes detected for space carving.")
-            return voxels # Return full volume (or we could return empty if preferred)
+        valid = [f for f in frames if f.get('body_detected', False)]
+        if not valid: valid = frames
             
         for f in valid:
             rad = np.radians(f['rotation_angle'])
@@ -706,13 +804,6 @@ class BodyProcessor:
         # Step 2: Silhouette segmentation (parallèle)
         frames = self.se.process(frames)
         
-        # Check if any frames were detected
-        detected_count = sum(1 for f in frames if f.get('body_detected', False))
-        if detected_count == 0:
-            logger.warning("No person detected in any frame. Using fallback mannequin model.")
-            # Do not return error, proceed to fallback generation
-            frames = [] # Clear frames to force fallback path downstream
-        
         # Step 3: Skeleton analysis (échantillonnage optimisé)
         landmarks = self.sk.analyze(frames, sample_step=preset.pose_sample_step, max_frames=preset.pose_max_frames)
         
@@ -789,29 +880,8 @@ class BodyProcessor:
                     os.path.join(res_dir, 'body_mesh.glb'), preset
                 )
             else:
-                if frames:
-                    voxels = self.vr.carve(frames)
-                    mesh_ok, glb_path = self.mg.generate(voxels, frames, os.path.join(res_dir, 'body_mesh.obj'))
-                else:
-                    logger.warning("Genering fallback cylinder mesh (no frames)...")
-                    # Use primitive cylinder for safety
-                    try:
-                        mesh = trimesh.primitives.Cylinder(radius=weight_kg/height_cm*10, height=height_cm/100, sections=32)
-                        # Set color safely
-                        mesh.visual.vertex_colors = np.tile([200, 200, 200, 255], (len(mesh.vertices), 1)).astype(np.uint8)
-                    except Exception as e:
-                         # Ultimate fallback if trimesh fails
-                         logger.error(f"Fallback mesh failed: {e}")
-                         mesh = trimesh.Trimesh(vertices=[[0,0,0], [0,1,0], [1,0,0]], faces=[[0,1,2]])
-                    
-                    try:
-                        mesh.export(os.path.join(res_dir, 'body_mesh.glb'))
-                        mesh_ok = True
-                        glb_path = os.path.join(res_dir, 'body_mesh.glb')
-                    except Exception as e:
-                        logger.error(f"Mesh export failed: {e}")
-                        mesh_ok = False
-                        glb_path = None
+                voxels = self.vr.carve(frames)
+                mesh_ok, glb_path = self.mg.generate(voxels, frames, os.path.join(res_dir, 'body_mesh.obj'))
                 smpl_params = {}
         
         # Step 5: Mesures avancées (plus de slices = plus de précision)

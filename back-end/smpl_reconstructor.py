@@ -1,31 +1,15 @@
 """
-SMPL/SMPL-X Reconstructor
-Transforme une séquence vidéo 2D en avatar 3D SMPL(-X) canonique.
-
-⚠️ Objectif :
-- Plus de génération géométrique manuelle (lofting, tubes, smoothing laplacien, etc.)
-- SMPL(-X) est l'unique générateur de mesh (topologie canonique)
-- On estime uniquement les paramètres (β, θ, caméra)
-
-Cette implémentation fournit :
-- Un wrapper `SMPLReconstructor` autour du modèle SMPL-X (via `smplx`)
-- Une initialisation simple de la forme (β) à partir de la biométrie
-- Une pose neutre (T-pose) pour un mesh prêt pour couture / retargeting
-
-Étapes plus avancées (fitting différentiable multi-frames, VIBE/HMR, pertes silhouette)
-peuvent être ajoutées sur cette base sans réintroduire de géométrie artisanale.
+SMPL-Inspired Body Reconstructor
+Generates realistic 3D body meshes from video using MediaPipe pose estimation
+and parametric body modeling based on anthropometric measurements.
 """
 
 import os
+import numpy as np
+import trimesh
+import cv2
 import logging
 from typing import List, Dict, Tuple, Optional, Any
-
-import cv2
-import numpy as np
-import torch
-import trimesh
-import smplx
-
 import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
@@ -33,70 +17,275 @@ from mediapipe.tasks.python import vision
 logger = logging.getLogger(__name__)
 
 
+class ParametricBodyModel:
+    """
+    Parametric body model inspired by SMPL.
+    Generates realistic human meshes from shape parameters (beta).
+    """
+    
+    # Body proportions relative to total height (normalized 0-1)
+    BODY_LANDMARKS = {
+        'head_top': 1.0,
+        'chin': 0.87,
+        'neck': 0.82,
+        'shoulders': 0.78,
+        'chest': 0.68,
+        'waist': 0.58,
+        'hips': 0.50,
+        'crotch': 0.47,
+        'mid_thigh': 0.35,
+        'knee': 0.27,
+        'calf': 0.18,
+        'ankle': 0.05,
+        'foot': 0.0
+    }
+    
+    def __init__(self, resolution_height: int = 120, resolution_radial: int = 72,
+                 smooth_iterations: int = 3):
+        self.resolution_height = max(50, resolution_height)
+        self.resolution_radial = max(32, resolution_radial)
+        self.smooth_iterations = max(0, smooth_iterations)
+        
+    def generate_mesh(self, 
+                      height_cm: float = 175.0,
+                      weight_kg: float = 70.0,
+                      measurements: Dict = None,
+                      gender: str = 'men') -> trimesh.Trimesh:
+        """
+        Generate a parametric 3D body mesh from measurements.
+        
+        Args:
+            height_cm: Total body height in cm
+            weight_kg: Body weight in kg
+            measurements: Dict with body measurements
+            gender: 'men' or 'women'
+            
+        Returns:
+            trimesh.Trimesh: 3D body mesh
+        """
+        logger.info(f"Generating parametric body mesh: {height_cm}cm, {weight_kg}kg")
+        
+        # Extract or estimate measurements
+        params = self._extract_body_params(measurements, height_cm, weight_kg, gender)
+        
+        # Generate body profile (radius at each height level)
+        profile = self._generate_body_profile(params, gender)
+        
+        # Create mesh from profile using revolution/lofting
+        mesh = self._create_mesh_from_profile(profile, height_cm)
+        
+        return mesh
+    
+    def _extract_body_params(self, measurements: Dict, height_cm: float, 
+                            weight_kg: float, gender: str) -> Dict:
+        """Extract body parameters from measurements or estimate from BMI."""
+        
+        bmi = weight_kg / ((height_cm / 100) ** 2)
+        bmi_factor = bmi / 22.0  # Normalized to average BMI
+        
+        # Default parameters based on gender and BMI
+        if gender == 'women':
+            defaults = {
+                'chest': 88 * bmi_factor,
+                'waist': 70 * bmi_factor,
+                'hips': 98 * bmi_factor,
+                'neck': 32 * bmi_factor,
+                'thigh': 56 * bmi_factor,
+                'shoulder_width': height_cm * 0.23,
+                'hip_width': height_cm * 0.19,
+            }
+        else:  # men
+            defaults = {
+                'chest': 98 * bmi_factor,
+                'waist': 82 * bmi_factor,
+                'hips': 95 * bmi_factor,
+                'neck': 38 * bmi_factor,
+                'thigh': 55 * bmi_factor,
+                'shoulder_width': height_cm * 0.26,
+                'hip_width': height_cm * 0.17,
+            }
+        
+        # Override with actual measurements if available
+        if measurements:
+            basics = measurements.get('basics', [])
+            for m in basics:
+                key = m.get('key', '')
+                if key in defaults and m.get('value_cm'):
+                    defaults[key] = m['value_cm']
+            
+            widths = measurements.get('widths', [])
+            for m in widths:
+                key = m.get('key', '')
+                if key == 'shoulders' and m.get('value_cm'):
+                    defaults['shoulder_width'] = m['value_cm']
+        
+        return defaults
+    
+    def _generate_body_profile(self, params: Dict, gender: str) -> List[Dict]:
+        """
+        Generate body profile - radius values at different height levels.
+        Creates a realistic human silhouette.
+        """
+        
+        # Convert circumferences to radii (circumference = 2 * pi * r)
+        def circ_to_radius(circ): 
+            return circ / (2 * np.pi)
+        
+        # Core radii
+        chest_r = circ_to_radius(params['chest'])
+        waist_r = circ_to_radius(params['waist'])
+        hips_r = circ_to_radius(params['hips'])
+        neck_r = circ_to_radius(params['neck'])
+        thigh_r = circ_to_radius(params['thigh'])
+        
+        # Build profile points (height_ratio, front_radius, side_radius)
+        # Use elliptical cross-sections for realism
+        profile = [
+            # Feet
+            {'h': 0.00, 'rx': 4.5, 'ry': 10.0, 'type': 'foot'},
+            {'h': 0.03, 'rx': 4.0, 'ry': 5.0, 'type': 'ankle'},
+            {'h': 0.05, 'rx': 4.5, 'ry': 5.5, 'type': 'ankle_top'},
+            
+            # Calf
+            {'h': 0.12, 'rx': thigh_r * 0.55, 'ry': thigh_r * 0.50, 'type': 'lower_calf'},
+            {'h': 0.18, 'rx': thigh_r * 0.65, 'ry': thigh_r * 0.60, 'type': 'calf_widest'},
+            {'h': 0.24, 'rx': thigh_r * 0.50, 'ry': thigh_r * 0.45, 'type': 'knee'},
+            
+            # Thigh
+            {'h': 0.30, 'rx': thigh_r * 0.75, 'ry': thigh_r * 0.70, 'type': 'lower_thigh'},
+            {'h': 0.38, 'rx': thigh_r * 0.95, 'ry': thigh_r * 0.90, 'type': 'mid_thigh'},
+            {'h': 0.45, 'rx': thigh_r, 'ry': thigh_r * 0.95, 'type': 'upper_thigh'},
+            
+            # Hips/Pelvis (critical for shape)
+            {'h': 0.48, 'rx': hips_r * 0.95, 'ry': hips_r * 0.75, 'type': 'crotch'},
+            {'h': 0.50, 'rx': hips_r, 'ry': hips_r * 0.78, 'type': 'hips'},
+            {'h': 0.52, 'rx': hips_r * 0.98, 'ry': hips_r * 0.80, 'type': 'hip_top'},
+            
+            # Waist
+            {'h': 0.56, 'rx': waist_r * 0.95, 'ry': waist_r * 0.85, 'type': 'lower_waist'},
+            {'h': 0.58, 'rx': waist_r, 'ry': waist_r * 0.82, 'type': 'waist'},
+            {'h': 0.60, 'rx': waist_r * 1.05, 'ry': waist_r * 0.85, 'type': 'upper_waist'},
+            
+            # Ribcage/Chest
+            {'h': 0.64, 'rx': chest_r * 0.90, 'ry': chest_r * 0.70, 'type': 'lower_chest'},
+            {'h': 0.68, 'rx': chest_r, 'ry': chest_r * 0.75, 'type': 'chest'},
+            {'h': 0.72, 'rx': chest_r * 0.95, 'ry': chest_r * 0.72, 'type': 'upper_chest'},
+            
+            # Shoulders (widest part for men)
+            {'h': 0.76, 'rx': params['shoulder_width'] / 2 * 0.9, 'ry': chest_r * 0.65, 'type': 'shoulder_base'},
+            {'h': 0.78, 'rx': params['shoulder_width'] / 2, 'ry': chest_r * 0.55, 'type': 'shoulders'},
+            {'h': 0.80, 'rx': params['shoulder_width'] / 2 * 0.75, 'ry': chest_r * 0.45, 'type': 'trapezius'},
+            
+            # Neck
+            {'h': 0.82, 'rx': neck_r * 1.1, 'ry': neck_r * 0.95, 'type': 'neck_base'},
+            {'h': 0.85, 'rx': neck_r, 'ry': neck_r * 0.90, 'type': 'neck_mid'},
+            {'h': 0.87, 'rx': neck_r * 0.95, 'ry': neck_r * 0.88, 'type': 'neck_top'},
+            
+            # Head (simplified ellipsoid)
+            {'h': 0.88, 'rx': 7.5, 'ry': 8.5, 'type': 'chin'},
+            {'h': 0.91, 'rx': 8.5, 'ry': 9.5, 'type': 'jaw'},
+            {'h': 0.94, 'rx': 8.0, 'ry': 10.0, 'type': 'face'},
+            {'h': 0.97, 'rx': 7.5, 'ry': 9.5, 'type': 'forehead'},
+            {'h': 1.00, 'rx': 5.0, 'ry': 6.0, 'type': 'crown'},
+        ]
+        
+        return profile
+    
+    def _create_mesh_from_profile(self, profile: List[Dict], height_cm: float) -> trimesh.Trimesh:
+        """
+        Create a humanoid mesh by separating legs and torso.
+        Generates 3 sub-meshes (L-Leg, R-Leg, Torso) and combines them.
+        """
+        height_m = height_cm / 100.0
+        n_radial = self.resolution_radial
+        
+        # Split profile into Legs and Torso
+        leg_profile = [p for p in profile if p['h'] < 0.48]
+        torso_profile = [p for p in profile if p['h'] >= 0.46] # Overlap at hips
+        
+        vertices = []
+        faces = []
+        
+        def add_tube(sub_profile, x_offset=0.0):
+            start_v_idx = len(vertices)
+            
+            # Generate rings
+            angles = np.linspace(0, 2 * np.pi, n_radial, endpoint=False)
+            
+            for section in sub_profile:
+                h = section['h'] * height_m
+                rx = section['rx'] / 100.0
+                ry = section['ry'] / 100.0
+                
+                for angle in angles:
+                    x = rx * np.cos(angle) + x_offset
+                    z = ry * np.sin(angle)
+                    vertices.append([x, h, z])
+            
+            # Generate faces
+            n_sections = len(sub_profile)
+            for i in range(n_sections - 1):
+                for j in range(n_radial):
+                    curr = start_v_idx + i * n_radial + j
+                    curr_next = start_v_idx + i * n_radial + (j + 1) % n_radial
+                    next_r = start_v_idx + (i + 1) * n_radial + j
+                    next_r_next = start_v_idx + (i + 1) * n_radial + (j + 1) % n_radial
+                    
+                    faces.append([curr, curr_next, next_r])
+                    faces.append([curr_next, next_r_next, next_r])
+            
+            # Cap top/bottom simple
+            # (Skipped for cleaner code, holes are hidden by overlap or at ends)
+            return len(vertices)
+
+        # 1. Left Leg (Offset -X)
+        # Calculate leg offset based on hip width
+        hip_width_m = (profile[10]['rx'] / 100.0) * 2  # Approx hip width
+        leg_offset = hip_width_m * 0.25
+        
+        add_tube(leg_profile, -leg_offset)
+        
+        # 2. Right Leg (Offset +X)
+        add_tube(leg_profile, leg_offset)
+        
+        # 3. Torso (Center)
+        add_tube(torso_profile, 0.0)
+        
+        # Create Trimesh
+        # Create Trimesh
+        mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
+        
+        # Compute proper normals
+        mesh.fix_normals()
+        
+        # Smoothing pour précision et rendu naturel
+        for _ in range(self.smooth_iterations):
+            try:
+                mesh = trimesh.smoothing.filter_laplacian(mesh, iterations=1, lamb=0.5)
+            except Exception:
+                break
+        
+        # Apply skin-like color
+        if hasattr(mesh.visual, 'vertex_colors'):
+            mesh.visual.vertex_colors = np.full((len(mesh.vertices), 4), [210, 180, 160, 255], dtype=np.uint8)
+            
+        logger.info(f"Generated mesh: {len(mesh.vertices)} vertices, {len(mesh.faces)} faces")
+        
+        return mesh
+
+
 class SMPLReconstructor:
     """
-    Reconstructeur SMPL-X : vidéo 2D → avatar 3D canonique.
-
-    - Utilise MediaPipe Pose pour extraire des informations de proportions
-    - Utilise SMPL-X comme unique générateur de mesh (vertices, faces, joints)
-    - Évite toute génération manuelle de géométrie (pas de lofting / tubes)
-
-    NOTE IMPORTANTE :
-    Cette première version ne fait PAS encore le fitting différentiable complet
-    décrit dans le pipeline (L_kp, L_sil, L_temp, etc.). Elle :
-      - Initialise β à partir de height_cm / weight_kg
-      - Produit un mesh SMPL-X en pose neutre (T-pose)
-    Ce mesh est déjà :
-      - topologie canonique
-      - riggé correctement
-      - exploitable pour couture / retargeting
+    Main 3D Body Reconstructor using parametric body model.
+    Extracts pose from video frames and generates realistic body mesh.
     """
-
-    def __init__(
-        self,
-        model_path: Optional[str] = None,
-        device: Optional[str] = None,
-    ) -> None:
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
-
-        # Résolution SMPL-X (peut être ajustée si besoin)
-        self.num_betas = 10
-
-        # Chemin modèle SMPL-X
-        if model_path is None:
-            # Par convention : back-end/models/smplx
-            base_dir = os.path.dirname(os.path.abspath(__file__))
-            model_path = os.path.join(base_dir, "models", "smplx")
-        self.model_path = model_path
-
-        if not os.path.exists(self.model_path):
-            logger.warning(
-                "SMPL-X model directory not found at %s. "
-                "Please download SMPL-X and place it in back-end/models/smplx.",
-                self.model_path,
-            )
-
-        # Modèle SMPL-X neutre (unisex) – topologie canonique
-        try:
-            self.model = smplx.create(
-                self.model_path,
-                model_type="smplx",
-                gender="neutral",
-                use_pca=False,
-                num_betas=self.num_betas,
-                flat_hand_mean=True,
-                batch_size=1,
-            ).to(self.device)
-            logger.info("SMPL-X model loaded from %s", self.model_path)
-        except Exception as e:
-            logger.error("Failed to load SMPL-X model: %s", e)
-            self.model = None
-
-        # Détecteur de pose MediaPipe (pour analyse ultérieure, ex: proportions)
+    
+    def __init__(self):
+        self.body_model = ParametricBodyModel()
         self.pose_detector = None
         self._init_pose_detector()
-
-    def _init_pose_detector(self) -> None:
+        
+    def _init_pose_detector(self):
         """Initialize MediaPipe Pose detector."""
         try:
             model_path = os.path.abspath('models/pose_landmarker_full.task')
@@ -110,124 +299,57 @@ class SMPLReconstructor:
                 self.pose_detector = vision.PoseLandmarker.create_from_options(options)
                 logger.info("Pose detector initialized")
             else:
-                logger.warning("Pose model not found: %s", model_path)
+                logger.warning(f"Pose model not found: {model_path}")
         except Exception as e:
-            logger.error("Failed to initialize pose detector: %s", e)
-
-    # -------------------------------------------------------------------------
-    # API principale
-    # -------------------------------------------------------------------------
-    def fit(
-        self,
-        frames: List[Dict],
-        height_cm: float = 175.0,
-        weight_kg: float = 70.0,
-        gender: str = "neutral",
-        output_path: Optional[str] = None,
-        preset: Any = None,
-    ) -> Tuple[bool, Optional[str], Dict]:
+            logger.error(f"Failed to initialize pose detector: {e}")
+    
+    def fit(self, frames: List[Dict], height_cm: float = 175.0, 
+            weight_kg: float = 70.0, gender: str = 'men',
+            output_path: str = None, preset: Any = None) -> Tuple[bool, Optional[str], Dict]:
         """
-        Vidéo → avatar SMPL-X.
-
-        Version actuelle (simplifiée) :
-        - Utilise uniquement height_cm / weight_kg pour initialiser β
-        - Produit un mesh en T-pose (θ = 0)
-        - Topologie canonique prête pour couture / animation
-
-        TODO (évolutions futures) :
-        - Fitting différentiable multi-frames (L_kp, L_sil, L_temp, etc.)
-        - Intégration de VIBE / HMR pour theta_init / beta_init
+        Fit body model to video frames. preset: PipelinePreset for mesh res and front_side_frames.
         """
-        if self.model is None:
-            logger.error("SMPL-X model is not available. Aborting reconstruction.")
+        if preset is not None:
+            self.body_model.resolution_height = max(50, getattr(preset, 'mesh_resolution_height', 120))
+            self.body_model.resolution_radial = max(32, getattr(preset, 'mesh_resolution_radial', 72))
+            self.body_model.smooth_iterations = max(0, getattr(preset, 'mesh_smooth_iterations', 3))
+        logger.info("Fitting SMPL-inspired body model (res %d/%d, smooth %d)...",
+                    self.body_model.resolution_height, self.body_model.resolution_radial,
+                    self.body_model.smooth_iterations)
+        
+        self.correct_angles(frames)
+        pose_analysis = self._analyze_poses(frames)
+        front_side_n = getattr(preset, 'front_side_frames', 16) if preset else 16
+        silhouette_params = self._analyze_silhouettes(frames, height_cm, front_side_frames=front_side_n)
+        
+        # Generate mesh
+        mesh = self.body_model.generate_mesh(
+            height_cm=height_cm,
+            weight_kg=weight_kg,
+            measurements=silhouette_params.get('measurements'),
+            gender=gender
+        )
+        
+        if mesh is None:
+            logger.error("Failed to generate mesh")
             return False, None, {}
-
-        # Échelle réelle → contrainte sur la taille du mesh SMPL-X
-        height_m = height_cm / 100.0
-
-        # Approximation simple de β (shape) à partir de BMI + taille
-        betas = self._init_betas_from_biometrics(height_cm, weight_kg)
-
-        # Pose neutre (T-pose) pour couture / retargeting
-        global_orient = torch.zeros(1, 3, device=self.device)
-        body_pose = torch.zeros(1, 63, device=self.device)  # 21 joints * 3
-        left_hand_pose = torch.zeros(1, 45, device=self.device)
-        right_hand_pose = torch.zeros(1, 45, device=self.device)
-        jaw_pose = torch.zeros(1, 3, device=self.device)
-        leye_pose = torch.zeros(1, 3, device=self.device)
-        reye_pose = torch.zeros(1, 3, device=self.device)
-
-        # Translation : centrée à l'origine, échelle contrôlée par height_cm
-        transl = torch.zeros(1, 3, device=self.device)
-
-        with torch.no_grad():
-            output = self.model(
-                betas=betas,
-                global_orient=global_orient,
-                body_pose=body_pose,
-                left_hand_pose=left_hand_pose,
-                right_hand_pose=right_hand_pose,
-                jaw_pose=jaw_pose,
-                leye_pose=leye_pose,
-                reye_pose=reye_pose,
-                transl=transl,
-            )
-
-        vertices = output.vertices[0].cpu().numpy()
-        faces = self.model.faces
-
-        # Mise à l'échelle en hauteur réelle (height_cm)
-        min_y, max_y = vertices[:, 1].min(), vertices[:, 1].max()
-        smpl_height = max_y - min_y
-        if smpl_height > 0:
-            scale = height_m / smpl_height
-            vertices *= scale
-
-        mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
-
-        # Export GLB
-        glb_path = None
+        
+        # Save mesh
         if output_path:
-            glb_path = output_path if output_path.endswith(".glb") else output_path.replace(".obj", ".glb")
+            glb_path = output_path if output_path.endswith('.glb') else output_path.replace('.obj', '.glb')
             try:
                 mesh.export(glb_path)
-                logger.info("SMPL-X mesh saved to: %s", glb_path)
+                logger.info(f"Mesh saved to: {glb_path}")
+                
+                # Generate SMPL-like parameters
+                smpl_params = self._compute_shape_params(silhouette_params, height_cm, weight_kg)
+                
+                return True, glb_path, smpl_params
             except Exception as e:
-                logger.error("Failed to save SMPL-X GLB: %s", e)
-                glb_path = None
-
-        # Paramètres retournés (β au format liste Python)
-        smpl_params = {
-            "beta": betas[0].cpu().tolist(),
-            "height_cm": height_cm,
-            "weight_kg": weight_kg,
-            "gender": gender,
-        }
-
-        return True, glb_path, smpl_params
-
-    # -------------------------------------------------------------------------
-    # Initialisation des paramètres de forme (β)
-    # -------------------------------------------------------------------------
-    def _init_betas_from_biometrics(self, height_cm: float, weight_kg: float) -> torch.Tensor:
-        """
-        Approximation simple de β à partir de height_cm et weight_kg.
-
-        Cette fonction ne remplace PAS un vrai regressor (VIBE / HMR),
-        mais fournit une initialisation cohérente pour la forme.
-        """
-        bmi = weight_kg / ((height_cm / 100.0) ** 2) if height_cm > 0 else 22.0
-        bmi_n = (bmi - 22.0) / 5.0  # Normalisé autour de l'IMC moyen
-        height_n = (height_cm - 175.0) / 15.0
-
-        # β0 ~ taille, β1 ~ corpulence (bmi), les autres à 0 pour l'instant
-        beta = torch.zeros(1, self.num_betas, device=self.device)
-        beta[0, 0] = float(height_n)
-        if self.num_betas > 1:
-            beta[0, 1] = float(bmi_n)
-
-        return beta
-
+                logger.error(f"Failed to save mesh: {e}")
+                return False, None, {}
+        
+        return True, None, {}
 
     def correct_angles(self, frames: List[Dict]):
         """

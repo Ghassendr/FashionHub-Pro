@@ -214,7 +214,7 @@ class SMPLLandmarkFitter:
         
         # Étape 4: Générer le mesh ajusté
         from smpl_reconstructor import ParametricBodyModel
-        body_model = ParametricBodyModel(resolution_height=300, resolution_radial=128, smooth_iterations=8)
+        body_model = ParametricBodyModel(resolution_height=150, resolution_radial=96, smooth_iterations=5)
         
         # Créer un dict de mesures ajustées depuis les landmarks
         adjusted_measurements = self._landmarks_to_measurements(

@@ -65,7 +65,7 @@ def process():
     cut_preference = request.form.get('cut_preference', None)
     if cut_preference == '':
         cut_preference = None
-    quality = request.form.get('quality', 'high').lower()  # fast | balanced | high (Default: high)
+    quality = request.form.get('quality', 'balanced').lower()  # fast | balanced | high
     if quality not in ('fast', 'balanced', 'high'):
         quality = 'balanced'
     
@@ -124,10 +124,13 @@ def serve_results(filepath):
     
     # Otherwise serve the file directly
     if os.path.exists(full_path):
-        directory = os.path.dirname(full_path)
-        filename = os.path.basename(full_path)
-        return send_from_directory(os.path.join(RESULTS_FOLDER, os.path.dirname(filepath)), filename)
+        abs_path = os.path.abspath(full_path)
+        directory = os.path.dirname(abs_path)
+        filename = os.path.basename(abs_path)
+        logger.info(f"Serving file: {filename} from {directory}")
+        return send_from_directory(directory, filename)
     
+    logger.warning(f"File not found: {full_path}")
     return jsonify({'error': 'File not found'}), 404
 
 
