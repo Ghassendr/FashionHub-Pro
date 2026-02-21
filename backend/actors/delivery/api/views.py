@@ -2,7 +2,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from django.contrib.auth.models import User
-from .models import Carrier, Vehicle, Route, Schedule
+from actors.delivery.models import Carrier, Vehicle, Route, Schedule
 from .serializers import CarrierSerializer, VehicleSerializer, RouteSerializer, ScheduleSerializer
 
 class VehicleViewSet(viewsets.ModelViewSet):

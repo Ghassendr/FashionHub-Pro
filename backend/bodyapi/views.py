@@ -9,14 +9,14 @@ from django.http import JsonResponse, FileResponse, HttpRequest, HttpResponseNot
 from django.views.decorators.csrf import csrf_exempt
 
 import importlib
-body_processor_mod = importlib.import_module("3d_model_body_measurements.body_processor")
+body_processor_mod = importlib.import_module("actors.client.ml_pipeline.body_processor")
 BodyProcessor = body_processor_mod.BodyProcessor
 
 
 logger = logging.getLogger(__name__)
 
 
-PIPELINE_ROOT = Path(getattr(settings, "PIPELINE_ROOT", Path(__file__).resolve().parent.parent / "3d_model_body_measurements"))
+PIPELINE_ROOT = Path(getattr(settings, "PIPELINE_ROOT", Path(__file__).resolve().parent.parent / "actors" / "client" / "ml_pipeline"))
 UPLOAD_FOLDER = Path(getattr(settings, "PIPELINE_UPLOADS", PIPELINE_ROOT / "uploads"))
 RESULTS_FOLDER = Path(getattr(settings, "PIPELINE_RESULTS", PIPELINE_ROOT / "results"))
 

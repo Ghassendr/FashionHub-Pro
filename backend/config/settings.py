@@ -82,7 +82,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Directories for the 3D pipeline (absolute paths)
-PIPELINE_ROOT = BASE_DIR / "3d_model_body_measurements"
+PIPELINE_ROOT = BASE_DIR / "actors" / "client" / "ml_pipeline"
 PIPELINE_UPLOADS = PIPELINE_ROOT / "uploads"
 PIPELINE_RESULTS = PIPELINE_ROOT / "results"
 

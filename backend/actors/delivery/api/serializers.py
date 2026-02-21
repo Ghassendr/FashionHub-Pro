@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Carrier, Vehicle, Route, Schedule
+from actors.delivery.models import Carrier, Vehicle, Route, Schedule
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
