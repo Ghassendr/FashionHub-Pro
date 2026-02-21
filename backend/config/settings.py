@@ -17,12 +17,10 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # Legacy apps (kept for migration compatibility)
-    "bodyapi",
-    "strategie_livraison",
-    # New actor-based structure (mirrors legacy apps)
+    # Actor-based structure
     "actors.client",
     "actors.delivery",
+    "actors.couturehouse",
     "core",
     # External dependencies
     "rest_framework",

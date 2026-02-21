@@ -169,6 +169,8 @@ def serve_results(request: HttpRequest, filepath: str):
 
         response = FileResponse(open(full_path, "rb"), content_type=content_type)
         response["Access-Control-Allow-Origin"] = "*"
+        response["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+        response["Access-Control-Allow-Headers"] = "*"
         return response
 
     logger.warning("File not found: %s", full_path)

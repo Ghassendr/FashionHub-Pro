@@ -1,0 +1,879 @@
+{
+  "id": "20ea01ec",
+  "status": "completed",
+  "video_info": {
+    "fps": 59.93947246379583,
+    "resolution": "2160x3840",
+    "duration": 23.240111111111112,
+    "extracted_count": 72
+  },
+  "user_input": {
+    "height_cm": 175.0,
+    "weight_kg": 75.0,
+    "age": null,
+    "gender": "men",
+    "cut_preference": null
+  },
+  "measurements": {
+    "basics": [
+      {
+        "key": "chest",
+        "name": "Tour de Poitrine",
+        "name_en": "Chest",
+        "value": "81.4",
+        "value_cm": 81.4,
+        "unit": "cm",
+        "confidence": 0.92,
+        "type": "chest"
+      },
+      {
+        "key": "waist",
+        "name": "Tour de Taille",
+        "name_en": "Waist",
+        "value": "78.4",
+        "value_cm": 78.4,
+        "unit": "cm",
+        "confidence": 0.9,
+        "type": "waist"
+      },
+      {
+        "key": "hips",
+        "name": "Tour de Hanches",
+        "name_en": "Hips",
+        "value": "100.7",
+        "value_cm": 100.7,
+        "unit": "cm",
+        "confidence": 0.93,
+        "type": "hips"
+      },
+      {
+        "key": "neck",
+        "name": "Tour de Cou",
+        "name_en": "Neck",
+        "value": "55.3",
+        "value_cm": 55.3,
+        "unit": "cm",
+        "confidence": 0.85,
+        "type": "neck"
+      },
+      {
+        "key": "thigh",
+        "name": "Tour de Cuisse",
+        "name_en": "Thigh",
+        "value": "92.8",
+        "value_cm": 92.8,
+        "unit": "cm",
+        "confidence": 0.82,
+        "type": "thigh"
+      }
+    ],
+    "heights": [
+      {
+        "key": "stature",
+        "name": "Stature Totale",
+        "name_en": "Height",
+        "value": "175.0",
+        "value_cm": 175.0,
+        "unit": "cm",
+        "confidence": 0.99,
+        "type": "height"
+      },
+      {
+        "key": "inseam",
+        "name": "Entrejambe",
+        "name_en": "Inseam",
+        "value": "70.5",
+        "value_cm": 70.5,
+        "unit": "cm",
+        "confidence": 0.85,
+        "type": "inseam"
+      },
+      {
+        "key": "arm_length",
+        "name": "Longueur Bras",
+        "name_en": "Arm Length",
+        "value": "77.0",
+        "value_cm": 77.0,
+        "unit": "cm",
+        "confidence": 0.8,
+        "type": "arm_length"
+      },
+      {
+        "key": "leg_length",
+        "name": "Longueur Jambes",
+        "name_en": "Leg Length",
+        "value": "70.5",
+        "value_cm": 70.5,
+        "unit": "cm",
+        "confidence": 0.85,
+        "type": "leg_length"
+      }
+    ],
+    "widths": [
+      {
+        "key": "shoulders",
+        "name": "Largeur Épaules",
+        "name_en": "Shoulder Width",
+        "value": "40.3",
+        "value_cm": 40.3,
+        "unit": "cm",
+        "confidence": 0.87,
+        "type": "shoulder_width"
+      },
+      {
+        "key": "back_width",
+        "name": "Largeur Dos",
+        "name_en": "Back Width",
+        "value": "34.2",
+        "value_cm": 34.2,
+        "unit": "cm",
+        "confidence": 0.82,
+        "type": "back_width"
+      }
+    ],
+    "functional": [
+      {
+        "key": "bicep",
+        "name": "Tour de Biceps",
+        "name_en": "Bicep",
+        "value": "28.5",
+        "value_cm": 28.5,
+        "unit": "cm",
+        "confidence": 0.75,
+        "type": "bicep"
+      },
+      {
+        "key": "wrist",
+        "name": "Tour de Poignet",
+        "name_en": "Wrist",
+        "value": "14.7",
+        "value_cm": 14.7,
+        "unit": "cm",
+        "confidence": 0.7,
+        "type": "wrist"
+      }
+    ],
+    "posture": []
+  },
+  "morphology": {
+    "silhouette": {
+      "type": "normal",
+      "type_fr": "Normal",
+      "description": "Silhouette équilibrée",
+      "confidence": 0.8,
+      "bmi": 24.5,
+      "bmi_category": "Poids normal",
+      "ratios": {
+        "waist_to_hip": 0.779,
+        "waist_to_chest": 0.963,
+        "shoulder_to_waist": 0.514
+      }
+    },
+    "proportions": {
+      "torso_ratio": 0.3,
+      "legs_ratio": 0.47,
+      "arms_ratio": 0.35,
+      "torso_cm": 52.5,
+      "legs_cm": 82.0,
+      "arms_cm": 61.0,
+      "torso_to_legs_ratio": 0.64,
+      "proportion_type": {
+        "type": "balanced",
+        "fr": "Équilibré",
+        "description": "Proportions standard"
+      },
+      "confidence": 0.5
+    },
+    "posture": {
+      "type": "unknown",
+      "type_fr": "Non déterminée",
+      "description": "Données insuffisantes pour analyse",
+      "issues": [],
+      "metrics": {
+        "shoulder_tilt": 0,
+        "hip_tilt": 0,
+        "spine_angle": 0
+      },
+      "confidence": 0.0
+    },
+    "quality_score": 0.43,
+    "summary": {
+      "fr": "Morphologie Normal avec Équilibré. Posture: Non déterminée.",
+      "en": "Normal body type with balanced proportions. Posture: unknown."
+    }
+  },
+  "fashion_recommendations": {
+    "size_recommendations": {
+      "EU": {
+        "recommended_size": "S",
+        "confidence": 0.5,
+        "alternatives": [
+          {
+            "size": "XS",
+            "note": "Plus ajusté"
+          },
+          {
+            "size": "M",
+            "note": "Plus ample"
+          }
+        ],
+        "fit_details": {
+          "chest": "loose",
+          "waist": "tight",
+          "hips": "tight"
+        }
+      },
+      "US": {
+        "recommended_size": "S",
+        "confidence": 0.8428166656333314,
+        "alternatives": [
+          {
+            "size": "XS",
+            "note": "Plus ajusté"
+          },
+          {
+            "size": "M",
+            "note": "Plus ample"
+          }
+        ],
+        "fit_details": {
+          "chest": "loose",
+          "waist": "perfect",
+          "hips": "tight"
+        }
+      },
+      "UK": {
+        "recommended_size": "S",
+        "confidence": 0.5,
+        "alternatives": [
+          {
+            "size": "XS",
+            "note": "Plus ajusté"
+          },
+          {
+            "size": "M",
+            "note": "Plus ample"
+          }
+        ],
+        "fit_details": {
+          "chest": "loose",
+          "waist": "tight",
+          "hips": "tight"
+        }
+      }
+    },
+    "cut_recommendations": {
+      "primary_recommendation": {
+        "style": "regular_fit",
+        "name_fr": "Coupe classique",
+        "name_en": "Regular Fit",
+        "description": "Coupe traditionnelle, confort optimal",
+        "score": 30,
+        "reasons": [
+          "Adapté à votre silhouette Normal"
+        ],
+        "ease_cm": {
+          "chest": 8,
+          "waist": 6,
+          "hips": 8
+        }
+      },
+      "alternatives": [
+        {
+          "style": "loose_fit",
+          "name_fr": "Coupe ample",
+          "name_en": "Loose Fit",
+          "description": "Coupe décontractée, liberté de mouvement",
+          "score": 30,
+          "reasons": [
+            "Adapté à votre silhouette Normal"
+          ],
+          "ease_cm": {
+            "chest": 12,
+            "waist": 10,
+            "hips": 12
+          }
+        },
+        {
+          "style": "tailored_fit",
+          "name_fr": "Coupe sur mesure",
+          "name_en": "Tailored Fit",
+          "description": "Entre ajustée et classique, élégance moderne",
+          "score": 30,
+          "reasons": [
+            "Adapté à votre silhouette Normal"
+          ],
+          "ease_cm": {
+            "chest": 6,
+            "waist": 4,
+            "hips": 6
+          }
+        }
+      ],
+      "all_options": [
+        {
+          "style": "regular_fit",
+          "name_fr": "Coupe classique",
+          "name_en": "Regular Fit",
+          "description": "Coupe traditionnelle, confort optimal",
+          "score": 30,
+          "reasons": [
+            "Adapté à votre silhouette Normal"
+          ],
+          "ease_cm": {
+            "chest": 8,
+            "waist": 6,
+            "hips": 8
+          }
+        },
+        {
+          "style": "loose_fit",
+          "name_fr": "Coupe ample",
+          "name_en": "Loose Fit",
+          "description": "Coupe décontractée, liberté de mouvement",
+          "score": 30,
+          "reasons": [
+            "Adapté à votre silhouette Normal"
+          ],
+          "ease_cm": {
+            "chest": 12,
+            "waist": 10,
+            "hips": 12
+          }
+        },
+        {
+          "style": "tailored_fit",
+          "name_fr": "Coupe sur mesure",
+          "name_en": "Tailored Fit",
+          "description": "Entre ajustée et classique, élégance moderne",
+          "score": 30,
+          "reasons": [
+            "Adapté à votre silhouette Normal"
+          ],
+          "ease_cm": {
+            "chest": 6,
+            "waist": 4,
+            "hips": 6
+          }
+        },
+        {
+          "style": "slim_fit",
+          "name_fr": "Coupe ajustée",
+          "name_en": "Slim Fit",
+          "description": "Coupe près du corps, silhouette épurée",
+          "score": 0,
+          "reasons": [],
+          "ease_cm": {
+            "chest": 4,
+            "waist": 2,
+            "hips": 4
+          }
+        }
+      ]
+    },
+    "morphological_alerts": [],
+    "tailor_summary": {
+      "text_fr": "📏 Taille recommandée: S (EU)\n✂️ Coupe suggérée: Coupe classique\n👤 Silhouette: Normal",
+      "key_points": {
+        "size_eu": "S",
+        "cut_style": "regular_fit",
+        "silhouette": "normal",
+        "alerts_count": 0
+      }
+    },
+    "measurements_for_pattern": {
+      "chest": {
+        "body_measure": 81.4,
+        "ease": 8,
+        "pattern_measure": 89.4
+      },
+      "waist": {
+        "body_measure": 78.4,
+        "ease": 6,
+        "pattern_measure": 84.4
+      },
+      "hips": {
+        "body_measure": 100.7,
+        "ease": 8,
+        "pattern_measure": 108.7
+      },
+      "shoulders": {
+        "body_measure": 40.3,
+        "ease": 0,
+        "pattern_measure": 40.3
+      },
+      "neck": {
+        "body_measure": 55.3,
+        "ease": 0,
+        "pattern_measure": 55.3
+      },
+      "arm_length": {
+        "body_measure": 70.5,
+        "ease": 0,
+        "pattern_measure": 70.5
+      },
+      "back_length": {
+        "body_measure": 43.8,
+        "ease": 0,
+        "pattern_measure": 43.8
+      }
+    }
+  },
+  "processing_time_seconds": 233.49,
+  "mesh_path": "/results/20ea01ec/body_mesh.glb",
+  "mesh_url": "/results/20ea01ec/body_mesh.glb",
+  "overlay_video_path": null,
+  "overlay_video_url": null,
+  "landmark_fitting_used": true,
+  "debug_image": "/results/20ea01ec/extraction_debug.jpg",
+  "quality_score": 0.0,
+  "confidence": 0.43,
+  "beta_parameters": [
+    0.0,
+    -0.907,
+    -0.107,
+    0.18,
+    0.5,
+    -0.1,
+    -0.4,
+    0.143,
+    -0.024,
+    -0.031
+  ],
+  "frames_data": [
+    {
+      "frame_number": 0,
+      "rotation_angle": 0.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 19,
+      "rotation_angle": 5.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 38,
+      "rotation_angle": 10.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 57,
+      "rotation_angle": 15.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 76,
+      "rotation_angle": 20.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 95,
+      "rotation_angle": 25.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 114,
+      "rotation_angle": 30.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 133,
+      "rotation_angle": 35.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 152,
+      "rotation_angle": 40.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 171,
+      "rotation_angle": 45.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 190,
+      "rotation_angle": 50.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 209,
+      "rotation_angle": 55.00000000000001,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 228,
+      "rotation_angle": 60.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 247,
+      "rotation_angle": 65.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 266,
+      "rotation_angle": 70.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 285,
+      "rotation_angle": 75.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 304,
+      "rotation_angle": 80.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 323,
+      "rotation_angle": 85.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 342,
+      "rotation_angle": 90.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 361,
+      "rotation_angle": 95.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 380,
+      "rotation_angle": 100.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 399,
+      "rotation_angle": 105.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 418,
+      "rotation_angle": 110.00000000000001,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 437,
+      "rotation_angle": 114.99999999999999,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 456,
+      "rotation_angle": 120.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 475,
+      "rotation_angle": 125.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 494,
+      "rotation_angle": 130.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 513,
+      "rotation_angle": 135.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 532,
+      "rotation_angle": 140.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 551,
+      "rotation_angle": 145.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 570,
+      "rotation_angle": 150.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 589,
+      "rotation_angle": 155.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 608,
+      "rotation_angle": 160.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 627,
+      "rotation_angle": 165.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 646,
+      "rotation_angle": 170.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 665,
+      "rotation_angle": 175.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 684,
+      "rotation_angle": 180.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 703,
+      "rotation_angle": 184.99999999999997,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 722,
+      "rotation_angle": 190.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 741,
+      "rotation_angle": 195.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 760,
+      "rotation_angle": 200.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 779,
+      "rotation_angle": 205.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 798,
+      "rotation_angle": 210.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 817,
+      "rotation_angle": 215.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 836,
+      "rotation_angle": 220.00000000000003,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 855,
+      "rotation_angle": 225.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 874,
+      "rotation_angle": 229.99999999999997,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 893,
+      "rotation_angle": 235.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 912,
+      "rotation_angle": 240.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 931,
+      "rotation_angle": 245.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 950,
+      "rotation_angle": 250.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 969,
+      "rotation_angle": 255.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 988,
+      "rotation_angle": 260.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 1007,
+      "rotation_angle": 265.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 1026,
+      "rotation_angle": 270.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 1045,
+      "rotation_angle": 275.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 1064,
+      "rotation_angle": 280.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 1083,
+      "rotation_angle": 285.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 1102,
+      "rotation_angle": 290.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 1121,
+      "rotation_angle": 295.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 1140,
+      "rotation_angle": 300.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 1159,
+      "rotation_angle": 305.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 1178,
+      "rotation_angle": 310.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 1197,
+      "rotation_angle": 315.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 1216,
+      "rotation_angle": 320.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 1235,
+      "rotation_angle": 325.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 1254,
+      "rotation_angle": 330.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 1273,
+      "rotation_angle": 335.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 1292,
+      "rotation_angle": 340.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 1311,
+      "rotation_angle": 345.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 1330,
+      "rotation_angle": 350.0,
+      "confidence": 0.3,
+      "body_detected": false
+    },
+    {
+      "frame_number": 1349,
+      "rotation_angle": 355.0,
+      "confidence": 0.3,
+      "body_detected": false
+    }
+  ],
+  "frames_used": 0,
+  "total_frames": 72
+}

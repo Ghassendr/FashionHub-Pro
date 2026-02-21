@@ -27,16 +27,18 @@ export default function Upload({ onResult, onLoading }) {
 
         try {
             // Use relatively simplified upload without progress bar for now to ensure stability
-            const response = await axios.post('/process', formData, {
+            const response = await axios.post('http://localhost:8000/api/client/videos/process', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
                 timeout: 300000 // 5 minutes timeout for 1500 frames
             });
 
             if (response.data) {
-                // Fix up mesh URL to be absolute or relative correctly
-                // Backend returns "results/id/body_mesh.glb"
-                // Vite proxy handles /results
-                onResult(response.data);
+                // Ensure the base URL is prepended if not already present
+                let result = { ...response.data };
+                if (result.mesh_url && !result.mesh_url.startsWith('http')) {
+                    result.mesh_url = `http://localhost:8000${result.mesh_url}`;
+                }
+                onResult(result);
             }
         } catch (err) {
             console.error(err);

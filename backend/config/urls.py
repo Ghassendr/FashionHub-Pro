@@ -14,9 +14,8 @@ urlpatterns = [
     # Actor-based APIs (new structure - enabled)
     path("api/client/", include("actors.client.api.urls")),
     path("api/delivery/", include("actors.delivery.api.urls")),
-    # Legacy URLs (for backward compatibility - still active)
-    path("", include("bodyapi.urls")),
-    path("api/strategie_livraison/", include("strategie_livraison.urls")),
+    # Couturehouse APIs
+    path("api/couturehouse/", include("actors.couturehouse.api.urls")),
     # Core APIs (Authentication)
     # path("api/auth/", include("core.auth.urls")),
     # JWT Token endpoints

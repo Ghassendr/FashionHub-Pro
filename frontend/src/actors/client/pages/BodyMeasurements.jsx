@@ -55,15 +55,28 @@ function BodyMeasurements() {
         data.append('quality', formData.quality);
 
         try {
-            const response = await axios.post('/process', data);
+            const response = await axios.post('http://localhost:8000/api/client/videos/process', data);
             const resultData = response.data;
-            if (resultData && resultData.mesh_url) {
+            console.log("Full Upload Response:", resultData);
+
+            // Check if backend returned an error status
+            if (resultData?.status === 'error') {
+                console.error('Pipeline Error:', resultData.error);
+                alert('Pipeline Error: ' + (resultData.error || 'Unknown error'));
+                setLoading(false);
+                return;
+            }
+
+            if (resultData && resultData.mesh_url && !resultData.mesh_url.startsWith('http')) {
                 resultData.mesh_url = `http://localhost:8000${resultData.mesh_url}?t=${Date.now()}`;
             }
+            console.log("Setting BodyMeasurements Result State:", resultData);
             setResult(resultData);
             setActiveTab('viewer');
         } catch (error) {
-            alert('Erreur: ' + error.message);
+            console.error('API Error:', error);
+            const msg = error.response?.data?.error || error.message;
+            alert('Erreur: ' + msg);
         } finally {
             setLoading(false);
         }
@@ -152,12 +165,12 @@ function BodyMeasurements() {
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-label block mb-2">Width (px)</label>
+                                    <label className="text-label block mb-2">Height (cm)</label>
                                     <input type="number" className="input-couture" id="heightInput"
                                         value={formData.height} onChange={handleInputChange} min="100" max="250" step="0.1" />
                                 </div>
                                 <div>
-                                    <label className="text-label block mb-2">Weight (t)</label>
+                                    <label className="text-label block mb-2">Weight (kg)</label>
                                     <input type="number" className="input-couture" id="weightInput"
                                         value={formData.weight} onChange={handleInputChange} min="30" max="200" step="0.1" />
                                 </div>
@@ -165,16 +178,16 @@ function BodyMeasurements() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-label block mb-2">Time (hrs)</label>
+                                    <label className="text-label block mb-2">Age</label>
                                     <input type="number" className="input-couture" id="ageInput"
                                         value={formData.age} onChange={handleInputChange} placeholder="Ex: 35" min="10" max="100" />
                                 </div>
                                 <div>
-                                    <label className="text-label block mb-2">Asset Type</label>
+                                    <label className="text-label block mb-2">Gender</label>
                                     <select className="input-couture cursor-pointer" id="genderInput"
                                         value={formData.gender} onChange={handleInputChange}>
-                                        <option value="men">Truck</option>
-                                        <option value="women">Van</option>
+                                        <option value="men">Men</option>
+                                        <option value="women">Women</option>
                                     </select>
                                 </div>
                             </div>
@@ -419,7 +432,7 @@ function BodyMeasurements() {
                                     <Activity className="text-gold/30" size={32} />
                                 </div>
                                 <h3 className="text-2xl font-display font-bold text-ivory mb-3">Awaiting Data</h3>
-                                <p className="text-ivory/30 leading-relaxed text-sm">Upload a 360° video file on the left and start the AI analysis to view the resulting mesh and optimal routing logic.</p>
+                                <p className="text-ivory/30 leading-relaxed text-sm">Upload a 360° video file on the left and start the AI analysis to view the resulting 3D body model and measurements.</p>
                             </div>
                         </div>
                     )}
