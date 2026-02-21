@@ -1,7 +1,13 @@
 {
+<<<<<<< HEAD
   "name": "frontend-combined",
   "private": true,
   "version": "1.0.0",
+=======
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+>>>>>>> 79d324d3f41813facfd92db59e17056b73c678e1
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,20 +21,31 @@
     "@tailwindcss/postcss": "^4.1.18",
     "axios": "^1.13.4",
     "clsx": "^2.1.1",
+<<<<<<< HEAD
     "lucide-react": "^0.575.0",
+=======
+    "lucide-react": "^0.563.0",
+>>>>>>> 79d324d3f41813facfd92db59e17056b73c678e1
     "plotly.js": "^3.3.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-plotly.js": "^2.6.0",
     "react-router-dom": "^7.13.0",
+<<<<<<< HEAD
     "recharts": "^3.7.0",
+=======
+>>>>>>> 79d324d3f41813facfd92db59e17056b73c678e1
     "tailwind-merge": "^3.4.0",
     "three": "^0.182.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+<<<<<<< HEAD
     "@tailwindcss/vite": "^4.2.0",
     "@types/react": "^19.2.7",
+=======
+    "@types/react": "^19.2.5",
+>>>>>>> 79d324d3f41813facfd92db59e17056b73c678e1
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
     "autoprefixer": "^10.4.24",
@@ -38,6 +55,10 @@
     "globals": "^16.5.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.18",
+<<<<<<< HEAD
     "vite": "^7.3.1"
+=======
+    "vite": "^7.2.4"
+>>>>>>> 79d324d3f41813facfd92db59e17056b73c678e1
   }
 }
