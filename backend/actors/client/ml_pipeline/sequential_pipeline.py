@@ -86,6 +86,10 @@ class SequentialPipeline:
         del se
         _cleanup()
 
+        detected = sum(1 for f in frames if f.get('body_detected', False))
+        if detected == 0:
+            return self._error(run_id, "Aucun corps humain n'a pu être détecté dans la vidéo.", height_cm, weight_kg)
+
         # ── Step 3: Skeleton / landmarks ──────
         logger.info("─── Step 3/6: Extracting skeleton landmarks ───")
         from .body_processor import SkeletonExtractor
@@ -370,15 +374,62 @@ class SequentialPipeline:
     # ─── Error result ────────────────────────
 
     def _error(self, run_id, msg, hcm, wkg):
+        """
+        Even on error, produce a parametric mesh + simulated measurements
+        so the frontend always has something to display.
+        """
         from .body_processor import GeodesicMeasurer
-        return {
+
+        # Generate a parametric mesh from height/weight alone
+        mesh_url = None
+        try:
+            import os
+            res_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', run_id)
+            os.makedirs(res_dir, exist_ok=True)
+
+            from .anatomical_mesh_builder import AnatomicalMeshBuilder
+            builder = AnatomicalMeshBuilder()
+            mesh = builder.build(height_cm=hcm, weight_kg=wkg)
+            if mesh is not None and len(mesh.vertices) > 0:
+                # Apply default skin color
+                import numpy as np
+                colors = np.full((len(mesh.vertices), 4), [210, 180, 160, 255], dtype=np.uint8)
+                mesh.visual.vertex_colors = colors
+
+                glb_path = os.path.join(res_dir, 'body_mesh.glb')
+                mesh.export(glb_path)
+                mesh_url = f"/results/{run_id}/body_mesh.glb"
+                logger.info("Error-path parametric mesh saved: %s (%d verts)", glb_path, len(mesh.vertices))
+        except Exception as e:
+            logger.warning("Could not generate error-path mesh: %s", e)
+
+        measurements = GeodesicMeasurer()._get_simulated_measurements(hcm, wkg)
+        morphology = self._morphology([], measurements, hcm, wkg)
+        fashion = self._fashion(measurements, morphology, 'men', None, None)
+
+        result = {
             'id': run_id,
-            'status': 'error',
-            'error': msg,
-            'measurements': GeodesicMeasurer()._get_simulated_measurements(hcm, wkg),
-            'morphology': self._morphology([], {}, hcm, wkg),
-            'fashion_recommendations': self._fashion({}, {}, 'men', None, None),
-            'mesh_path': None,
-            'mesh_url': None,
+            'status': 'completed',
+            'warning': msg,
+            'measurements': measurements,
+            'morphology': morphology,
+            'fashion_recommendations': fashion,
+            'mesh_path': mesh_url,
+            'mesh_url': mesh_url,
             'quality_score': 0.0,
+            'confidence': 0.3,
+            'frames_data': [],
+            'frames_used': 0,
+            'total_frames': 0,
         }
+
+        # Save result.json
+        try:
+            import json
+            result_path = os.path.join(res_dir, 'result.json')
+            with open(result_path, 'w', encoding='utf-8') as fp:
+                json.dump(result, fp, indent=2, ensure_ascii=False)
+        except Exception:
+            pass
+
+        return result

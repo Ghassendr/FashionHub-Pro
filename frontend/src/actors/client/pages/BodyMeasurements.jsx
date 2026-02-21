@@ -197,9 +197,9 @@ function BodyMeasurements() {
                                 <select className="input-couture cursor-pointer" id="cutInput"
                                     value={formData.cut} onChange={handleInputChange}>
                                     <option value="">Automatic (Recommended)</option>
-                                    <option value="ajusté">Strict Distance</option>
-                                    <option value="normal">Balanced Profit</option>
-                                    <option value="large">High Margin</option>
+                                    <option value="ajusté">Slim Fit</option>
+                                    <option value="normal">Regular Fit</option>
+                                    <option value="large">Loose Fit</option>
                                 </select>
                             </div>
 

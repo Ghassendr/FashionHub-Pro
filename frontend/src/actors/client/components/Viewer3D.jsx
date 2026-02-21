@@ -29,10 +29,6 @@ function Model({ url }) {
 
     React.useLayoutEffect(() => {
         if (scene) {
-            // Backend mesh is built in meters from y=0 (feet) to y=1.75 (head)
-            // Center the model vertically so it sits in the middle of the camera's view
-            scene.position.set(0, -0.85, 0);
-
             scene.traverse((child) => {
                 if (child.isMesh) {
                     // Force a consistent gold material to ignore corrupted GLB vertex colors
@@ -47,7 +43,13 @@ function Model({ url }) {
         }
     }, [scene]);
 
-    return <primitive object={scene} />;
+    // Backend mesh is built in meters from y=0 (feet) to y=1.75 (head)
+    // Center the model vertically so it sits in the middle of the camera's view using a group wrapper
+    return (
+        <group position={[0, -0.85, 0]}>
+            <primitive object={scene} />
+        </group>
+    );
 }
 
 export default function Viewer3D({ url }) {
