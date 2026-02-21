@@ -17,11 +17,17 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # Legacy apps (kept for migration compatibility)
     "bodyapi",
+    "strategie_livraison",
+    # New actor-based structure (mirrors legacy apps)
+    "actors.client",
+    "actors.delivery",
+    "core",
+    # External dependencies
     "rest_framework",
     "rest_framework_simplejwt",
     "corsheaders",
-    "strategie_livraison",
 ]
 
 MIDDLEWARE = [

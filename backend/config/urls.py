@@ -11,8 +11,15 @@ def root_health(_request):
 
 urlpatterns = [
     path("", root_health, name="root_health"),
+    # Legacy URLs (for backward compatibility - these still work)
     path("", include("bodyapi.urls")),
     path("api/strategie_livraison/", include("strategie_livraison.urls")),
+    # Actor-based URLs (new structure)
+    # path("api/client/", include("actors.client.api.urls")),
+    # path("api/delivery/", include("actors.delivery.api.urls")),
+    # Core APIs (Authentication)
+    # path("api/auth/", include("core.auth.urls")),
+    # JWT Token endpoints
     path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
 ]

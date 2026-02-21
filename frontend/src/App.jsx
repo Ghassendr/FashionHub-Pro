@@ -1,11 +1,11 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import Layout from './components/Layout/Layout';
-import Home from './pages/Home';
-import Onboarding from './pages/Onboarding';
-import Dashboard from './pages/Dashboard';
-import BodyMeasurements from './pages/BodyMeasurements';
-import Delivery from './pages/Delivery';
-import CoutureHouse from './pages/CoutureHouse';
+import Layout from './shared/components/Layout/Layout';
+import Home from './shared/pages/Home';
+import Onboarding from './actors/client/pages/Onboarding';
+import Dashboard from './actors/client/pages/Dashboard';
+import BodyMeasurements from './actors/client/pages/BodyMeasurements';
+import Delivery from './actors/delivery/pages/Delivery';
+import CoutureHouse from './actors/delivery/pages/CoutureHouse';
 
 function App() {
   return (
