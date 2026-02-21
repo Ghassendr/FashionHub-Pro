@@ -8,6 +8,7 @@ from flask_cors import CORS
 import os
 import logging
 from body_processor import BodyProcessor
+from Fornisseur.auth_routes import auth_bp
 # visualization.py excluded as frontend handles viz
 
 # Configuration
@@ -18,6 +19,9 @@ os.makedirs(RESULTS_FOLDER, exist_ok=True)
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
+
+# Register auth blueprint
+app.register_blueprint(auth_bp, url_prefix='/api/auth')
 
 # Logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
