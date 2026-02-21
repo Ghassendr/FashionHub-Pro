@@ -322,11 +322,12 @@ def list_runs(request: HttpRequest):
                 with open(result_file, "r", encoding="utf-8") as f:
                     result = json.load(f)
 
+                user_data = result.get("user_input") or result.get("input", {})
                 runs.append({
                     "id": result.get("id", run_dir.name),
                     "timestamp": datetime.fromtimestamp(result_file.stat().st_mtime).isoformat(),
-                    "height": result.get("input", {}).get("height_cm"),
-                    "weight": result.get("input", {}).get("weight_kg"),
+                    "height": user_data.get("height_cm"),
+                    "weight": user_data.get("weight_kg"),
                     "status": result.get("status", "unknown"),
                     "quality_score": result.get("quality_score"),
                 })
@@ -388,10 +389,12 @@ def get_run_status(request: HttpRequest, run_id: str):
         with open(path, "r", encoding="utf-8") as f:
             result = json.load(f)
 
+        status = result.get("status", "unknown")
+        progress = 100 if status in ("success", "completed") else 0
         return JsonResponse({
             "id": result.get("id", run_id),
-            "status": result.get("status", "unknown"),
-            "progress": 100 if result.get("status") == "success" else 0,
+            "status": status,
+            "progress": progress,
             "processing_time": result.get("processing_time_seconds"),
             "quality_score": result.get("quality_score"),
             "timestamp": datetime.fromtimestamp(path.stat().st_mtime).isoformat(),

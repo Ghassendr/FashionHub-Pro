@@ -1,14 +1,10 @@
-<<<<<<< HEAD
-=======
 /** @type {import('tailwindcss').Config} */
->>>>>>> 79d324d3f41813facfd92db59e17056b73c678e1
 export default {
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-<<<<<<< HEAD
     extend: {
       colors: {
         noir: '#0D0D0D',
@@ -75,9 +71,6 @@ export default {
         },
       },
     },
-=======
-    extend: {},
->>>>>>> 79d324d3f41813facfd92db59e17056b73c678e1
   },
   plugins: [],
 }

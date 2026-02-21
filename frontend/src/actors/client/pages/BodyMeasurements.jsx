@@ -54,8 +54,9 @@ function BodyMeasurements() {
         data.append('cut_preference', formData.cut);
         data.append('quality', formData.quality);
 
+        const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
         try {
-            const response = await axios.post('http://localhost:8000/api/client/videos/process', data);
+            const response = await axios.post(`${API_BASE}/api/client/videos/process`, data, { timeout: 300000 });
             const resultData = response.data;
             console.log("Full Upload Response:", resultData);
 
@@ -68,14 +69,14 @@ function BodyMeasurements() {
             }
 
             if (resultData && resultData.mesh_url && !resultData.mesh_url.startsWith('http')) {
-                resultData.mesh_url = `http://localhost:8000${resultData.mesh_url}?t=${Date.now()}`;
+                resultData.mesh_url = `${API_BASE}${resultData.mesh_url}?t=${Date.now()}`;
             }
             console.log("Setting BodyMeasurements Result State:", resultData);
             setResult(resultData);
             setActiveTab('viewer');
         } catch (error) {
             console.error('API Error:', error);
-            const msg = error.response?.data?.error || error.message;
+            const msg = error.response?.data?.error || error.message || 'Backend inaccessible. Vérifiez que le serveur tourne sur le port 8000.';
             alert('Erreur: ' + msg);
         } finally {
             setLoading(false);
@@ -137,7 +138,7 @@ function BodyMeasurements() {
                                 <div className="flex flex-col items-center animate-fade-in">
                                     <CheckCircle className="text-gold mb-3" size={24} />
                                     <p className="text-sm text-ivory truncate w-full px-4">{file.name}</p>
-                                    <p className="text-[10px] tracking-luxury uppercase text-gold/60 mt-2">Ready for analysis</p>
+                                    <p className="text-[10px] tracking-luxury uppercase text-gold/60 mt-2">Prêt — Cliquez « Launch AI Analysis » en bas</p>
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center">
@@ -339,11 +340,12 @@ function BodyMeasurements() {
                                     <div className="bg-noir/50 border border-subtle/20 p-6">
                                         <h2 className="text-label text-gold mb-6 border-b border-subtle/20 pb-3">Morphological Radar</h2>
                                         <div className="w-full flex justify-center">
+                                            {(result?.measurements?.basics?.length > 0) ? (
                                             <Plot
                                                 data={[{
                                                     type: 'scatterpolar',
-                                                    r: (result?.measurements?.basics || []).slice(0, 6).map(m => m.value_cm),
-                                                    theta: (result?.measurements?.basics || []).slice(0, 6).map(m => m.name),
+                                                    r: (result?.measurements?.basics || []).slice(0, 6).map(m => m.value_cm || 0),
+                                                    theta: (result?.measurements?.basics || []).slice(0, 6).map(m => m.name || m.key || ''),
                                                     fill: 'toself',
                                                     fillcolor: 'rgba(198, 167, 94, 0.15)',
                                                     line: { color: '#C6A75E', width: 2 }
@@ -358,6 +360,9 @@ function BodyMeasurements() {
                                                 style={{ width: '100%', height: '400px', maxWidth: '600px' }}
                                                 config={{ displayModeBar: false }}
                                             />
+                                            ) : (
+                                                <p className="text-ivory/40 py-12">Aucune donnée de mesure disponible pour le radar.</p>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -426,13 +431,20 @@ function BodyMeasurements() {
                             </div>
                         </div>
                     ) : (
-                        <div className="h-full flex items-center justify-center border border-dashed border-subtle/30 m-4 lg:m-0">
-                            <div className="text-center max-w-sm px-8 py-16">
-                                <div className="w-20 h-20 border border-gold/20 flex items-center justify-center mx-auto mb-8">
-                                    <Activity className="text-gold/30" size={32} />
+                        <div className="h-full flex items-center justify-center border-2 border-dashed border-gold/30 m-4 lg:m-0 bg-muted/30">
+                            <div className="text-center max-w-md px-8 py-16">
+                                <div className="w-24 h-24 border-2 border-gold/40 flex items-center justify-center mx-auto mb-8 rounded-full">
+                                    <Activity className="text-gold" size={40} />
                                 </div>
-                                <h3 className="text-2xl font-display font-bold text-ivory mb-3">Awaiting Data</h3>
-                                <p className="text-ivory/30 leading-relaxed text-sm">Upload a 360° video file on the left and start the AI analysis to view the resulting 3D body model and measurements.</p>
+                                <h3 className="text-2xl font-display font-bold text-ivory mb-3">En attente des résultats</h3>
+                                <p className="text-ivory/70 leading-relaxed text-sm mb-6">
+                                    {file
+                                        ? "Cliquez sur le bouton doré « Launch AI Analysis » en bas à gauche pour lancer l'analyse."
+                                        : "Glissez-déposez une vidéo 360° à gauche (ou cliquez pour sélectionner), puis cliquez sur « Launch AI Analysis »."}
+                                </p>
+                                {file && (
+                                    <p className="text-gold text-sm font-medium">→ Fichier sélectionné : {file.name}</p>
+                                )}
                             </div>
                         </div>
                     )}
