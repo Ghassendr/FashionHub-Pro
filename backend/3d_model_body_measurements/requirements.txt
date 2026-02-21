@@ -1,0 +1,13 @@
+Flask
+flask-cors
+django
+opencv-python
+numpy
+trimesh[all]
+scikit-image
+mediapipe
+requests
+scipy
+networkx
+plotly
+scikit-learn
