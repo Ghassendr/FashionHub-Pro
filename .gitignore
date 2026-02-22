@@ -76,4 +76,5 @@ db.sqlite3-journal
 media/
 
 # React/Vite
-.eslintcache"backend/actors/client/ml_pipeline/results/" 
+.eslintcache
+backend/actors/client/ml_pipeline/results/
