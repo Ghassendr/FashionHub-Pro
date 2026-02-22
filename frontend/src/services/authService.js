@@ -1,5 +1,5 @@
 // Auth Service - Manage authentication state and API calls
-const API_URL = "http://localhost:5000/api/auth";
+const API_URL = "http://localhost:8000/api/auth";
 
 export const authService = {
   // Check if user is logged in

@@ -16,6 +16,8 @@ urlpatterns = [
     path("api/delivery/", include("actors.delivery.api.urls")),
     # Couturehouse APIs
     path("api/couturehouse/", include("actors.couturehouse.api.urls")),
+    # Fournisseur / Supplier APIs
+    path("api/", include("actors.fournisseur.urls")),
     # Core APIs (Authentication)
     # path("api/auth/", include("core.auth.urls")),
     # JWT Token endpoints

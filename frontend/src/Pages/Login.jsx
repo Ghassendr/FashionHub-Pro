@@ -49,7 +49,7 @@ function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/login", {
+      const response = await fetch("http://localhost:8000/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -94,7 +94,7 @@ function Login() {
       setSuccess(true);
       setTimeout(() => {
         setLoading(false);
-        navigate("/dashboard");
+        navigate("/fournisseur/dashboard");
       }, 1500);
     } catch (err) {
       console.error("Login error:", err);
@@ -123,9 +123,9 @@ function Login() {
           <div className="feature-item">
             <div className="feature-icon">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                <path d="M2 17l10 5 10-5"/>
-                <path d="M2 12l10 5 10-5"/>
+                <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                <path d="M2 17l10 5 10-5" />
+                <path d="M2 12l10 5 10-5" />
               </svg>
             </div>
             <p>Verified Supplier Network</p>
@@ -133,8 +133,8 @@ function Login() {
           <div className="feature-item">
             <div className="feature-icon">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <path d="M9 11l3 3L22 4"/>
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="M9 11l3 3L22 4" />
               </svg>
             </div>
             <p>Quality Certified Materials</p>
@@ -142,8 +142,8 @@ function Login() {
           <div className="feature-item">
             <div className="feature-icon">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"/>
-                <polyline points="12 6 12 12 16 14"/>
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
               </svg>
             </div>
             <p>24/7 Business Support</p>

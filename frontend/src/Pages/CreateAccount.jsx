@@ -158,7 +158,7 @@ function CreateAccount() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/signup", {
+      const response = await fetch("http://localhost:8000/api/auth/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -176,7 +176,7 @@ function CreateAccount() {
         } else if (response.status === 400) {
           setError(
             data.error ||
-              "Invalid data provided. Please check your information.",
+            "Invalid data provided. Please check your information.",
           );
         } else if (response.status === 500) {
           setError("Server error. Please try again later.");
@@ -205,7 +205,7 @@ function CreateAccount() {
       setSuccess(true);
       setTimeout(() => {
         setLoading(false);
-        navigate("/dashboard");
+        navigate("/fournisseur/dashboard");
       }, 1500);
     } catch (err) {
       console.error("Registration error:", err);
@@ -240,9 +240,8 @@ function CreateAccount() {
             {[1, 2, 3, 4].map((step) => (
               <div
                 key={step}
-                className={`step-dot ${currentStep >= step ? "active" : ""} ${
-                  currentStep === step ? "current" : ""
-                }`}
+                className={`step-dot ${currentStep >= step ? "active" : ""} ${currentStep === step ? "current" : ""
+                  }`}
               />
             ))}
           </div>
@@ -251,9 +250,9 @@ function CreateAccount() {
           <p className="auth-form-subtitle">
             Step {currentStep} of 4 - {
               currentStep === 1 ? "Account Credentials" :
-              currentStep === 2 ? "Business Information" :
-              currentStep === 3 ? "Business Address" :
-              "Contact Details"
+                currentStep === 2 ? "Business Information" :
+                  currentStep === 3 ? "Business Address" :
+                    "Contact Details"
             }
           </p>
 
@@ -681,7 +680,7 @@ function CreateAccount() {
                       type="button"
                       onClick={handleAddCertification}
                       className="auth-button-secondary"
-                      style={{ 
+                      style={{
                         padding: '0.875rem 1.5rem',
                         whiteSpace: 'nowrap',
                         minWidth: 'fit-content'
@@ -691,11 +690,11 @@ function CreateAccount() {
                     </button>
                   </div>
                   {formData.certificationsQualite.length > 0 && (
-                    <div style={{ 
-                      display: 'flex', 
-                      flexWrap: 'wrap', 
+                    <div style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
                       gap: '0.5rem',
-                      marginTop: '0.75rem' 
+                      marginTop: '0.75rem'
                     }}>
                       {formData.certificationsQualite.map((cert, index) => (
                         <div

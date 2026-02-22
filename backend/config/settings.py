@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     "actors.client",
     "actors.delivery",
     "actors.couturehouse",
+    "actors.fournisseur",
     "core",
     # External dependencies
     "rest_framework",
@@ -65,6 +66,15 @@ DATABASES = {
 }
 
 AUTH_PASSWORD_VALIDATORS: list[dict] = []
+
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+    'django.contrib.auth.hashers.Argon2PasswordHasher',
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+    'django.contrib.auth.hashers.ScryptPasswordHasher',
+    'actors.fournisseur.hashers.WerkzeugPasswordHasher',
+]
 
 LANGUAGE_CODE = "en-us"
 
