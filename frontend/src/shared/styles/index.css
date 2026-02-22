@@ -6,6 +6,13 @@
     @apply font-sans antialiased bg-noir text-ivory;
     margin: 0;
     line-height: 1.7;
+    cursor: url('/needle-cursor.svg') 6 25, auto;
+  }
+
+  body:has(a:hover),
+  body:has(button:hover),
+  body:has(.clickable:hover) {
+    cursor: url('/needle-cursor.svg') 6 25, pointer;
   }
 
   h1,
@@ -55,7 +62,8 @@
   }
 
   .btn {
-    @apply inline-flex items-center justify-center px-8 py-3 font-sans text-sm font-medium tracking-luxury uppercase transition-all duration-500 gap-2 border cursor-pointer;
+    @apply inline-flex items-center justify-center px-8 py-3 font-sans text-sm font-medium tracking-luxury uppercase transition-all duration-500 gap-2 border;
+    cursor: url('/needle-cursor.svg') 6 25, pointer;
   }
 
   .btn-primary {
