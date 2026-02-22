@@ -24,7 +24,15 @@ RESULTS_FOLDER = Path(getattr(settings, "PIPELINE_RESULTS", PIPELINE_ROOT / "res
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULTS_FOLDER, exist_ok=True)
 
-processor = BodyProcessor()
+_processor = None
+
+def get_processor():
+    global _processor
+    if _processor is None:
+        logger.info("Initializing BodyProcessor (lazy load)...")
+        _processor = BodyProcessor()
+    return _processor
+
 
 
 def _parse_float(value: str | None, default: float) -> float:
@@ -113,7 +121,7 @@ def process_video(request: HttpRequest):
     )
 
     try:
-        result: dict[str, Any] = processor.process(
+        result: dict[str, Any] = get_processor().process(
             str(save_path),
             str(RESULTS_FOLDER),
             height_cm=height,
@@ -421,8 +429,9 @@ def health_check(_request: HttpRequest):
             }
         }
     """
-    morphology_enabled = getattr(processor, "morphology_enabled", True)
-    fashion_enabled = getattr(processor, "fashion_enabled", True)
+    proc = get_processor()
+    morphology_enabled = getattr(proc, "morphology_enabled", True)
+    fashion_enabled = getattr(proc, "fashion_enabled", True)
 
     return JsonResponse({
         "status": "healthy",
