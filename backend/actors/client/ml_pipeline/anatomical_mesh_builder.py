@@ -210,11 +210,18 @@ class AnatomicalMeshBuilder:
         mesh.fix_normals()
 
         # Laplacian smoothing for organic look
-        for _ in range(self.smooth_iters):
-            try:
-                mesh = trimesh.smoothing.filter_laplacian(mesh, iterations=1, lamb=0.5)
-            except Exception:
-                break
+        try:
+            # Pass 1: Aggressive smoothing to blend tube seams
+            for _ in range(self.smooth_iters):
+                mesh = trimesh.smoothing.filter_laplacian(mesh, iterations=1, lamb=0.6)
+            
+            # Pass 2: Gentle smoothing to preserve generated curves
+            mesh = trimesh.smoothing.filter_laplacian(mesh, iterations=1, lamb=0.3)
+            
+            # Recompute normals after smoothing
+            mesh.fix_normals()
+        except Exception as e:
+            logger.warning("Mesh smoothing failed: %s", e)
 
         # Skin color
         mesh.visual.vertex_colors = np.full(

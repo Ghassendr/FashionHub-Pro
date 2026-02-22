@@ -112,47 +112,49 @@ class SilhouetteExtractor:
     def __init__(self, num_workers: int = 1):
         self.num_workers = max(1, num_workers)
         try:
-            model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'models', 'selfie_segmenter.tflite'))
-            if not os.path.exists(model_path):
-                model_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'models', 'selfie_segmenter.tflite')
-            base_options = python.BaseOptions(model_asset_path=model_path)
-            options = vision.ImageSegmenterOptions(
-                base_options=base_options,
-                output_category_mask=True,
-                running_mode=vision.RunningMode.IMAGE)
-            self.segmenter = vision.ImageSegmenter.create_from_options(options)
+            from rembg import new_session
+            # Uses u2net_human_seg for high-quality human outlines
+            self.session = new_session("u2net_human_seg")
             self.model_loaded = True
+            logger.info("Rembg (U-2-Net) loaded successfully for silhouette segmentation.")
         except Exception as e:
-            logger.error(f"Erreur chargement Selfie Segmenter: {e}")
+            logger.error(f"Error loading Rembg: {e}")
             self.model_loaded = False
         
     def _segment_one(self, frame_data: Dict) -> Dict:
-        """Segment une frame (utilisé par les workers)."""
+        """Segment a frame using Rembg."""
+        if not self.model_loaded:
+            frame_data['body_detected'] = False
+            return frame_data
+
         img = cv2.imread(frame_data['path'])
         if img is None:
             frame_data['body_detected'] = False
             return frame_data
-        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=img_rgb)
+            
         try:
-            result = self.segmenter.segment(mp_image)
-            mask_np = result.category_mask.numpy_view()
-            mask = (mask_np > 0).astype(np.uint8) * 255
+            from rembg import remove
+            output = remove(img, session=self.session, alpha_matting=True)
+            if output.shape[2] == 4:
+                mask = output[:, :, 3]
+            else:
+                gray = cv2.cvtColor(output, cv2.COLOR_BGR2GRAY)
+                _, mask = cv2.threshold(gray, 10, 255, cv2.THRESH_BINARY)
+            
             mask = self._enhance_mask(mask)
             quality = self._calculate_mask_quality(mask, img.shape)
-            
-            # Seuil plus bas pour accepter les détections partielles (bras levés, etc.)
-            # Vérifier aussi la présence de membres même si le masque est petit
             has_limbs = self._check_limbs_present(mask, img.shape)
             
-            if quality > 0.08 or (quality > 0.05 and has_limbs):  # Seuil plus bas
+            if quality > 0.08 or (quality > 0.05 and has_limbs):
                 frame_data['mask'] = mask
                 frame_data['body_detected'] = True
                 frame_data['mask_quality'] = quality
             else:
                 frame_data['body_detected'] = False
-        except Exception:
+        except Exception as e:
+            logger.error(f"Rembg segmentation failed on frame: {e}")
             frame_data['body_detected'] = False
+            
         return frame_data
         
     def process(self, frames: List[Dict]) -> List[Dict]:
