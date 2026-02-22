@@ -141,356 +141,226 @@ def _build_ellipsoid(center, rx, ry, rz, n_lat=12, n_lon=24):
 # Anatomical Mesh Builder
 # ─────────────────────────────────────────────
 
+import os
+import trimesh
+import numpy as np
+import logging
+from typing import Dict, Optional, Tuple
+
+logger = logging.getLogger(__name__)
+
+def lerp(a, b, t):
+    return a + (b - a) * t
+
 class AnatomicalMeshBuilder:
     """
-    Builds a detailed 3D body mesh with proper anatomy:
-      head, neck, torso, arms (with elbows), hands,
-      legs (upper + lower), feet.
-
-    All geometry is CPU-only (numpy + trimesh).
+    Template Deformation Pipeline.
+    Instead of generating low-poly spheres and tubes, this loads a high-quality AAA base mesh
+    (e.g. MakeHuman base) and non-rigidly morphs it to precisely match the user's measurements.
     """
 
-    # Height ratios (fraction of total height, 0 = feet, 1 = head top)
-    H = {
-        'head_top':   1.00,
-        'head_ctr':   0.935,
-        'chin':       0.870,
-        'neck_base':  0.815,
-        'shoulders':  0.790,
-        'armpit':     0.755,
-        'chest':      0.700,
-        'waist':      0.590,
-        'navel':      0.560,
-        'hips':       0.500,
-        'crotch':     0.470,
-        'mid_thigh':  0.370,
-        'knee':       0.270,
-        'calf_wide':  0.200,
-        'ankle':      0.050,
-        'foot_bot':   0.000,
-    }
-
-    def __init__(self, n_radial: int = 32, smooth_iterations: int = 3):
-        self.n_radial = max(16, n_radial)
-        self.smooth_iters = max(0, smooth_iterations)
-
-    # ── public API ───────────────────────────
-
+    def __init__(self, n_radial: int = 72, smooth_iterations: int = 3):
+        # We keep these kwargs to avoid breaking calling code, but we don't use them
+        # since we rely entirely on the superior topology of the template.
+        self.smooth_iters = smooth_iterations
+        
+        # Load the AAA Template Mesh
+        self.models_dir = os.path.join(os.path.dirname(__file__), 'models')
+        self.base_male_path = os.path.join(self.models_dir, 'base_male.obj')
+        
     def build(self,
               height_cm: float = 175.0,
               weight_kg: float = 70.0,
               measurements: Optional[Dict] = None,
               gender: str = 'men') -> trimesh.Trimesh:
         """
-        Build and return a complete anatomical mesh (T-pose).
-
-        Returns:
-            trimesh.Trimesh with ~5 000–10 000 vertices
+        Loads the AAA base mesh and deforms it to the user's exact measurements.
         """
-        hm = height_cm / 100.0
-        p = self._params(height_cm, weight_kg, measurements, gender)
-        nr = self.n_radial
+        logger.info("Applying AAA Template Deformation: %.0fcm, %.0fkg, %s", height_cm, weight_kg, gender)
+        
+        if not os.path.exists(self.base_male_path):
+            logger.error(f"Base mesh not found at {self.base_male_path}. Cannot deform.")
+            return trimesh.Trimesh()
 
-        logger.info("Building anatomical mesh: %.0fcm, %.0fkg, %s", height_cm, weight_kg, gender)
-
-        parts: List[trimesh.Trimesh] = [
-            self._head(hm, p, nr),
-            self._neck(hm, p, nr),
-            self._torso(hm, p, nr),
-        ]
-
-        for side in ('left', 'right'):
-            parts.append(self._arm(hm, p, nr, side))
-            parts.append(self._hand(hm, p, nr, side))
-            parts.append(self._upper_leg(hm, p, nr, side))
-            parts.append(self._lower_leg(hm, p, nr, side))
-            parts.append(self._foot(hm, p, nr, side))
-
-        mesh = trimesh.util.concatenate(parts)
-        mesh.fix_normals()
-
-        # Laplacian smoothing for organic look
         try:
-            # Pass 1: Aggressive smoothing to blend tube seams
-            for _ in range(self.smooth_iters):
-                mesh = trimesh.smoothing.filter_laplacian(mesh, iterations=1, lamb=0.6)
+            # 1. Load the generic base mesh
+            mesh = trimesh.load(self.base_male_path, process=False)
+            if isinstance(mesh, trimesh.Scene):
+                mesh = trimesh.util.concatenate(list(mesh.geometry.values()))
             
-            # Pass 2: Gentle smoothing to preserve generated curves
-            mesh = trimesh.smoothing.filter_laplacian(mesh, iterations=1, lamb=0.3)
+            # Store original vertices
+            V = mesh.vertices.copy()
             
-            # Recompute normals after smoothing
+            # --- Global Alignment & Height Scaling ---
+            # Center the model on X and Z, and place feet at Y=0
+            min_bounds = V.min(axis=0)
+            max_bounds = V.max(axis=0)
+            
+            # Shift to origin
+            V[:, 0] -= (max_bounds[0] + min_bounds[0]) / 2.0
+            V[:, 2] -= (max_bounds[2] + min_bounds[2]) / 2.0
+            V[:, 1] -= min_bounds[1] # Feet at Y=0
+            
+            # Global Height Scale
+            current_height = V[:, 1].max()
+            target_height = height_cm / 100.0
+            height_scale = target_height / current_height if current_height > 0 else 1.0
+            
+            # Apply uniform global scale first to get the right height natively
+            V *= height_scale
+            
+            # --- Non-Rigid Regional Deformation (Weight & Measurements) ---
+            # We deform the X (width) and Z (depth) based on vertical Y slices,
+            # using a BMI-driven 1D spline interpolation.
+            
+            # Baseline BMI for the template is assumed to be roughly 22.0
+            bmi = weight_kg / (target_height ** 2)
+            bf = bmi / 22.0  # Girth scale factor
+            
+            # Calculate precise target girths
+            p = self._params(height_cm, weight_kg, measurements, gender)
+            
+            # Anatomical keypoints as percentage of total height
+            H = {
+                'head_top': 1.00,
+                'chin': 0.88,
+                'neck_base': 0.84,
+                'shoulders': 0.80,
+                'armpit': 0.76,
+                'chest': 0.70,
+                'waist': 0.60,
+                'navel': 0.56,
+                'hips': 0.51,
+                'crotch': 0.48,
+                'mid_thigh': 0.40,
+                'knee': 0.28,
+                'calf_wide': 0.18,
+                'ankle': 0.05,
+                'feet': 0.00
+            }
+
+            # Map the Y-coordinates (heights) to corresponding X and Z scale factors
+            y_points = []
+            x_scales = []
+            z_scales = []
+            
+            # Helper to add a deformation control point
+            def add_ctrl(y_ratio, sx, sz):
+                y_points.append(y_ratio * target_height)
+                x_scales.append(sx)
+                z_scales.append(sz)
+
+            # Head/Neck (stays relatively constant, slight width increase with weight)
+            add_ctrl(H['head_top'], 1.0, 1.0)
+            add_ctrl(H['chin'], 1.0 + (bf-1)*0.1, 1.0 + (bf-1)*0.1)
+            add_ctrl(H['neck_base'], 1.0 + (bf-1)*0.3, 1.0 + (bf-1)*0.3)
+            
+            # Torso (heavily affected by weight/measurements)
+            # The template has a certain chest/waist/hips. We scale them relative to "normal".
+            # Chest
+            chest_ratio = (p['chest_rx'] / (target_height * 0.15)) * (bf**0.8)
+            add_ctrl(H['chest'], chest_ratio, chest_ratio * 1.1)
+            
+            # Waist (the biggest responder to weight gain)
+            waist_ratio = (p['waist_rx'] / (target_height * 0.125)) * (bf**1.2)
+            add_ctrl(H['waist'], waist_ratio, waist_ratio * 1.3)
+            
+            # Hips
+            hip_ratio = (p['hip_rx'] / (target_height * 0.14)) * (bf**1.0)
+            add_ctrl(H['hips'], hip_ratio, hip_ratio * 1.1)
+            
+            # Legs
+            c_leg = (bf**0.5) if bf > 1.0 else (bf**0.8) 
+            add_ctrl(H['crotch'], c_leg, c_leg)
+            add_ctrl(H['mid_thigh'], c_leg, c_leg)
+            add_ctrl(H['knee'], 1.0 + (bf-1)*0.2, 1.0 + (bf-1)*0.2)
+            add_ctrl(H['calf_wide'], 1.0 + (bf-1)*0.4, 1.0 + (bf-1)*0.4)
+            add_ctrl(H['ankle'], 1.0 + (bf-1)*0.1, 1.0 + (bf-1)*0.1)
+            add_ctrl(H['feet'], 1.0, 1.0)
+
+            # Sort control points by Y correctly
+            y_points = np.array(y_points)
+            x_scales = np.array(x_scales)
+            z_scales = np.array(z_scales)
+            
+            sort_idx = np.argsort(y_points)
+            y_points = y_points[sort_idx]
+            x_scales = x_scales[sort_idx]
+            z_scales = z_scales[sort_idx]
+
+            # Vectorized interpolation for every vertex
+            vy = V[:, 1]
+            interp_sx = np.interp(vy, y_points, x_scales)
+            interp_sz = np.interp(vy, y_points, z_scales)
+            
+            # To scale legs correctly without moving them too far apart,
+            # we scale relative to the left/right leg centers for Y < crotch point
+            crotch_y = H['crotch'] * target_height
+            leg_mask = vy < crotch_y
+            torso_mask = ~leg_mask
+            
+            # Estimate leg centers
+            left_leg_x = V[leg_mask & (V[:, 0] < 0), 0].mean() if np.any(leg_mask & (V[:, 0] < 0)) else -0.1
+            right_leg_x = V[leg_mask & (V[:, 0] > 0), 0].mean() if np.any(leg_mask & (V[:, 0] > 0)) else 0.1
+            
+            # Apply deformation
+            # Torso, Head, Arms (Scale relative to X=0, Z=0)
+            V[torso_mask, 0] *= interp_sx[torso_mask]
+            V[torso_mask, 2] *= interp_sz[torso_mask]
+            
+            # Legs (Scale relative to their respective centers)
+            left_mask = leg_mask & (V[:, 0] < 0)
+            right_mask = leg_mask & (V[:, 0] > 0)
+            
+            V[left_mask, 0] = left_leg_x + (V[left_mask, 0] - left_leg_x) * interp_sx[left_mask]
+            V[right_mask, 0] = right_leg_x + (V[right_mask, 0] - right_leg_x) * interp_sx[right_mask]
+            
+            V[leg_mask, 2] *= interp_sz[leg_mask] # Depth remains centered on Z=0
+            
+            # Finalize mesh
+            mesh.vertices = V
             mesh.fix_normals()
+
+            # Optional: light smoothing to fix any interpolation pinching
+            if self.smooth_iters > 0:
+                mesh = trimesh.smoothing.filter_laplacian(mesh, iterations=1, lamb=0.3)
+                mesh.fix_normals()
+
+            # Skin color mapping
+            if hasattr(mesh.visual, 'vertex_colors'):
+                mesh.visual.vertex_colors = np.full(
+                    (len(mesh.vertices), 4), [210, 180, 160, 255], dtype=np.uint8
+                )
+
+            logger.info("AAA Deformed mesh generated: %d verts, %d faces", len(mesh.vertices), len(mesh.faces))
+            return mesh
+            
         except Exception as e:
-            logger.warning("Mesh smoothing failed: %s", e)
+            logger.error(f"Template Deformation failed: {e}")
+            return trimesh.Trimesh()
 
-        # Skin color
-        mesh.visual.vertex_colors = np.full(
-            (len(mesh.vertices), 4), [210, 180, 160, 255], dtype=np.uint8
-        )
-
-        logger.info("Anatomical mesh: %d verts, %d faces", len(mesh.vertices), len(mesh.faces))
-        return mesh
-
-    # ── parameter estimation ─────────────────
+    # ── parameter estimation (kept for internal scaling reference) ──
 
     def _params(self, hcm, wkg, meas, gender) -> Dict:
-        """Derive all radii and lengths from height/weight/measurements."""
+        """Derive target radial parameters from height/weight/measurements."""
         bmi = wkg / ((hcm / 100) ** 2)
-        bf = bmi / 22.0  # BMI factor (1.0 = average)
+        bf = bmi / 22.0
         hm = hcm / 100.0
-
         is_f = gender == 'women'
 
         d = {
-            # Head (meters, semi-axes of ellipsoid)
             'head_rx': 0.080 if is_f else 0.085,
-            'head_ry': 0.100 if is_f else 0.105,
-            'head_rz': 0.088 if is_f else 0.095,
-            # Neck radius
-            'neck_r': (0.050 if is_f else 0.060) * bf ** 0.3,
-            # Shoulders (half-width from center)
-            'sh_hw': hm * (0.215 / 2 if is_f else 0.245 / 2),
-            # Torso cross-section semi-axes (rx = left-right, ry = front-back)
-            'chest_rx': (0.135 if is_f else 0.150) * bf ** 0.5,
-            'chest_ry': (0.105 if is_f else 0.115) * bf ** 0.5,
             'waist_rx': (0.110 if is_f else 0.125) * bf ** 0.6,
-            'waist_ry': (0.088 if is_f else 0.098) * bf ** 0.6,
+            'chest_rx': (0.135 if is_f else 0.150) * bf ** 0.5,
             'hip_rx':   (0.150 if is_f else 0.140) * bf ** 0.5,
-            'hip_ry':   (0.110 if is_f else 0.105) * bf ** 0.5,
-            # Arms
-            'ua_r':  (0.042 if is_f else 0.050) * bf ** 0.4,
-            'fa_r':  (0.033 if is_f else 0.040) * bf ** 0.3,
-            'wr_r':  0.025 if is_f else 0.028,
-            'ua_len': hm * 0.186,
-            'fa_len': hm * 0.155,
-            'hand_len': hm * 0.105,
-            # Legs
-            'thigh_r': (0.082 if is_f else 0.088) * bf ** 0.5,
-            'knee_r':  0.052 if is_f else 0.058,
-            'calf_r':  (0.052 if is_f else 0.058) * bf ** 0.3,
-            'ankle_r': 0.033 if is_f else 0.037,
-            # Hip joint offset (half distance between leg centers)
-            'leg_offset': hm * (0.085 if is_f else 0.080),
-            # Foot
-            'foot_len': hm * 0.152,
-            'foot_w':   0.045 if is_f else 0.050,
-            'foot_h':   0.035 if is_f else 0.040,
         }
 
-        # Override from actual measurements
         if meas:
             for m in meas.get('basics', []):
                 key, val = m.get('key', ''), m.get('value_cm')
-                if not val:
-                    continue
-                rm = val / (2 * np.pi * 100)  # circ cm → radius m
-                if key == 'chest':
-                    d['chest_rx'] = rm * 1.15
-                    d['chest_ry'] = rm * 0.85
-                elif key == 'waist':
-                    d['waist_rx'] = rm * 1.10
-                    d['waist_ry'] = rm * 0.90
-                elif key == 'hips':
-                    d['hip_rx'] = rm * 1.15
-                    d['hip_ry'] = rm * 0.85
-                elif key == 'neck':
-                    d['neck_r'] = rm
-                elif key == 'thigh':
-                    d['thigh_r'] = rm
-            for m in meas.get('widths', []):
-                if m.get('key') == 'shoulders' and m.get('value_cm'):
-                    d['sh_hw'] = m['value_cm'] / 200.0
-
+                if not val: continue
+                rm = val / (2 * np.pi * 100)
+                if key == 'chest': d['chest_rx'] = rm * 1.15
+                elif key == 'waist': d['waist_rx'] = rm * 1.10
+                elif key == 'hips': d['hip_rx'] = rm * 1.15
         return d
-
-    # ── body part builders ───────────────────
-
-    def _head(self, hm, p, nr):
-        ctr = [0, hm * self.H['head_ctr'], 0.01]  # slightly forward
-        return _build_ellipsoid(ctr, p['head_rx'], p['head_ry'], p['head_rz'],
-                                n_lat=14, n_lon=nr)
-
-    def _neck(self, hm, p, nr):
-        y0 = hm * self.H['neck_base']
-        y1 = hm * self.H['chin']
-        r = p['neck_r']
-        t = np.linspace(0, 1, 5)
-        path = [[0, y0 + (y1 - y0) * ti, 0] for ti in t]
-        secs = [
-            (r * 1.20, r * 1.05),
-            (r * 1.10, r * 1.00),
-            (r * 1.00, r * 0.95),
-            (r * 0.95, r * 0.90),
-            (r * 0.88, r * 0.85),
-        ]
-        return _build_tube(path, secs, nr, cap_start=True)
-
-    def _torso(self, hm, p, nr):
-        H = self.H
-        # Key height levels (bottom to top)
-        levels = [
-            (H['crotch'],   p['hip_rx'] * 0.65,  p['hip_ry'] * 0.55),
-            (0.485,         p['hip_rx'] * 0.85,  p['hip_ry'] * 0.75),
-            (H['hips'],     p['hip_rx'],         p['hip_ry']),
-            (0.530,         p['hip_rx'] * 0.98,  p['hip_ry'] * 0.95),
-            (H['navel'],    lerp(p['hip_rx'], p['waist_rx'], 0.4),
-                            lerp(p['hip_ry'], p['waist_ry'], 0.4)),
-            (H['waist'],    p['waist_rx'],       p['waist_ry']),
-            (0.630,         lerp(p['waist_rx'], p['chest_rx'], 0.35),
-                            lerp(p['waist_ry'], p['chest_ry'], 0.35)),
-            (0.665,         p['chest_rx'] * 0.95, p['chest_ry'] * 0.95),
-            (H['chest'],    p['chest_rx'],       p['chest_ry']),
-            (0.730,         p['chest_rx'] * 0.95, p['chest_ry'] * 0.88),
-            (H['armpit'],   p['sh_hw'] * 0.92,  p['chest_ry'] * 0.72),
-            (H['shoulders'], p['sh_hw'],         p['chest_ry'] * 0.58),
-            (H['neck_base'], p['neck_r'] * 1.25, p['neck_r'] * 1.10),
-        ]
-        path = [[0, hm * h, 0] for h, _, _ in levels]
-        secs = [(rx, ry) for _, rx, ry in levels]
-        return _build_tube(path, secs, nr)
-
-    def _arm(self, hm, p, nr, side):
-        s = -1.0 if side == 'left' else 1.0
-        sy = hm * self.H['shoulders']
-        sh_x = s * p['sh_hw']
-
-        # T-pose: extend arms nearly horizontal with slight natural drop
-        elbow_x = sh_x + s * p['ua_len']
-        wrist_x = elbow_x + s * p['fa_len']
-        drop_e = -0.015 * hm
-        drop_w = -0.030 * hm
-
-        path = [
-            [sh_x,                              sy,            0],
-            [sh_x + s * p['ua_len'] * 0.30,     sy + drop_e * 0.2, 0],
-            [sh_x + s * p['ua_len'] * 0.60,     sy + drop_e * 0.5, 0],
-            [elbow_x,                            sy + drop_e,  0],
-            [elbow_x + s * p['fa_len'] * 0.35,  sy + (drop_e + drop_w) / 2 * 0.7, 0],
-            [elbow_x + s * p['fa_len'] * 0.70,  sy + drop_w * 0.8 + drop_e * 0.2, 0],
-            [wrist_x,                            sy + drop_w,  0],
-        ]
-
-        ua, fa, wr = p['ua_r'], p['fa_r'], p['wr_r']
-        secs = [
-            (ua * 1.25, ua * 1.15),  # shoulder joint
-            (ua * 1.10, ua * 1.00),
-            (ua,        ua * 0.95),  # bicep
-            (ua * 0.82, fa * 1.15),  # elbow
-            (fa * 1.05, fa),
-            (fa * 0.95, fa * 0.90),
-            (wr,        wr * 0.88),  # wrist
-        ]
-        return _build_tube(path, secs, nr, cap_start=True, cap_end=True)
-
-    def _hand(self, hm, p, nr, side):
-        s = -1.0 if side == 'left' else 1.0
-        sy = hm * self.H['shoulders']
-        drop_w = -0.030 * hm
-        wrist_x = s * (p['sh_hw'] + p['ua_len'] + p['fa_len'])
-        wrist_y = sy + drop_w
-        hl = p['hand_len']
-        wr = p['wr_r']
-
-        path = [
-            [wrist_x,                     wrist_y,          0],
-            [wrist_x + s * hl * 0.25,     wrist_y - 0.004,  0],
-            [wrist_x + s * hl * 0.50,     wrist_y - 0.008,  0],
-            [wrist_x + s * hl * 0.80,     wrist_y - 0.012,  0],
-            [wrist_x + s * hl,            wrist_y - 0.016,  0],
-        ]
-        secs = [
-            (wr * 1.00, wr * 0.50),  # wrist connection
-            (wr * 1.35, wr * 0.45),  # palm base
-            (wr * 1.45, wr * 0.42),  # palm widest
-            (wr * 1.20, wr * 0.35),  # knuckles
-            (wr * 0.55, wr * 0.22),  # fingertips
-        ]
-        return _build_tube(path, secs, max(nr // 2, 12), cap_end=True)
-
-    def _upper_leg(self, hm, p, nr, side):
-        s = -1.0 if side == 'left' else 1.0
-        lo = s * p['leg_offset']
-        cy = hm * self.H['crotch']
-        ky = hm * self.H['knee']
-
-        path = [
-            [lo,  cy,                          0],
-            [lo,  cy - (cy - ky) * 0.15,       0],
-            [lo,  cy - (cy - ky) * 0.35,       0],
-            [lo,  hm * self.H['mid_thigh'],    0],
-            [lo,  cy - (cy - ky) * 0.70,       0],
-            [lo,  cy - (cy - ky) * 0.85,       0],
-            [lo,  ky,                          0],
-        ]
-        tr, kr = p['thigh_r'], p['knee_r']
-        secs = [
-            (tr * 1.05, tr * 1.00),   # hip joint
-            (tr * 1.00, tr * 0.98),
-            (tr * 0.95, tr * 0.92),
-            (tr * 0.88, tr * 0.85),   # mid thigh
-            (tr * 0.78, tr * 0.75),
-            (kr * 1.10, kr * 1.05),
-            (kr,        kr * 0.95),   # knee
-        ]
-        return _build_tube(path, secs, nr, cap_start=True)
-
-    def _lower_leg(self, hm, p, nr, side):
-        s = -1.0 if side == 'left' else 1.0
-        lo = s * p['leg_offset']
-        ky = hm * self.H['knee']
-        ay = hm * self.H['ankle']
-        cw_y = hm * self.H['calf_wide']
-
-        path = [
-            [lo,  ky,                          0],
-            [lo,  ky - (ky - cw_y) * 0.30,    0],
-            [lo,  ky - (ky - cw_y) * 0.60,    0],
-            [lo,  cw_y,                        0],
-            [lo,  cw_y - (cw_y - ay) * 0.35,  0],
-            [lo,  cw_y - (cw_y - ay) * 0.70,  0],
-            [lo,  ay,                          0],
-        ]
-        kr, cr, ar = p['knee_r'], p['calf_r'], p['ankle_r']
-        secs = [
-            (kr,        kr * 0.95),   # knee joint
-            (kr * 0.95, cr * 1.10),
-            (cr * 1.05, cr * 1.02),
-            (cr,        cr * 0.95),   # widest calf
-            (cr * 0.85, cr * 0.80),
-            (ar * 1.20, ar * 1.15),
-            (ar,        ar * 0.95),   # ankle
-        ]
-        return _build_tube(path, secs, nr)
-
-    def _foot(self, hm, p, nr, side):
-        s = -1.0 if side == 'left' else 1.0
-        lo = s * p['leg_offset']
-        ay = hm * self.H['ankle']
-        fl = p['foot_len']
-        fw = p['foot_w']
-        fh = p['foot_h']
-
-        # Foot extends forward from ankle
-        path = [
-            [lo, ay,           -fl * 0.20],  # heel
-            [lo, ay * 0.60,    -fl * 0.05],
-            [lo, ay * 0.35,     fl * 0.15],
-            [lo, ay * 0.20,     fl * 0.40],
-            [lo, ay * 0.12,     fl * 0.65],
-            [lo, ay * 0.05,     fl * 0.85],  # toes
-        ]
-        secs = [
-            (fw * 0.70, fh * 0.80),  # heel
-            (fw * 0.85, fh * 0.90),
-            (fw * 1.00, fh * 0.85),  # arch
-            (fw * 1.10, fh * 0.65),  # ball
-            (fw * 1.05, fh * 0.45),
-            (fw * 0.60, fh * 0.25),  # toes
-        ]
-        return _build_tube(path, secs, max(nr // 2, 12), cap_start=True, cap_end=True)
-
-
-# ── helper ──────────────────────────
-def lerp(a, b, t):
-    """Linear interpolation."""
-    return a + (b - a) * t

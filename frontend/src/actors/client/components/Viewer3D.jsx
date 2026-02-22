@@ -3,9 +3,30 @@
  * Renders the body mesh using React Three Fiber.
  * Auto-rotates and allows orbit controls.
  */
-import React, { Suspense } from 'react';
+import React, { useLayoutEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, useGLTF, Stage, ContactShadows, Html } from '@react-three/drei';
+import { OrbitControls, useGLTF, Stage, ContactShadows } from '@react-three/drei';
+import * as THREE from 'three';
+
+function Model({ url }) {
+    const { scene } = useGLTF(url);
+
+    useLayoutEffect(() => {
+        scene.traverse((child) => {
+            if (child.isMesh) {
+                // Apply a natural skin tone material
+                child.material = new THREE.MeshStandardMaterial({
+                    color: '#e8beac', // Natural fair skin tone (can easily be modified)
+                    roughness: 0.45,
+                    metalness: 0.05,
+                    envMapIntensity: 1.0,
+                });
+            }
+        });
+    }, [scene]);
+
+    return <primitive object={scene} />;
+}
 
 // Error Boundary for 3D Viewer
 class ErrorBoundary extends React.Component {
@@ -46,47 +67,16 @@ function Model({ url }) {
     // Backend mesh is built in meters from y=0 (feet) to y=1.75 (head)
     // Center the model vertically so it sits in the middle of the camera's view using a group wrapper
     return (
-        <group position={[0, -0.85, 0]}>
-            <primitive object={scene} />
-        </group>
-    );
-}
-
-export default function Viewer3D({ url }) {
-    console.log("Viewer3D Render Triggered. Received URL prop:", url);
-
-    if (!url) {
-        return (
-            <div className="w-full h-full min-h-[500px] bg-black rounded-lg overflow-hidden relative shadow-lg flex items-center justify-center">
-                <p className="text-ivory/30 text-sm">No 3D model available</p>
-            </div>
-        );
-    }
-
-    return (
-        <div className="w-full h-full min-h-[500px] bg-black rounded-lg overflow-hidden relative shadow-lg group">
-            <ErrorBoundary fallback={
-                <div className="flex flex-col items-center justify-center h-full text-red-400 p-6 text-center">
-                    <p className="mb-2 font-medium">Erreur de chargement du modèle 3D</p>
-                    <p className="text-sm">Le fichier est introuvable ou corrompu.</p>
-                </div>
-            }>
-                <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 1, 5], fov: 50 }}>
-                    <color attach="background" args={['#111111']} />
-                    <ambientLight intensity={2} />
-                    <directionalLight position={[10, 10, 10]} intensity={2} />
-
-                    <axesHelper args={[5]} />
-                    <gridHelper args={[10, 10]} />
-
-                    <Suspense fallback={
-                        <Html center>
-                            <div className="text-white bg-black/80 px-4 py-2 rounded font-sans tracking-wide border border-gold/30">
-                                <span className="text-gold animate-pulse">Loading 3D Engine...</span>
-                            </div>
-                        </Html>
-                    }>
-                        <Stage environment="city" intensity={0.6} adjustCamera={true}>
+        <div className="h-[500px] w-full bg-gray-50 rounded-xl overflow-hidden border border-gray-200">
+            {url ? (
+                <ErrorBoundary fallback={
+                    <div className="flex flex-col items-center justify-center h-full text-red-400 p-6 text-center">
+                        <p className="mb-2 font-medium">Erreur de chargement du modèle 3D</p>
+                        <p className="text-sm">Le fichier est introuvable ou corrompu.</p>
+                    </div>
+                }>
+                    <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 0, 4], fov: 50 }}>
+                        <Stage environment="studio" intensity={1.2}>
                             <Model url={url} />
                         </Stage>
                         <OrbitControls
@@ -98,6 +88,6 @@ export default function Viewer3D({ url }) {
                     </Suspense>
                 </Canvas>
             </ErrorBoundary>
-        </div>
+        </div >
     );
 }
