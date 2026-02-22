@@ -359,7 +359,7 @@ class SkeletonExtractor:
                 min_pose_detection_confidence=0.3,  # Seuil plus bas pour détecter plus de poses
                 min_pose_presence_confidence=0.3,   # Même avec membres partiellement visibles
                 min_tracking_confidence=0.3,
-                output_segmentation_masks=True)     # Activer les masques de segmentation
+                output_segmentation_masks=False)
             self.detector = vision.PoseLandmarker.create_from_options(options)
             self.model_loaded = True
         except Exception: self.model_loaded = False
@@ -383,13 +383,6 @@ class SkeletonExtractor:
                     h = img.shape[0]
                     mask = f['mask']
                     
-                    # Améliorer le masque avec la segmentation MediaPipe Pose si disponible
-                    if res.segmentation_masks and len(res.segmentation_masks) > 0:
-                        pose_mask = res.segmentation_masks[0].numpy_view()
-                        pose_mask_binary = (pose_mask > 0.5).astype(np.uint8) * 255
-                        # Combiner avec le masque de segmentation selfie
-                        mask = cv2.bitwise_or(mask, pose_mask_binary)
-                        f['mask'] = mask
                     rows = np.where(np.any(mask, axis=1))[0]
                     if len(rows) == 0: continue
                     y_min, y_max = rows[0], rows[-1]

@@ -3,12 +3,28 @@
  * Renders the body mesh using React Three Fiber.
  * Auto-rotates and allows orbit controls.
  */
-import React from 'react';
+import React, { useLayoutEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, useGLTF, Stage, ContactShadows } from '@react-three/drei';
+import * as THREE from 'three';
 
 function Model({ url }) {
     const { scene } = useGLTF(url);
+
+    useLayoutEffect(() => {
+        scene.traverse((child) => {
+            if (child.isMesh) {
+                // Apply a natural skin tone material
+                child.material = new THREE.MeshStandardMaterial({
+                    color: '#e8beac', // Natural fair skin tone (can easily be modified)
+                    roughness: 0.45,
+                    metalness: 0.05,
+                    envMapIntensity: 1.0,
+                });
+            }
+        });
+    }, [scene]);
+
     return <primitive object={scene} />;
 }
 
@@ -37,7 +53,7 @@ export default function Viewer3D({ url }) {
                     </div>
                 }>
                     <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 0, 4], fov: 50 }}>
-                        <Stage environment="city" intensity={0.6}>
+                        <Stage environment="studio" intensity={1.2}>
                             <Model url={url} />
                         </Stage>
                         <OrbitControls autoRotate />

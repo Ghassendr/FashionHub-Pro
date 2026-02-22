@@ -252,18 +252,38 @@ class ParametricBodyModel:
         add_tube(torso_profile, 0.0)
         
         # Create Trimesh
-        # Create Trimesh
         mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
         
         # Compute proper normals
         mesh.fix_normals()
         
-        # Smoothing pour précision et rendu naturel
-        for _ in range(self.smooth_iterations):
-            try:
-                mesh = trimesh.smoothing.filter_laplacian(mesh, iterations=1, lamb=0.5)
-            except Exception:
-                break
+        # --- SEAMLESS MANIFOLD FUSION VIA VOXELIZATION ---
+        logger.info("Fusing SMPL parts into continuous manifold mesh...")
+        try:
+            pitch = height_m * 0.015  # ~1.5cm voxels
+            voxel_volume = mesh.voxelized(pitch=pitch)
+            voxel_volume = voxel_volume.fill()
+            meshed_volume = voxel_volume.marching_cubes
+            
+            # Center and scale back to the original size
+            meshed_volume.vertices += voxel_volume.translation
+            mesh = meshed_volume
+            
+            # 3. Aggressive organic smoothing
+            for _ in range(self.smooth_iterations + 3):
+                mesh = trimesh.smoothing.filter_laplacian(mesh, iterations=1, lamb=0.65)
+                
+            mesh.fix_normals()
+            
+        except Exception as e:
+            logger.warning("Voxel fusion failed: %s. Falling back to simple concatenate.", e)
+            for _ in range(self.smooth_iterations):
+                try:
+                    mesh = trimesh.smoothing.filter_laplacian(mesh, iterations=1, lamb=0.5)
+                except Exception:
+                    break
+            mesh.fix_normals()
+
         
         # Apply skin-like color
         if hasattr(mesh.visual, 'vertex_colors'):
