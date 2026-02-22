@@ -1,0 +1,17 @@
+Django>=4.2,<5.0
+djangorestframework
+djangorestframework-simplejwt
+django-cors-headers
+Pillow
+opencv-python
+numpy
+trimesh[all]
+scikit-image
+mediapipe
+requests
+scipy
+networkx
+plotly
+scikit-learn
+rembg
+onnxruntime

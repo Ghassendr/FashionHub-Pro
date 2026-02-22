@@ -256,60 +256,86 @@ class SequentialPipeline:
             return False, None, {}
 
     def _texture(self, mesh, frames, height_cm):
-        """Map video frame colors onto mesh vertices (CPU)."""
+        """Smart Texturing: Blends colors weighting by view-angle to prevent smearing."""
         valid = [f for f in frames if f.get('body_detected')]
         if not valid:
             return mesh
 
-        # Pick representative frames: front and side views
-        front = sorted(valid, key=lambda f: min(
-            abs(f['rotation_angle'] % 360),
-            abs((f['rotation_angle'] % 360) - 180)
-        ))[:5]
-        side = sorted(valid, key=lambda f: min(
-            abs((f['rotation_angle'] % 360) - 90),
-            abs((f['rotation_angle'] % 360) - 270)
-        ))[:5]
+        # Pick 8 most representative angles for a full 360 wrap
+        selected_frames = []
+        for target_angle in [0, 45, 90, 135, 180, 225, 270, 315]:
+             closest = min(valid, key=lambda f: min(
+                 abs((f.get('rotation_angle', 0) % 360) - target_angle),
+                 360 - abs((f.get('rotation_angle', 0) % 360) - target_angle)
+             ))
+             if closest not in selected_frames:
+                 selected_frames.append(closest)
+                 
+        colors_accum = np.zeros((len(mesh.vertices), 3), dtype=np.float64)
+        weights_accum = np.zeros(len(mesh.vertices), dtype=np.float64)
 
-        colors = np.zeros((len(mesh.vertices), 4), dtype=np.uint64)
-        counts = np.zeros(len(mesh.vertices), dtype=np.int32)
+        if not hasattr(mesh, 'vertex_normals'):
+            mesh.fix_normals()
+        normals = mesh.vertex_normals
 
-        for frame in front + side:
+        for frame in selected_frames:
             try:
                 img = cv2.imread(frame['path'])
-                if img is None:
-                    continue
+                if img is None: continue
                 h, w = img.shape[:2]
+                
+                # Camera angle in radians
                 rad = np.radians(frame.get('rotation_angle', 0))
                 cos_a, sin_a = np.cos(rad), np.sin(rad)
-
+                
+                # Camera ray direction in mesh local space (assuming rotation around Y axis)
+                cam_dir = np.array([sin_a, 0, cos_a])
+                
+                # Dot product of vertex normal and camera ray (determines if facing camera)
+                # 1.0 = looking straight at camera, <= 0 = facing away
+                facing = np.dot(normals, cam_dir)
+                
                 verts = mesh.vertices
+                # Simple orthographic projection
                 x_rot = verts[:, 0] * cos_a - verts[:, 2] * sin_a
-
+                
                 bounds = mesh.bounds
                 sx = w / (bounds[1][0] - bounds[0][0] + 1e-6)
                 sy = h / (bounds[1][1] - bounds[0][1] + 1e-6)
-
+                
                 u = ((x_rot - bounds[0][0]) * sx).astype(int)
                 v = ((-verts[:, 1] + bounds[1][1]) * sy).astype(int)
-
+                
                 ok = (u >= 0) & (u < w) & (v >= 0) & (v < h)
-
+                
                 mask = frame.get('mask')
                 for i in np.where(ok)[0]:
+                    if facing[i] < 0.2: # Ignore vertices facing away or at grazing angles
+                        continue
+                        
                     if mask is not None and mask[v[i], u[i]] == 0:
                         continue
-                    colors[i, :3] += img[v[i], u[i]][::-1]
-                    counts[i] += 1
-            except Exception:
+                        
+                    color = img[v[i], u[i]][::-1] # BGR to RGB
+                    weight = facing[i] ** 2 # Square the weight to strongly prefer direct facing
+                    
+                    colors_accum[i] += color * weight
+                    weights_accum[i] += weight
+            except Exception as e:
+                logger.warning("Texture warning: %s", e)
                 continue
 
-        has_c = counts > 0
-        if np.any(has_c):
-            colors[has_c, :3] = colors[has_c, :3] // counts[has_c, None]
-        colors[~has_c, :3] = [200, 180, 160]
-        colors[:, 3] = 255
-        mesh.visual.vertex_colors = colors.astype(np.uint8)
+        # Output assignment
+        final_colors = np.zeros((len(mesh.vertices), 4), dtype=np.uint8)
+        has_color = weights_accum > 0
+        
+        if np.any(has_color):
+            final_colors[has_color, :3] = (colors_accum[has_color] / weights_accum[has_color, None]).astype(np.uint8)
+            
+        final_colors[~has_color, :3] = [200, 180, 160] # Default skin/clay color
+        final_colors[:, 3] = 255
+        
+        mesh.visual.vertex_colors = final_colors
         return mesh
 
     # ─── Morphology / Fashion wrappers ───────

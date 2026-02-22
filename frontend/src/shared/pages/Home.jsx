@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Sparkles, Ruler, TrendingUp, Shield, Eye } from 'lucide-react';
+import { ArrowRight, Sparkles, Ruler, TrendingUp, Shield, Eye, UserPlus } from 'lucide-react';
 
 const Home = () => {
     return (
@@ -36,6 +36,7 @@ const Home = () => {
                         <Link to="/client/dashboard" className="btn btn-secondary">
                             Client Dashboard
                         </Link>
+
                     </div>
                 </div>
 
@@ -149,9 +150,11 @@ const Home = () => {
                         <p className="text-ivory/40 mb-10 leading-relaxed max-w-lg">
                             Experience a bespoke journey tailored exclusively to your vision. From initial measurements to final delivery — every detail, perfected.
                         </p>
-                        <Link to="/client/onboarding" className="btn btn-primary">
-                            Request Appointment <ArrowRight size={16} />
-                        </Link>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <Link to="/client/onboarding" className="btn btn-primary">
+                                Request Appointment <ArrowRight size={16} />
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </section>

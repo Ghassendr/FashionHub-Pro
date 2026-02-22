@@ -289,7 +289,7 @@ function BodyMeasurements() {
                             </div>
 
                             {/* Tab Content Container */}
-                            <div className="flex-grow bg-muted border border-subtle/30 overflow-hidden relative">
+                            <div className="flex-grow bg-muted border border-subtle/30 overflow-hidden relative min-h-[700px]">
 
                                 <div className={`absolute inset-0 transition-opacity duration-500 ${activeTab === 'viewer' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
                                     <div className="w-full h-full bg-noir">
