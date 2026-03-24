@@ -3,8 +3,10 @@ import Layout from './shared/components/Layout/Layout';
 import Home from './shared/pages/Home';
 import Onboarding from './actors/client/pages/Onboarding';
 import BodyMeasurements from './actors/client/pages/BodyMeasurements';
-import Delivery from './actors/delivery/pages/Delivery';
-import CoutureHouse from './actors/delivery/pages/CoutureHouse';
+import DeliveryDashboard from './actors/delivery/pages/DeliveryDashboard';
+import ActivityDashboard from './Pages/Dashboard';
+import CoutureHouseDashboard from './actors/couturehouse/pages/Dashboard';
+import CreateDesign from './actors/couturehouse/pages/CreateDesign';
 import FournisseurDashboard from './actors/Fournisseur/Dashboard';
 import FournisseurSettings from './actors/Fournisseur/Settings';
 
@@ -12,7 +14,7 @@ function App() {
   return (
     <Routes>
       {/* Delivery Dashboard (Standalone Fullscreen) */}
-      <Route path="/delivery" element={<Delivery />} />
+      <Route path="/delivery" element={<DeliveryDashboard />} />
 
       <Route path="/" element={<Layout />}>
         {/* Main Portal */}
