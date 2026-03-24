@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { authService } from '../../../services/authService';
 
 const LoginModal = ({ isOpen, onClose, onSwitchToRegister }) => {
     const [formData, setFormData] = useState({
@@ -22,7 +23,7 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister }) => {
         }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!formData.email.trim() || !formData.password.trim()) {
@@ -30,18 +31,28 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister }) => {
             return;
         }
 
-        console.log("Submitting Login", formData);
-        setError('');
-        setSuccessMsg("Logged in successfully!");
-
-        // Auto close after 3 seconds
-        setTimeout(() => {
-            onClose();
-            // Reset form
-            setFormData({ email: '', password: '', rememberMe: false });
-            setSuccessMsg('');
+        try {
             setError('');
-        }, 3000);
+            setSuccessMsg('');
+            
+            await authService.login(formData.email, formData.password);
+            
+            setSuccessMsg("Logged in successfully!");
+
+            // Auto close after 1.5 seconds
+            setTimeout(() => {
+                onClose();
+                // Reset form
+                setFormData({ email: '', password: '', rememberMe: false });
+                setSuccessMsg('');
+                setError('');
+                // Force reload or redirect to dashboard if needed
+                window.location.reload(); 
+            }, 1500);
+        } catch (err) {
+            setError(err.message || "Invalid email or password.");
+            console.error(err);
+        }
     };
 
     return (

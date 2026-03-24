@@ -30,22 +30,30 @@ const Dashboard = () => {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end mb-16 gap-4">
                 <div>
-                    <p className="text-label text-gold mb-3">Client Dashboard</p>
+                    <p className="text-label text-gold mb-3">Maison de Couture</p>
                     <h1 className="font-display text-4xl md:text-5xl font-bold text-ivory">
-                        Your Atelier
+                        Global Activity
                     </h1>
                 </div>
-                <button className="btn btn-primary">
-                    New Commission
-                </button>
+                <div className="flex gap-4">
+                    <button 
+                        onClick={() => window.location.href = '/couturehouse/designs'}
+                        className="btn btn-secondary"
+                    >
+                        Atelier Designs
+                    </button>
+                    <button className="btn btn-primary">
+                        Export Report
+                    </button>
+                </div>
             </div>
-
+ 
             {/* Stat Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-subtle/30 mb-16">
-                <StatCard icon={<Truck size={18} />} label="Active Shipments" value="12" trend="+15%" trendUp />
-                <StatCard icon={<Package size={18} />} label="Pending Orders" value="5" trend="-2" trendUp={false} />
-                <StatCard icon={<Clock size={18} />} label="Avg. Delivery" value="1.2 Days" trend="-0.3d" trendUp />
-                <StatCard icon={<DollarSign size={18} />} label="Collection Value" value="$4,200" trend="+12%" trendUp />
+                <StatCard icon={<Package size={18} />} label="Designs Commissioned" value="03" trend="+1" trendUp />
+                <StatCard icon={<TrendingUp size={18} />} label="Style Credits" value="850 pts" trend="+120" trendUp />
+                <StatCard icon={<Clock size={18} />} label="In Production" value="01" trend="Stable" trendUp={false} />
+                <StatCard icon={<DollarSign size={18} />} label="Total Credits" value="$1,200" trend="+5%" trendUp />
             </div>
 
             {/* Chart + Shipments */}
@@ -81,19 +89,18 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {/* Recent Shipments */}
+                {/* Recent Activity */}
                 <div className="lg:col-span-2 bg-noir p-8 border border-subtle/20">
                     <div className="flex justify-between items-center mb-8">
-                        <h2 className="font-display text-xl text-ivory">Recent Shipments</h2>
+                        <h2 className="font-display text-xl text-ivory">Recent Activity</h2>
                         <button className="text-label text-gold hover:text-gold-light transition-colors flex items-center gap-1">
                             View All <ChevronRight size={12} />
                         </button>
                     </div>
                     <div className="space-y-1">
-                        <ShipmentRow id="#CT-8821" origin="Paris" dest="Milano" status="In Transit" statusColor="text-gold" />
-                        <ShipmentRow id="#CT-8822" origin="London" dest="Dubai" status="Pending" statusColor="text-blush" />
-                        <ShipmentRow id="#CT-8823" origin="Paris" dest="New York" status="Delivered" statusColor="text-emerald" />
-                        <ShipmentRow id="#CT-8824" origin="Milano" dest="Tokyo" status="In Transit" statusColor="text-gold" />
+                        <ShipmentRow id="Gala Dress" origin="Atelier Paris" dest="Processing" status="Draft" statusColor="text-gold" />
+                        <ShipmentRow id="Silk Suit" origin="London Fabrics" dest="Shipped" status="Active" statusColor="text-emerald" />
+                        <ShipmentRow id="Summer Cape" origin="Milan Tailor" dest="Delivered" status="Completed" statusColor="text-ivory/40" />
                     </div>
                 </div>
             </div>

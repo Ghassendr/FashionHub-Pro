@@ -112,15 +112,15 @@ function BodyMeasurements() {
                     <div className="bg-muted border border-subtle/50 p-8 relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-gold/10 rounded-full blur-2xl -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-700"></div>
                         <h1 className="text-2xl font-display font-bold mb-2 tracking-tight relative z-10 flex items-center gap-3 text-ivory">
-                            <Activity className="text-gold" size={24} /> Couture Analysis
+                            <Activity className="text-gold" size={24} /> 3D Body Scan
                         </h1>
-                        <p className="text-ivory/40 font-light relative z-10 text-sm">Upload files for AI-powered 3D optimal matchmaking.</p>
+                        <p className="text-ivory/40 font-light relative z-10 text-sm">Create your AI-powered 3D measurement profile for a perfect fit.</p>
                     </div>
 
                     {/* Upload Card */}
                     <div className="bg-muted border border-subtle/50 p-6">
                         <h2 className="text-label text-gold mb-4 flex items-center gap-2">
-                            <UploadCloud size={14} /> File Upload
+                            <UploadCloud size={14} /> Video Upload
                         </h2>
 
                         <div
@@ -138,7 +138,7 @@ function BodyMeasurements() {
                                 <div className="flex flex-col items-center animate-fade-in">
                                     <CheckCircle className="text-gold mb-3" size={24} />
                                     <p className="text-sm text-ivory truncate w-full px-4">{file.name}</p>
-                                    <p className="text-[10px] tracking-luxury uppercase text-gold/60 mt-2">Prêt — Cliquez « Launch AI Analysis » en bas</p>
+                                    <p className="text-[10px] tracking-luxury uppercase text-gold/60 mt-2">Ready — Click "Analyze Body Measurements" below</p>
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center">
@@ -224,7 +224,7 @@ function BodyMeasurements() {
                         {loading ? (
                             <><span className="w-4 h-4 border-2 border-noir/30 border-t-noir rounded-full animate-spin"></span> Processing...</>
                         ) : (
-                            <><Activity size={16} /> Launch AI Analysis</>
+                            <><Activity size={16} /> Analyze Body Measurements</>
                         )}
                     </button>
 

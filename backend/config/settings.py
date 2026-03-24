@@ -1,5 +1,16 @@
 from pathlib import Path
 import os
+import mongoengine
+
+# MongoDB Connection
+mongoengine.connect(
+    db="fashionhub",
+    host="localhost",
+    port=27017,
+    username="admin",
+    password="password",
+    authentication_source="admin"
+)
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -89,6 +100,10 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Media files
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
 # Directories for the 3D pipeline (absolute paths)
 PIPELINE_ROOT = BASE_DIR / "actors" / "client" / "ml_pipeline"
 PIPELINE_UPLOADS = PIPELINE_ROOT / "uploads"
@@ -96,6 +111,7 @@ PIPELINE_RESULTS = PIPELINE_ROOT / "results"
 
 os.makedirs(PIPELINE_UPLOADS, exist_ok=True)
 os.makedirs(PIPELINE_RESULTS, exist_ok=True)
+os.makedirs(MEDIA_ROOT / "couturehouse" / "designs", exist_ok=True)
 
 
 CORS_ALLOW_ALL_ORIGINS = True
