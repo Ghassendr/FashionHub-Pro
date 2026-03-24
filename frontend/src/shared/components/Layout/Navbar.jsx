@@ -1,14 +1,23 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, LogIn } from 'lucide-react';
+import { Menu, X, LogIn, User, LogOut } from 'lucide-react';
 import RegistrationModal from '../Auth/RegistrationModal';
 import LoginModal from '../Auth/LoginModal';
+import { authService } from '../../../services/authService';
 
 const Navbar = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [isRegisterOpen, setIsRegisterOpen] = useState(false);
     const [isLoginOpen, setIsLoginOpen] = useState(false);
     const location = useLocation();
+    
+    const isAuthenticated = authService.isAuthenticated();
+    const user = authService.getUserInfo();
+
+    const handleLogout = () => {
+        authService.logout();
+        window.location.reload();
+    };
 
     const isActive = (path) =>
         location.pathname === path
@@ -48,24 +57,39 @@ const Navbar = () => {
                             <Link to="/" className={`text-[11px] tracking-luxury uppercase font-medium ${isActive('/')}`}>
                                 Portal
                             </Link>
-                            <Link to="/client/dashboard" className={`text-[11px] tracking-luxury uppercase font-medium ${isActive('/client/dashboard') || location.pathname.startsWith('/client') ? 'text-gold' : 'text-ivory/60 hover:text-gold transition-all duration-500'}`}>
+                            <Link to="/client/3d-measurements" className={`text-[11px] tracking-luxury uppercase font-medium ${isActive('/client/3d-measurements') || location.pathname.startsWith('/client') ? 'text-gold' : 'text-ivory/60 hover:text-gold transition-all duration-500'}`}>
                                 Client
                             </Link>
                             <Link to="/delivery" className={`text-[11px] tracking-luxury uppercase font-medium ${isActive('/delivery')}`}>
                                 Delivery
                             </Link>
-                            <Link to="/couturehouse" className={`text-[11px] tracking-luxury uppercase font-medium ${isActive('/couturehouse')}`}>
+                            <Link to="/couturehouse" className={`text-[11px] tracking-luxury uppercase font-medium ${location.pathname.startsWith('/couturehouse') ? 'text-gold' : 'text-ivory/60 hover:text-gold transition-all duration-500'}`}>
                                 Couture House
                             </Link>
 
                             <div className="h-4 w-px bg-subtle ml-2"></div>
 
-                            <button
-                                onClick={() => setIsLoginOpen(true)}
-                                className="btn-ghost flex items-center gap-2 text-[11px] tracking-luxury uppercase font-medium border border-gold/40 px-5 py-2 hover:bg-gold/10 transition-all duration-500"
-                            >
-                                <LogIn size={14} /> Login
-                            </button>
+                            {isAuthenticated ? (
+                                <div className="flex items-center gap-6">
+                                    <div className="flex items-center gap-2 text-[11px] tracking-luxury uppercase text-gold font-medium">
+                                        <User size={14} /> {user.name}
+                                    </div>
+                                    <button
+                                        onClick={handleLogout}
+                                        className="text-ivory/50 hover:text-red-400 transition-colors"
+                                        title="Logout"
+                                    >
+                                        <LogOut size={16} />
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => setIsLoginOpen(true)}
+                                    className="btn-ghost flex items-center gap-2 text-[11px] tracking-luxury uppercase font-medium border border-gold/40 px-5 py-2 hover:bg-gold/10 transition-all duration-500"
+                                >
+                                    <LogIn size={14} /> Login
+                                </button>
+                            )}
                         </div>
 
                         {/* Mobile Toggle */}
@@ -83,16 +107,30 @@ const Navbar = () => {
                     <div className="md:hidden absolute top-full left-0 w-full bg-noir/98 backdrop-blur-xl border-b border-subtle/30 animate-fade-in">
                         <div className="flex flex-col gap-1 p-8">
                             <Link to="/" className={`py-3 text-[11px] tracking-luxury uppercase font-medium ${isActive('/')}`} onClick={() => setIsOpen(false)}>Portal</Link>
-                            <Link to="/client/dashboard" className={`py-3 text-[11px] tracking-luxury uppercase font-medium ${isActive('/client/dashboard') || location.pathname.startsWith('/client') ? 'text-gold' : 'text-ivory/60 hover:text-gold transition-all duration-500'}`} onClick={() => setIsOpen(false)}>Client</Link>
+                            <Link to="/client/3d-measurements" className={`py-3 text-[11px] tracking-luxury uppercase font-medium ${location.pathname.startsWith('/client') ? 'text-gold' : 'text-ivory/60 hover:text-gold transition-all duration-500'}`} onClick={() => setIsOpen(false)}>Client</Link>
                             <Link to="/delivery" className={`py-3 text-[11px] tracking-luxury uppercase font-medium ${isActive('/delivery')}`} onClick={() => setIsOpen(false)}>Delivery</Link>
-                            <Link to="/couturehouse" className={`py-3 text-[11px] tracking-luxury uppercase font-medium ${isActive('/couturehouse')}`} onClick={() => setIsOpen(false)}>Couture House</Link>
+                            <Link to="/couturehouse" className={`py-3 text-[11px] tracking-luxury uppercase font-medium ${location.pathname.startsWith('/couturehouse') ? 'text-gold' : 'text-ivory/60 hover:text-gold transition-all duration-500'}`} onClick={() => setIsOpen(false)}>Couture House</Link>
                             <div className="divider-gold mt-6 mb-4 mx-0"></div>
-                            <button
-                                onClick={() => { setIsLoginOpen(true); setIsOpen(false); }}
-                                className="btn btn-primary w-full justify-center mt-2 flex items-center gap-2"
-                            >
-                                <LogIn size={16} /> Login
-                            </button>
+                            {isAuthenticated ? (
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex items-center gap-3 py-3 text-[11px] tracking-luxury uppercase text-gold font-medium border-b border-subtle/20">
+                                        <User size={16} /> {user.name}
+                                    </div>
+                                    <button
+                                        onClick={handleLogout}
+                                        className="btn btn-secondary w-full justify-center flex items-center gap-2 text-red-400 border-red-900/30"
+                                    >
+                                        <LogOut size={16} /> Logout
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => { setIsLoginOpen(true); setIsOpen(false); }}
+                                    className="btn btn-primary w-full justify-center mt-2 flex items-center gap-2"
+                                >
+                                    <LogIn size={16} /> Login
+                                </button>
+                            )}
                         </div>
                     </div>
                 )}

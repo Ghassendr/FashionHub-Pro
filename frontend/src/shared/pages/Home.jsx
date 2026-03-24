@@ -33,10 +33,6 @@ const Home = () => {
                         <Link to="/client/onboarding" className="btn btn-primary">
                             Explore Collection <ArrowRight size={16} />
                         </Link>
-                        <Link to="/client/dashboard" className="btn btn-secondary">
-                            Client Dashboard
-                        </Link>
-
                     </div>
                 </div>
 

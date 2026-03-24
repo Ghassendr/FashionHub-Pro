@@ -2,10 +2,11 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './shared/components/Layout/Layout';
 import Home from './shared/pages/Home';
 import Onboarding from './actors/client/pages/Onboarding';
-import Dashboard from './actors/client/pages/Dashboard';
 import BodyMeasurements from './actors/client/pages/BodyMeasurements';
 import Delivery from './actors/delivery/pages/Delivery';
-import CoutureHouse from './actors/delivery/pages/CoutureHouse';
+import CoutureHouseDashboard from './actors/couturehouse/pages/Dashboard';
+import ActivityDashboard from './actors/client/pages/Dashboard';
+import CreateDesign from './actors/couturehouse/pages/CreateDesign';
 import FournisseurDashboard from './actors/Fournisseur/Dashboard';
 import FournisseurSettings from './actors/Fournisseur/Settings';
 
@@ -18,9 +19,8 @@ function App() {
 
         {/* Client Domain */}
         <Route path="client">
-          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route index element={<Navigate to="3d-measurements" replace />} />
           <Route path="onboarding" element={<Onboarding />} />
-          <Route path="dashboard" element={<Dashboard />} />
           <Route path="3d-measurements" element={<BodyMeasurements />} />
         </Route>
 
@@ -28,7 +28,11 @@ function App() {
         <Route path="delivery" element={<Delivery />} />
 
         {/* Couture House Domain */}
-        <Route path="couturehouse" element={<CoutureHouse />} />
+        <Route path="couturehouse">
+          <Route index element={<ActivityDashboard />} />
+          <Route path="designs" element={<CoutureHouseDashboard />} />
+          <Route path="create" element={<CreateDesign />} />
+        </Route>
 
         {/* Fournisseur Domain */}
         <Route path="fournisseur">

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, User, Building2, Truck, Scissors, ArrowRight, ArrowLeft, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { authService } from '../../../services/authService';
 
 const RegistrationModal = ({ isOpen, onClose, onSwitchToLogin }) => {
     const [step, setStep] = useState(1);
@@ -122,7 +123,7 @@ const RegistrationModal = ({ isOpen, onClose, onSwitchToLogin }) => {
         }
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         // Validation for Form 3 (Files) if not Client
         if (role !== 'Client' && step === 4) {
             let requiredStep3 = [];
@@ -143,19 +144,44 @@ const RegistrationModal = ({ isOpen, onClose, onSwitchToLogin }) => {
             }
         }
 
-        console.log("Submitting Registration for ", role, formData);
-
-        setError('');
-        setSuccessMsg(`Welcome to Maison Tissue! Your registration as a ${role} is being processed.`);
-
-        // Auto close after 3 seconds
-        setTimeout(() => {
-            onClose();
-            setStep(1);
-            setRole(null);
+        try {
+            setError('');
             setSuccessMsg('');
-            // Reset form data in real app here
-        }, 3000);
+
+            // Map fullName to prenom/nom
+            const nameParts = formData.fullName.split(' ');
+            const prenom = nameParts[0] || '';
+            const nom = nameParts.slice(1).join(' ') || prenom;
+
+            const signupData = {
+                email: formData.email,
+                password: formData.password,
+                nom: nom,
+                prenom: prenom,
+                nomOrganization: formData.companyName || formData.fullName,
+                lieu: formData.address,
+                phone: formData.phone,
+                telephoneContact: formData.phone,
+                adresse: formData.address,
+                role: role // Added for backend context if needed
+            };
+
+            await authService.signup(signupData);
+
+            setSuccessMsg(`Welcome to Maison Tissue! Your registration as a ${role} is complete.`);
+
+            // Auto close after 2 seconds
+            setTimeout(() => {
+                onClose();
+                setStep(1);
+                setRole(null);
+                setSuccessMsg('');
+                window.location.reload();
+            }, 2000);
+        } catch (err) {
+            setError(err.message || "Registration failed. Please try again.");
+            console.error(err);
+        }
     };
 
     const renderStepIndicator = () => {
