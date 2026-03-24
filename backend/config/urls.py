@@ -14,6 +14,7 @@ urlpatterns = [
     # Actor-based APIs (new structure - enabled)
     path("api/client/", include("actors.client.api.urls")),
     path("api/delivery/", include("actors.delivery.api.urls")),
+    path("api/mongo/delivery/", include("actors.delivery.urls")),  # MongoDB endpoints
     # Couturehouse APIs
     path("api/couturehouse/", include("actors.couturehouse.api.urls")),
     # Fournisseur / Supplier APIs
