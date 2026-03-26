@@ -341,25 +341,25 @@ function BodyMeasurements() {
                                         <h2 className="text-label text-gold mb-6 border-b border-subtle/20 pb-3">Morphological Radar</h2>
                                         <div className="w-full flex justify-center">
                                             {(result?.measurements?.basics?.length > 0) ? (
-                                            <Plot
-                                                data={[{
-                                                    type: 'scatterpolar',
-                                                    r: (result?.measurements?.basics || []).slice(0, 6).map(m => m.value_cm || 0),
-                                                    theta: (result?.measurements?.basics || []).slice(0, 6).map(m => m.name || m.key || ''),
-                                                    fill: 'toself',
-                                                    fillcolor: 'rgba(198, 167, 94, 0.15)',
-                                                    line: { color: '#C6A75E', width: 2 }
-                                                }]}
-                                                layout={{
-                                                    autosize: true,
-                                                    paper_bgcolor: 'rgba(0,0,0,0)',
-                                                    polar: { radialaxis: { visible: true, range: [0, 120], tickcolor: '#2A2A2A', gridcolor: '#2A2A2A' }, angularaxis: { tickfont: { family: 'Inter', color: '#666' }, gridcolor: '#2A2A2A' }, bgcolor: 'rgba(0,0,0,0)' },
-                                                    font: { color: '#F5F5F0', family: 'Inter' },
-                                                    margin: { t: 30, b: 30, l: 30, r: 30 }
-                                                }}
-                                                style={{ width: '100%', height: '400px', maxWidth: '600px' }}
-                                                config={{ displayModeBar: false }}
-                                            />
+                                                <Plot
+                                                    data={[{
+                                                        type: 'scatterpolar',
+                                                        r: (result?.measurements?.basics || []).slice(0, 6).map(m => m.value_cm || 0),
+                                                        theta: (result?.measurements?.basics || []).slice(0, 6).map(m => m.name || m.key || ''),
+                                                        fill: 'toself',
+                                                        fillcolor: 'rgba(198, 167, 94, 0.15)',
+                                                        line: { color: '#C6A75E', width: 2 }
+                                                    }]}
+                                                    layout={{
+                                                        autosize: true,
+                                                        paper_bgcolor: 'rgba(0,0,0,0)',
+                                                        polar: { radialaxis: { visible: true, range: [0, 120], tickcolor: '#2A2A2A', gridcolor: '#2A2A2A' }, angularaxis: { tickfont: { family: 'Inter', color: '#666' }, gridcolor: '#2A2A2A' }, bgcolor: 'rgba(0,0,0,0)' },
+                                                        font: { color: '#F5F5F0', family: 'Inter' },
+                                                        margin: { t: 30, b: 30, l: 30, r: 30 }
+                                                    }}
+                                                    style={{ width: '100%', height: '400px', maxWidth: '600px' }}
+                                                    config={{ displayModeBar: false }}
+                                                />
                                             ) : (
                                                 <p className="text-ivory/40 py-12">Aucune donnée de mesure disponible pour le radar.</p>
                                             )}

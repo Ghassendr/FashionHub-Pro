@@ -128,15 +128,14 @@ const RegistrationModal = ({ isOpen, onClose, onSwitchToLogin }) => {
         if (role !== 'Client' && step === 4) {
             let requiredStep3 = [];
             if (role === 'Couture House') {
-                requiredStep3 = ['commercialRegister', 'portfolioPhotos', 'workshopPhoto', 'ownerId'];
+                requiredStep3 = ['commercialRegister', 'ownerId'];
             } else if (role === 'Fournisseur') {
-                requiredStep3 = ['commercialRegister', 'fabricSamplePhotos', 'warehousePhoto']; // fabricQualityCert is optional
+                requiredStep3 = ['commercialRegister', 'warehousePhoto'];
             } else if (role === 'Delivery') {
-                requiredStep3 = ['commercialRegister', 'insuranceDocument', 'vehiclePhotos']; // luxuryReference is optional
+                requiredStep3 = ['commercialRegister', 'vehiclePhotos'];
             }
 
             for (const field of requiredStep3) {
-                // In a real app we'd check if a file object exists, here we check if string is empty
                 if (!formData[field]) {
                     setError("Please upload all required verification documents.");
                     return;
@@ -148,27 +147,58 @@ const RegistrationModal = ({ isOpen, onClose, onSwitchToLogin }) => {
             setError('');
             setSuccessMsg('');
 
-            // Map fullName to prenom/nom
-            const nameParts = formData.fullName.split(' ');
-            const prenom = nameParts[0] || '';
-            const nom = nameParts.slice(1).join(' ') || prenom;
-
-            const signupData = {
-                email: formData.email,
-                password: formData.password,
-                nom: nom,
-                prenom: prenom,
-                nomOrganization: formData.companyName || formData.fullName,
-                lieu: formData.address,
-                phone: formData.phone,
-                telephoneContact: formData.phone,
-                adresse: formData.address,
-                role: role // Added for backend context if needed
+            // Map roles to backend slug format
+            const roleMap = {
+                'Client': 'client',
+                'Couture House': 'couture_house',
+                'Fournisseur': 'fournisseur',
+                'Delivery': 'delivery'
             };
 
-            await authService.signup(signupData);
+            const backendRole = roleMap[role];
 
-            setSuccessMsg(`Welcome to Maison Tissue! Your registration as a ${role} is complete.`);
+            // Prepare profile_data based on role
+            let profile_data = {};
+            if (backendRole === 'client') {
+                profile_data = { phone: formData.phone, address: formData.address };
+            } else if (backendRole === 'couture_house') {
+                profile_data = {
+                    house_name: formData.companyName,
+                    specialization: formData.specialization,
+                    starting_price: formData.startingPrice,
+                    avg_production_time: formData.productionTime
+                };
+            } else if (backendRole === 'fournisseur') {
+                profile_data = {
+                    nomOrganization: formData.companyName,
+                    fabric_category: formData.fabricCategory,
+                    origin_country: formData.originCountry,
+                    min_price_per_meter: formData.minPricePerMeter
+                };
+            } else if (backendRole === 'delivery') {
+                profile_data = {
+                    company_name: formData.companyName,
+                    service_type: formData.serviceType,
+                    delivery_time_guarantee: formData.deliveryTimeGuarantee,
+                    insurance_coverage: formData.insuranceCoverage
+                };
+            }
+
+            const payload = {
+                username: formData.email, // Use full email as unique username (avoid random numbers)
+                email: formData.email,
+                password: formData.password,
+                role: backendRole,
+                profile_data: profile_data,
+                verification_docs: {
+                    commercial_register_url: formData.commercialRegister,
+                    id_card_url: formData.ownerId || formData.commercialRegister // Simplified mapping
+                }
+            };
+
+            await authService.signup(payload);
+
+            setSuccessMsg(`Welcome to Maison Tissue! Your registration as a ${role} is complete. ${backendRole !== 'client' ? 'Account pending review.' : ''}`);
 
             // Auto close after 2 seconds
             setTimeout(() => {
@@ -176,8 +206,9 @@ const RegistrationModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                 setStep(1);
                 setRole(null);
                 setSuccessMsg('');
-                window.location.reload();
-            }, 2000);
+                // Redirect to login or refresh
+                if (onSwitchToLogin) onSwitchToLogin();
+            }, 3000);
         } catch (err) {
             setError(err.message || "Registration failed. Please try again.");
             console.error(err);
@@ -346,29 +377,29 @@ const RegistrationModal = ({ isOpen, onClose, onSwitchToLogin }) => {
 
                 {role === 'Couture House' && (
                     <div className="space-y-4">
-                        <FileInput name="commercialRegister" label="Commercial Register (PDF) *" />
-                        <FileInput name="portfolioPhotos" label="Portfolio Photos (min 5 high quality photos) *" />
+                        <FileInput name="commercialRegister" label="Commercial Register (PDF) *" onChange={handleChange} />
+                        <FileInput name="portfolioPhotos" label="Portfolio Photos (min 5 high quality photos) *" onChange={handleChange} />
                         <p className="text-xs text-gold/60 -mt-2 mb-2">⚡ IMPORTANT: Portfolio is the main criteria for Haute Couture validation.</p>
-                        <FileInput name="workshopPhoto" label="Workshop Photo *" />
-                        <FileInput name="ownerId" label="Owner ID *" />
+                        <FileInput name="workshopPhoto" label="Workshop Photo *" onChange={handleChange} />
+                        <FileInput name="ownerId" label="Owner ID *" onChange={handleChange} />
                     </div>
                 )}
 
                 {role === 'Fournisseur' && (
                     <div className="space-y-4">
-                        <FileInput name="commercialRegister" label="Commercial Register *" />
-                        <FileInput name="fabricQualityCert" label="Fabric Quality Certificate (if available)" required={false} />
-                        <FileInput name="fabricSamplePhotos" label="3 Fabric Sample Photos (high resolution) *" />
-                        <FileInput name="warehousePhoto" label="Warehouse Photo *" />
+                        <FileInput name="commercialRegister" label="Commercial Register *" onChange={handleChange} />
+                        <FileInput name="fabricQualityCert" label="Fabric Quality Certificate (if available)" required={false} onChange={handleChange} />
+                        <FileInput name="fabricSamplePhotos" label="3 Fabric Sample Photos (high resolution) *" onChange={handleChange} />
+                        <FileInput name="warehousePhoto" label="Warehouse Photo *" onChange={handleChange} />
                     </div>
                 )}
 
                 {role === 'Delivery' && (
                     <div className="space-y-4">
-                        <FileInput name="commercialRegister" label="Commercial Register *" />
-                        <FileInput name="insuranceDocument" label="Insurance Document *" />
-                        <FileInput name="vehiclePhotos" label="Vehicle Photos *" />
-                        <FileInput name="luxuryReference" label="Luxury goods reference (optional but strong)" required={false} />
+                        <FileInput name="commercialRegister" label="Commercial Register *" onChange={handleChange} />
+                        <FileInput name="insuranceDocument" label="Insurance Document *" onChange={handleChange} />
+                        <FileInput name="vehiclePhotos" label="Vehicle Photos *" onChange={handleChange} />
+                        <FileInput name="luxuryReference" label="Luxury goods reference (optional but strong)" required={false} onChange={handleChange} />
                     </div>
                 )}
             </div>
@@ -540,7 +571,7 @@ const Input = ({ label, name, type = "text", value, onChange }) => (
     </div>
 );
 
-const FileInput = ({ label, name, required = true }) => (
+const FileInput = ({ label, name, required = true, onChange }) => (
     <div className="flex flex-col gap-2">
         <label className="text-label flex justify-between">
             {label}
@@ -549,6 +580,7 @@ const FileInput = ({ label, name, required = true }) => (
         <input
             type="file"
             name={name}
+            onChange={onChange}
             className="block w-full text-sm text-ivory/70 file:mr-4 file:py-2 file:px-4 file:rounded-sm file:border-0 file:text-sm file:font-medium file:bg-gold/10 file:text-gold hover:file:bg-gold/20 transition-all focus:outline-none file:cursor-pointer"
             required={required}
         />

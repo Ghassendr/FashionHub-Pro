@@ -20,7 +20,7 @@ urlpatterns = [
     # Fournisseur / Supplier APIs
     path("api/", include("actors.fournisseur.urls")),
     # Core APIs (Authentication)
-    # path("api/auth/", include("core.auth.urls")),
+    path("api/auth/", include("core.auth.urls")),
     # JWT Token endpoints
     path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),

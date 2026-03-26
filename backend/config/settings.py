@@ -71,10 +71,16 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "fashionhub",
+        "USER": "admin",
+        "PASSWORD": "password",
+        "HOST": "localhost", # Running locally outside docker for now, or use docker service name if inside
+        "PORT": "5432",
     }
 }
+
+AUTH_USER_MODEL = 'core.User'
 
 AUTH_PASSWORD_VALIDATORS: list[dict] = []
 

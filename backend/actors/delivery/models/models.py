@@ -1,10 +1,28 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.conf import settings
 
 class Carrier(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='carrier_profile')
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='carrier_profile')
     company_name = models.CharField(max_length=255)
     contact_phone = models.CharField(max_length=50, blank=True)
+    
+    VERIFICATION_CHOICES = (
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('revision_requested', 'Revision Requested'),
+    )
+    verification_status = models.CharField(max_length=20, choices=VERIFICATION_CHOICES, default='pending')
+    
+    # Specific fields from user request
+    service_type = models.CharField(max_length=100, blank=True)
+    delivery_time_guarantee = models.CharField(max_length=100, blank=True)
+    insurance_coverage = models.CharField(max_length=255, blank=True)
+    
+    # Document Verification URLs
+    commercial_register_url = models.URLField(max_length=500, blank=True)
+    id_card_url = models.URLField(max_length=500, blank=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):

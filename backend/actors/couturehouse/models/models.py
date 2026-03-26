@@ -1,5 +1,28 @@
 from mongoengine import Document, EmbeddedDocument, fields
 from django.conf import settings
+from django.db import models as django_models
+
+class CoutureHouseProfile(django_models.Model):
+    user = django_models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=django_models.CASCADE, related_name='couture_house_profile')
+    house_name = django_models.CharField(max_length=255)
+    specialization = django_models.CharField(max_length=255, blank=True)
+    starting_price = django_models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    avg_production_time = django_models.CharField(max_length=100, blank=True)
+    
+    VERIFICATION_CHOICES = (
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('revision_requested', 'Revision Requested'),
+    )
+    verification_status = django_models.CharField(max_length=20, choices=VERIFICATION_CHOICES, default='pending')
+    
+    # Document Verification URLs
+    commercial_register_url = django_models.URLField(max_length=500, blank=True)
+    id_card_url = django_models.URLField(max_length=500, blank=True)
+    
+    def __str__(self):
+        return self.house_name
 
 class DesignMedia(EmbeddedDocument):
     """

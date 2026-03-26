@@ -28,7 +28,7 @@ export const authService = {
 
   // Login
   async login(email, password) {
-    const response = await fetch(`${API_URL}/login`, {
+    const response = await fetch(`${API_URL}/login/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -36,41 +36,36 @@ export const authService = {
 
     if (!response.ok) {
       const data = await response.json();
-      throw new Error(data.error || "Login failed");
+      throw new Error(data.detail || "Login failed");
     }
 
     const data = await response.json();
 
-    // Store token and user info
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("user_id", data.user.id);
-    localStorage.setItem("user_email", data.user.email);
-    localStorage.setItem("user_name", `${data.user.prenom} ${data.user.nom}`);
+    // Store token and user info (SimpleJWT returns access/refresh)
+    localStorage.setItem("token", data.access);
+    localStorage.setItem("refresh_token", data.refresh);
 
+    // Decode token to get role and status if needed, or use a separate profile call
+    // For now, let's assume we store what we get
     return data;
   },
 
   // Signup
-  async signup(formData) {
-    const response = await fetch(`${API_URL}/signup`, {
+  async signup(payload) {
+    const response = await fetch(`${API_URL}/register/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
       const data = await response.json();
-      throw new Error(data.error || "Registration failed");
+      // Handle Django Rest Framework error format (can be object or list)
+      const errorMsg = typeof data === 'object' ? Object.values(data).flat()[0] : "Registration failed";
+      throw new Error(errorMsg);
     }
 
-    const data = await response.json();
-
-    // Store token and user info
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("user_id", data.user.id);
-    localStorage.setItem("user_email", data.user.email);
-
-    return data;
+    return response.json();
   },
 
   // Verify token

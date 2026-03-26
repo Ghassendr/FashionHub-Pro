@@ -67,4 +67,24 @@ Le frontend communique avec le backend via `http://localhost:8000`. Les endpoint
 
 ---
 
+## 🗄️ Structure de la Base de Données (Schema)
+
+La plateforme utilise une architecture **1+4** (1 table User centralisée + 4 profils spécifiques).
+
+### 1. Noyau (Auth)
+*   **User** : `id`, `email` (login), `password`, `role` (client/pro), `account_status` (active/pending/approved).
+
+### 2. Profils Acteurs
+*   **Client** : `user_id`, `phone`, `address`.
+*   **Maison de Couture** : `user_id`, `house_name`, `specialization`, `starting_price`, `verification_status`, `docs_urls`.
+*   **Fournisseur** : `user_id`, `nomOrganization`, `typeProduct`, `specialites`, `city`, `pays`, `verification_status`.
+*   **Transporteur (Carrier)** : `user_id`, `company_name`, `service_type`, `insurance_coverage`.
+
+### 3. Logistique & Inventaire
+*   **Fabric** : `id`, `supplier_id`, `materiel`, `prix`, `quantite`, `color` (JSON), `image`.
+*   **Vehicle** : `id`, `carrier_id`, `registration_number`, `capacity_kg`, `type`.
+*   **Route** : `id`, `carrier_id`, `start/end_location`, `status`.
+
+---
+
 **Statut du Projet** : Phase 2 (API modulaire et reconstruction 3D) complétée. ✅

@@ -19,7 +19,7 @@ import {
   Gauge,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { authService } from "../services/authService";
+import { authService } from "../../services/authService";
 import { createDebugButton } from "../utils/debugBackend";
 import "./Dashboard.css";
 

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { X, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { authService } from '../../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 
 const LoginModal = ({ isOpen, onClose, onSwitchToRegister }) => {
+    const { login } = useAuth();
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -34,20 +35,18 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister }) => {
         try {
             setError('');
             setSuccessMsg('');
-            
-            await authService.login(formData.email, formData.password);
-            
-            setSuccessMsg("Logged in successfully!");
+
+            const userData = await login(formData.email, formData.password);
+
+            setSuccessMsg(`Welcome back, ${userData.role}!`);
 
             // Auto close after 1.5 seconds
             setTimeout(() => {
                 onClose();
-                // Reset form
                 setFormData({ email: '', password: '', rememberMe: false });
                 setSuccessMsg('');
                 setError('');
-                // Force reload or redirect to dashboard if needed
-                window.location.reload(); 
+                // AuthContext updates state, so no reload needed if components are reactive
             }, 1500);
         } catch (err) {
             setError(err.message || "Invalid email or password.");

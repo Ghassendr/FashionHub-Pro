@@ -1,22 +1,17 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, LogIn, User, LogOut } from 'lucide-react';
+import { Menu, X, LogIn, User, LogOut, ShieldCheck } from 'lucide-react';
 import RegistrationModal from '../Auth/RegistrationModal';
 import LoginModal from '../Auth/LoginModal';
-import { authService } from '../../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 
 const Navbar = () => {
+    const { user, logout, isAuthenticated, isAdmin, isLoginOpen, setIsLoginOpen, isRegisterOpen, setIsRegisterOpen } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
-    const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-    const [isLoginOpen, setIsLoginOpen] = useState(false);
     const location = useLocation();
-    
-    const isAuthenticated = authService.isAuthenticated();
-    const user = authService.getUserInfo();
 
     const handleLogout = () => {
-        authService.logout();
-        window.location.reload();
+        logout();
     };
 
     const isActive = (path) =>
@@ -57,22 +52,47 @@ const Navbar = () => {
                             <Link to="/" className={`text-[11px] tracking-luxury uppercase font-medium ${isActive('/')}`}>
                                 Portal
                             </Link>
-                            <Link to="/client/3d-measurements" className={`text-[11px] tracking-luxury uppercase font-medium ${isActive('/client/3d-measurements') || location.pathname.startsWith('/client') ? 'text-gold' : 'text-ivory/60 hover:text-gold transition-all duration-500'}`}>
-                                Client
-                            </Link>
-                            <Link to="/delivery" className={`text-[11px] tracking-luxury uppercase font-medium ${isActive('/delivery')}`}>
-                                Delivery
-                            </Link>
-                            <Link to="/couturehouse" className={`text-[11px] tracking-luxury uppercase font-medium ${location.pathname.startsWith('/couturehouse') ? 'text-gold' : 'text-ivory/60 hover:text-gold transition-all duration-500'}`}>
-                                Couture House
-                            </Link>
+
+                            {/* Role-Based Links */}
+                            {user?.role === 'client' && (
+                                <Link to="/client/3d-measurements" className={`text-[11px] tracking-luxury uppercase font-medium ${isActive('/client/3d-measurements') || location.pathname.startsWith('/client') ? 'text-gold' : 'text-ivory/60 hover:text-gold transition-all duration-500'}`}>
+                                    Client
+                                </Link>
+                            )}
+
+                            {user?.role === 'delivery' && (
+                                <Link to="/delivery" className={`text-[11px] tracking-luxury uppercase font-medium ${isActive('/delivery')}`}>
+                                    Delivery
+                                </Link>
+                            )}
+
+                            {user?.role === 'couture_house' && (
+                                <Link to="/couturehouse" className={`text-[11px] tracking-luxury uppercase font-medium ${location.pathname.startsWith('/couturehouse') ? 'text-gold' : 'text-ivory/60 hover:text-gold transition-all duration-500'}`}>
+                                    Couture House
+                                </Link>
+                            )}
+
+                            {user?.role === 'fournisseur' && (
+                                <Link to="/fournisseur/dashboard" className={`text-[11px] tracking-luxury uppercase font-medium ${location.pathname.startsWith('/fournisseur') ? 'text-gold' : 'text-ivory/60 hover:text-gold transition-all duration-500'}`}>
+                                    Supplier
+                                </Link>
+                            )}
+
+                            {isAdmin && (
+                                <Link to="/admin/review" className={`text-[11px] tracking-luxury uppercase font-gold font-bold flex items-center gap-1 ${isActive('/admin/review')}`}>
+                                    <ShieldCheck size={14} /> Admin
+                                </Link>
+                            )}
 
                             <div className="h-4 w-px bg-subtle ml-2"></div>
 
                             {isAuthenticated ? (
                                 <div className="flex items-center gap-6">
-                                    <div className="flex items-center gap-2 text-[11px] tracking-luxury uppercase text-gold font-medium">
-                                        <User size={14} /> {user.name}
+                                    <div className="flex flex-col items-end">
+                                        <div className="flex items-center gap-2 text-[11px] tracking-luxury uppercase text-gold font-medium">
+                                            <User size={14} /> {user.name || (user.email && user.email.split('@')[0]) || 'User'}
+                                        </div>
+                                        <span className="text-[9px] text-ivory/40 uppercase tracking-tighter">{user.role} • {user.status}</span>
                                     </div>
                                     <button
                                         onClick={handleLogout}
@@ -107,9 +127,28 @@ const Navbar = () => {
                     <div className="md:hidden absolute top-full left-0 w-full bg-noir/98 backdrop-blur-xl border-b border-subtle/30 animate-fade-in">
                         <div className="flex flex-col gap-1 p-8">
                             <Link to="/" className={`py-3 text-[11px] tracking-luxury uppercase font-medium ${isActive('/')}`} onClick={() => setIsOpen(false)}>Portal</Link>
-                            <Link to="/client/3d-measurements" className={`py-3 text-[11px] tracking-luxury uppercase font-medium ${location.pathname.startsWith('/client') ? 'text-gold' : 'text-ivory/60 hover:text-gold transition-all duration-500'}`} onClick={() => setIsOpen(false)}>Client</Link>
-                            <Link to="/delivery" className={`py-3 text-[11px] tracking-luxury uppercase font-medium ${isActive('/delivery')}`} onClick={() => setIsOpen(false)}>Delivery</Link>
-                            <Link to="/couturehouse" className={`py-3 text-[11px] tracking-luxury uppercase font-medium ${location.pathname.startsWith('/couturehouse') ? 'text-gold' : 'text-ivory/60 hover:text-gold transition-all duration-500'}`} onClick={() => setIsOpen(false)}>Couture House</Link>
+                            
+                            {user?.role === 'client' && (
+                                <Link to="/client/3d-measurements" className={`py-3 text-[11px] tracking-luxury uppercase font-medium ${location.pathname.startsWith('/client') ? 'text-gold' : 'text-ivory/60 hover:text-gold transition-all duration-500'}`} onClick={() => setIsOpen(false)}>Client</Link>
+                            )}
+                            
+                            {user?.role === 'delivery' && (
+                                <Link to="/delivery" className={`py-3 text-[11px] tracking-luxury uppercase font-medium ${isActive('/delivery')}`} onClick={() => setIsOpen(false)}>Delivery</Link>
+                            )}
+                            
+                            {user?.role === 'couture_house' && (
+                                <Link to="/couturehouse" className={`py-3 text-[11px] tracking-luxury uppercase font-medium ${location.pathname.startsWith('/couturehouse') ? 'text-gold' : 'text-ivory/60 hover:text-gold transition-all duration-500'}`} onClick={() => setIsOpen(false)}>Couture House</Link>
+                            )}
+
+                            {user?.role === 'fournisseur' && (
+                                <Link to="/fournisseur/dashboard" className={`py-3 text-[11px] tracking-luxury uppercase font-medium ${location.pathname.startsWith('/fournisseur') ? 'text-gold' : 'text-ivory/60 hover:text-gold transition-all duration-500'}`} onClick={() => setIsOpen(false)}>Supplier</Link>
+                            )}
+
+                            {isAdmin && (
+                                <Link to="/admin/review" className={`py-3 text-[11px] tracking-luxury uppercase font-gold font-bold flex items-center gap-1 ${isActive('/admin/review')}`} onClick={() => setIsOpen(false)}>
+                                    <ShieldCheck size={14} /> Admin
+                                </Link>
+                            )}
                             <div className="divider-gold mt-6 mb-4 mx-0"></div>
                             {isAuthenticated ? (
                                 <div className="flex flex-col gap-4">

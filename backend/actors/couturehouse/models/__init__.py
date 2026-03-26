@@ -1,1 +1,1 @@
-from .models import Design, DesignMedia
+from .models import Design, DesignMedia, CoutureHouseProfile

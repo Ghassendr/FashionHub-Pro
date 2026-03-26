@@ -18,3 +18,4 @@ onnxruntime
 mongoengine
 django-rest-framework-mongoengine
 pymongo
+psycopg2-binary

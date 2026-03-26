@@ -1,8 +1,21 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Sparkles, Ruler, TrendingUp, Shield, Eye, UserPlus } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const Home = () => {
+    const { isAuthenticated, user, setIsRegisterOpen } = useAuth();
+    const navigate = useNavigate();
+
+    const handleProtectedAction = (e, targetPath) => {
+        e.preventDefault();
+        if (isAuthenticated) {
+            navigate(targetPath);
+        } else {
+            setIsRegisterOpen(true);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-noir">
             {/* Hero — Full-bleed cinematic */}
@@ -30,9 +43,12 @@ const Home = () => {
                         A centralized platform blending precision 3D body mapping with intelligent logistics — crafted for the world's most discerning fashion houses.
                     </p>
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                        <Link to="/client/onboarding" className="btn btn-primary">
+                        <button 
+                            onClick={(e) => handleProtectedAction(e, '/client/onboarding')} 
+                            className="btn btn-primary"
+                        >
                             Explore Collection <ArrowRight size={16} />
-                        </Link>
+                        </button>
                     </div>
                 </div>
 
@@ -58,9 +74,12 @@ const Home = () => {
                             <p className="text-ivory/50 leading-relaxed mb-8 max-w-lg">
                                 Our platform seamlessly integrates AI-powered 3D body measurement technology to simulate ergonomic fits for the manufacturing floor. Every measurement, every contour — captured with couture precision.
                             </p>
-                            <Link to="/client/3d-measurements" className="btn btn-secondary inline-flex">
+                            <button 
+                                onClick={(e) => handleProtectedAction(e, '/client/3d-measurements')} 
+                                className="btn btn-secondary inline-flex"
+                            >
                                 Try 3D Measurements <ArrowRight size={14} />
-                            </Link>
+                            </button>
                         </div>
                         <div className="relative">
                             <div className="aspect-[4/5] bg-muted border border-subtle/50 overflow-hidden">
@@ -147,9 +166,12 @@ const Home = () => {
                             Experience a bespoke journey tailored exclusively to your vision. From initial measurements to final delivery — every detail, perfected.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4">
-                            <Link to="/client/onboarding" className="btn btn-primary">
+                            <button 
+                                onClick={(e) => handleProtectedAction(e, '/client/onboarding')} 
+                                className="btn btn-primary"
+                            >
                                 Request Appointment <ArrowRight size={16} />
-                            </Link>
+                            </button>
                         </div>
                     </div>
                 </div>

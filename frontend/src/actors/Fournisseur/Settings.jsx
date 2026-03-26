@@ -11,7 +11,7 @@ import {
   CheckCircle,
   X,
 } from "lucide-react";
-import { authService } from "../services/authService";
+import { authService } from "../../services/authService";
 import "./Settings.css"; // Link new CSS file
 
 function Settings() {
