@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import Layout from './shared/components/Layout/Layout';
 import Home from './shared/pages/Home';
 import ProtectedRoute from './shared/components/Auth/ProtectedRoute'; // Added
@@ -33,32 +33,45 @@ function App() {
         <Route path="profile/:userId?" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
 
         {/* Client Domain - Restricted to Clients */}
-        <Route path="client" element={<ProtectedRoute allowedRoles={['client']} />}>
-          <Route index element={<Navigate to="3d-measurements" replace />} />
-          <Route path="onboarding" element={<Onboarding />} />
-          <Route path="3d-measurements" element={<BodyMeasurements />} />
+        <Route path="client" element={<ProtectedRoute allowedRoles={['client']}><Outlet /></ProtectedRoute>}>
+          <Route path="client" element={<ProtectedRoute allowedRoles={['client']} />}>
+            <Route index element={<Navigate to="3d-measurements" replace />} />
+            <Route path="onboarding" element={<Onboarding />} />
+            <Route path="3d-measurements" element={<BodyMeasurements />} />
+          </Route>
         </Route>
-      </Route>
 
-      {/* Specialty Dashboards - No Public Navbar */}
-      <Route path="couturehouse" element={<ProtectedRoute allowedRoles={['couture_house']} />}>
-        <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard" element={<CoutureHouseDashboard />} />
-        <Route path="create" element={<CreateDesign />} />
-      </Route>
+        {/* Couture House Domain - Restricted to Couture Houses */}
+        <Route path="couturehouse" element={<ProtectedRoute allowedRoles={['couture_house']}><Outlet /></ProtectedRoute>}>
+          <Route index element={<ActivityDashboard />} />
+          <Route path="designs" element={<CoutureHouseDashboard />} />
+          <Route path="create" element={<CreateDesign />} />
+        </Route>
+        {/* Specialty Dashboards - No Public Navbar */}
+        <Route path="couturehouse" element={<ProtectedRoute allowedRoles={['couture_house']} />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<CoutureHouseDashboard />} />
+          <Route path="create" element={<CreateDesign />} />
+        </Route>
 
-      <Route path="fournisseur" element={<ProtectedRoute allowedRoles={['fournisseur']} />}>
-        <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard" element={<FournisseurDashboard />} />
-        <Route path="settings" element={<FournisseurSettings />} />
-      </Route>
+        {/* Fournisseur Domain - Restricted to Suppliers */}
+        <Route path="fournisseur" element={<ProtectedRoute allowedRoles={['fournisseur']}><Outlet /></ProtectedRoute>}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<FournisseurDashboard />} />
+          <Route path="settings" element={<FournisseurSettings />} />
+        </Route>
+        <Route path="fournisseur" element={<ProtectedRoute allowedRoles={['fournisseur']} />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<FournisseurDashboard />} />
+          <Route path="settings" element={<FournisseurSettings />} />
+        </Route>
 
-      <Route path="admin/review" element={<ProtectedRoute allowedRoles={['admin']} />}>
-        <Route index element={<ReviewDashboard />} />
-      </Route>
+        <Route path="admin/review" element={<ProtectedRoute allowedRoles={['admin']} />}>
+          <Route index element={<ReviewDashboard />} />
+        </Route>
 
-      {/* Fallback */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

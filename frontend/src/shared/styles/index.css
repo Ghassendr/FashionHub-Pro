@@ -1,10 +1,50 @@
 @import "tailwindcss";
-@config "../../../tailwind.config.js";
+
+@theme {
+  --color-noir: #0A0A0B;
+  --color-ivory: #F5F5F0;
+  --color-gold: #C9A84C;
+  --color-gold-light: #D4BA7A;
+  --color-gold-dark: #A88B3D;
+  --color-gold-muted: rgba(201, 168, 76, 0.15);
+  --color-surface: #18181C;
+  --color-muted: #141416;
+  --color-subtle: #2A2A2E;
+  --color-blush: #D4A0A0;
+  --color-emerald: #2D5A4A;
+  --color-gold-deep: #8a7a5a;
+  --color-divider-line: #1e1e18;
+  --color-border-dim: #3a3a2e;
+  --color-noir-rich: #0d0d0b;
+  --color-cream: #f0ead6;
+  --color-champagne: #E8D5B7;
+
+  --font-serif: "Cormorant Garamond", serif;
+  --font-sans: Montserrat, system-ui, sans-serif;
+  --font-display: "Cormorant Garamond", serif;
+
+  --letter-spacing-luxury: 0.25em;
+  --letter-spacing-editorial: 0.15em;
+
+  --shadow-glow-gold: 0 0 30px rgba(201, 168, 76, 0.1);
+  --shadow-editorial: 0 25px 60px -15px rgba(0, 0, 0, 0.5);
+  --shadow-card: 0 4px 30px rgba(0, 0, 0, 0.3);
+  --shadow-soft: 0 10px 40px -10px rgba(0,0,0,0.4);
+
+  --animate-fade-in: fadeIn 0.8s ease-out forwards;
+  --animate-fade-up: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-slide-up: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-shimmer: shimmer 2.5s ease-in-out infinite;
+  --animate-parallax: parallax 20s linear infinite;
+  --animate-glow: glow 3s ease-in-out infinite alternate;
+  --animate-spin-slow: spin 8s linear infinite;
+}
 
 @layer base {
   body {
     @apply font-sans antialiased bg-noir text-ivory;
     margin: 0;
+    padding-top: 60px; /* Fixed Navbar Offset */
     line-height: 1.7;
     cursor: url('/needle-cursor.svg') 6 25, auto;
   }
@@ -65,9 +105,39 @@
   }
 }
 
+@utility tracking-luxury {
+  letter-spacing: 0.25em;
+}
+
+@utility tracking-editorial {
+  letter-spacing: 0.15em;
+}
+
+@utility tracking-widest {
+  letter-spacing: 0.1em;
+}
+
+@utility border-luxury {
+  border: 0.5px solid rgba(201, 168, 76, 0.18);
+}
+
 @layer components {
+  .container-editorial {
+    @apply w-full max-w-[1100px] mx-auto px-12 box-border overflow-hidden;
+  }
+
+  .section-rhythm {
+    @apply py-[100px];
+  }
+
   .wrapper {
-    @apply w-full px-6 sm:px-8 lg:px-16;
+    width: 100%;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 40px;
+    padding-right: 40px;
+    box-sizing: border-box;
   }
 
   .btn {
@@ -95,54 +165,185 @@
     @apply border-gold/30 shadow-glow-gold;
   }
 
+  .btn-couture-cta {
+    @apply relative overflow-hidden inline-flex items-center justify-center px-8 py-4 font-sans text-[11px] font-medium tracking-luxury uppercase transition-all duration-500 border border-gold text-gold bg-transparent;
+    z-index: 1;
+  }
+
+  .btn-couture-cta::before {
+    content: '';
+    @apply absolute inset-0 bg-gold;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+    z-index: -1;
+  }
+
+  .btn-couture-cta:hover {
+    @apply text-noir;
+  }
+
+  .btn-couture-cta:hover::before {
+    transform: scaleX(1);
+  }
+
   .input-couture {
-    @apply w-full px-4 py-3 bg-subtle/50 border border-subtle text-ivory placeholder-ivory/30 rounded-none text-sm tracking-wide transition-all duration-300 focus:outline-none focus:border-gold focus:shadow-glow-gold font-sans;
+    @apply w-full px-4 py-3 bg-surface border border-luxury text-ivory placeholder-ivory/20 rounded-none text-[12px] tracking-wide transition-all duration-300 focus:outline-none focus:border-gold/50 font-sans;
   }
 
   .divider-gold {
-    @apply w-16 h-px bg-gold mx-auto;
+    @apply w-full h-[0.5px] bg-gold/20 mx-auto;
   }
 
   .text-label {
-    @apply text-[11px] tracking-luxury uppercase text-ivory/50 font-sans font-medium;
+    @apply text-[9px] tracking-[0.25em] uppercase text-gold/50 font-sans font-light;
+  }
+
+  .couture-label {
+    @apply text-[8px] tracking-[0.3em] uppercase text-gold/40 font-sans font-medium mb-1.5 block;
+  }
+
+  .couture-input-underline {
+    @apply w-full bg-transparent border-b border-gold/20 py-2.5 text-xs text-ivory/90 tracking-wide transition-all duration-500 focus:outline-none focus:border-gold shadow-none rounded-none;
+  }
+
+  .couture-input-underline:focus {
+    @apply border-gold shadow-[0_1px_0_0_rgba(201,168,76,0.3)];
+  }
+
+  .couture-group-title {
+    @apply font-serif text-[13px] tracking-[0.15em] text-gold/80 mb-6 flex items-center gap-4 uppercase;
+  }
+
+  .couture-group-title::after {
+    content: '';
+    @apply h-[0.5px] flex-grow bg-gold/10;
+  }
+
+  /* 精密 Refinement Classes */
+  .couture-label-refined {
+    @apply text-[9px] uppercase tracking-[0.15em] text-[#8a7a5a] font-sans font-medium mb-3 block leading-none;
+  }
+
+  .couture-underline-refined {
+    @apply w-full bg-transparent border-b border-gold/15 py-1 text-base text-ivory/90 tracking-wide transition-all duration-500 focus:outline-none focus:border-gold/60 shadow-none rounded-none font-sans font-light placeholder-gold/20;
+  }
+
+  .couture-underline-refined:focus {
+    @apply border-gold shadow-[0_1px_0_0_rgba(201,168,76,0.2)];
+  }
+
+  .btn-couture-pulse {
+    @apply relative w-full flex items-center justify-center gap-4 py-6 border border-gold/40 bg-[#0d0d0b] text-gold font-sans text-[11px] font-semibold tracking-[0.3em] uppercase transition-all duration-700 overflow-hidden;
+  }
+
+  .btn-couture-pulse:hover {
+    @apply bg-gold text-noir border-gold;
+  }
+
+  .divider-spectral {
+    @apply w-full h-[1px] bg-[#2a2a22] my-8;
+  }
+
+  /* Phase 2: Refined Sidebar UI */
+  .label-v2 {
+    @apply text-[10px] uppercase tracking-[0.15em] text-[#8a7a5a] font-sans font-medium mb-1.5 block leading-tight;
+  }
+
+  .value-v2 {
+    @apply text-[15px] text-[#f0ead6] font-sans font-light leading-snug;
+  }
+
+  .input-underline-v2 {
+    @apply w-full bg-transparent border-b border-[#3a3a2e] pb-1.5 text-[15px] text-[#f0ead6] font-light transition-all duration-300 focus:outline-none focus:border-gold placeholder:text-gold/20;
+  }
+
+  .divider-luxury-v2 {
+    @apply w-full h-[1px] bg-[#1e1e18] my-5;
+  }
+
+  .upload-zone-v2 {
+    @apply w-full border border-dashed border-[#3a3a2e] rounded-[4px] p-6 flex flex-col items-center justify-center transition-all duration-500 hover:border-gold hover:shadow-[0_0_20px_rgba(201,169,110,0.05)];
+  }
+
+  .btn-luxury-cta {
+    @apply w-full h-[44px] flex items-center justify-center gap-4 border border-gold bg-transparent text-gold font-sans text-[12px] font-semibold tracking-[0.2em] uppercase transition-all duration-300;
+  }
+
+  .btn-luxury-cta:hover {
+    @apply bg-gold text-[#0a0a08];
+  }
+
+  .btn-luxury-cta:disabled {
+    @apply opacity-40 cursor-not-allowed;
   }
 }
 
-/* Animations */
+/* Base Keyframes */
 @keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(40px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes shimmer {
-
-  0%,
-  100% {
-    background-position: -200% center;
-  }
-
-  50% {
-    background-position: 200% center;
-  }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.8s ease-out forwards;
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+@keyframes parallax {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-20px); }
+}
+
+@keyframes glow {
+  0% { box-shadow: 0 0 20px rgba(198, 167, 94, 0.1); }
+  100% { box-shadow: 0 0 40px rgba(198, 167, 94, 0.25); }
+}
+
+@keyframes dashArray {
   to {
-    opacity: 1;
+    stroke-dashoffset: 0;
   }
+}
+
+@keyframes dashRotate {
+  from { stroke-dashoffset: 24; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(2deg); }
+}
+
+.animate-dash-slow {
+  stroke-dasharray: 8 4;
+  animation: dashRotate 3s linear infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.perspective-1000 {
+  perspective: 1000px;
 }

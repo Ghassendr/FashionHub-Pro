@@ -47,7 +47,7 @@ function Settings() {
     try {
       setLoading(true);
       const response = await fetch(
-        `http://localhost:5000/api/auth/user/${userId}`,
+        `http://localhost:8000/api/auth/user/${userId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -77,7 +77,7 @@ function Settings() {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/auth/user/${userId}/update`,
+        `http://localhost:8000/api/auth/user/${userId}/update`,
         {
           method: "PUT",
           headers: {

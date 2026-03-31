@@ -1,8 +1,7 @@
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import Viewer3D from '../components/Viewer3D';
-import Plot from 'react-plotly.js';
-import { UploadCloud, CheckCircle, AlertCircle, Maximize, Activity, Navigation, BarChart3, Ruler, ArrowRight } from 'lucide-react';
+import { UploadCloud, Activity, Ruler, ArrowRight } from 'lucide-react';
 import '../../../shared/styles/App.css';
 
 function BodyMeasurements() {
@@ -58,25 +57,18 @@ function BodyMeasurements() {
         try {
             const response = await axios.post(`${API_BASE}/api/client/videos/process`, data, { timeout: 300000 });
             const resultData = response.data;
-            console.log("Full Upload Response:", resultData);
-
-            // Check if backend returned an error status
             if (resultData?.status === 'error') {
-                console.error('Pipeline Error:', resultData.error);
                 alert('Pipeline Error: ' + (resultData.error || 'Unknown error'));
                 setLoading(false);
                 return;
             }
-
             if (resultData && resultData.mesh_url && !resultData.mesh_url.startsWith('http')) {
                 resultData.mesh_url = `${API_BASE}${resultData.mesh_url}?t=${Date.now()}`;
             }
-            console.log("Setting BodyMeasurements Result State:", resultData);
             setResult(resultData);
             setActiveTab('viewer');
         } catch (error) {
-            console.error('API Error:', error);
-            const msg = error.response?.data?.error || error.message || 'Backend inaccessible. Vérifiez que le serveur tourne sur le port 8000.';
+            const msg = error.response?.data?.error || error.message || 'Error occurred during processing.';
             alert('Erreur: ' + msg);
         } finally {
             setLoading(false);
@@ -85,13 +77,13 @@ function BodyMeasurements() {
 
     // Render Helpers
     const renderMeasurementItem = (m) => (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-subtle/30 last:border-0" key={m.key || m.name}>
-            <span className="text-sm text-ivory/70">{m.name}</span>
-            <div className="flex items-center gap-4 mt-2 sm:mt-0">
-                <span className="font-display font-bold text-gold truncate w-16 text-right cursor-default" title={`${m.value_cm} cm`}>{m.value_cm} cm</span>
-                <div className="w-20 h-1 bg-subtle overflow-hidden shrink-0" title={`Confidence: ${Math.round((m.confidence || 0.8) * 100)}%`}>
-                    <div
-                        className={`h-full ${m.confidence > 0.8 ? 'bg-emerald' : m.confidence > 0.5 ? 'bg-gold' : 'bg-blush'}`}
+        <div className="flex items-center justify-between py-4 border-b border-gold/5 group hover:bg-gold/[0.01] transition-colors px-1" key={m.key || m.name}>
+            <span className="text-[10px] uppercase tracking-[0.2em] text-ivory/50 font-light">{m.name}</span>
+            <div className="flex items-center gap-6">
+                <span className="text-sm font-serif text-gold tracking-wide">{m.value_cm} <span className="text-[9px] uppercase opacity-40 ml-0.5">cm</span></span>
+                <div className="w-16 h-[1px] bg-gold/10 relative">
+                    <div 
+                        className={`absolute inset-y-0 left-0 ${m.confidence > 0.8 ? 'bg-gold' : 'bg-gold/40'}`}
                         style={{ width: `${(m.confidence || 0.8) * 100}%` }}
                     ></div>
                 </div>
@@ -100,367 +92,286 @@ function BodyMeasurements() {
     );
 
     return (
-        <div className="min-h-[calc(100vh-5rem)] bg-noir pt-24 pb-8 relative">
-            {/* Background Effects */}
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gold/3 rounded-full blur-[120px] pointer-events-none"></div>
-            <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-gold/2 rounded-full blur-[150px] pointer-events-none"></div>
-
-            <main className="wrapper relative z-10 animate-fade-in flex flex-col lg:flex-row gap-8">
-                {/* Sidebar */}
-                <aside className="w-full lg:w-[380px] shrink-0 space-y-6">
-                    {/* Header Card */}
-                    <div className="bg-muted border border-subtle/50 p-8 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-gold/10 rounded-full blur-2xl -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-700"></div>
-                        <h1 className="text-2xl font-display font-bold mb-2 tracking-tight relative z-10 flex items-center gap-3 text-ivory">
-                            <Activity className="text-gold" size={24} /> 3D Body Scan
-                        </h1>
-                        <p className="text-ivory/40 font-light relative z-10 text-sm">Create your AI-powered 3D measurement profile for a perfect fit.</p>
-                    </div>
-
-                    {/* Upload Card */}
-                    <div className="bg-muted border border-subtle/50 p-6">
-                        <h2 className="text-label text-gold mb-4 flex items-center gap-2">
-                            <UploadCloud size={14} /> Video Upload
-                        </h2>
-
-                        <div
-                            className={`border border-dashed p-8 text-center cursor-pointer transition-all duration-500 ${file ? 'border-gold/50 bg-gold/5' : 'border-subtle hover:border-gold/30 hover:bg-subtle/50'}`}
-                            onClick={() => fileInputRef.current.click()}
-                            onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-gold/50', 'bg-gold/5'); }}
-                            onDragLeave={(e) => e.currentTarget.classList.remove('border-gold/50', 'bg-gold/5')}
-                            onDrop={(e) => {
-                                e.preventDefault();
-                                e.currentTarget.classList.remove('border-gold/50', 'bg-gold/5');
-                                if (e.dataTransfer.files.length) setFile(e.dataTransfer.files[0]);
-                            }}
-                        >
-                            {file ? (
-                                <div className="flex flex-col items-center animate-fade-in">
-                                    <CheckCircle className="text-gold mb-3" size={24} />
-                                    <p className="text-sm text-ivory truncate w-full px-4">{file.name}</p>
-                                    <p className="text-[10px] tracking-luxury uppercase text-gold/60 mt-2">Ready — Click "Analyze Body Measurements" below</p>
-                                </div>
-                            ) : (
-                                <div className="flex flex-col items-center">
-                                    <UploadCloud size={24} className="text-ivory/20 mb-3" />
-                                    <p className="text-sm text-ivory/50">Drag & drop your file here</p>
-                                    <p className="text-xs text-ivory/25 mt-1">or click to browse</p>
-                                </div>
-                            )}
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleFileChange}
-                                accept="video/*"
-                                hidden
-                            />
+        <div className="min-h-screen bg-noir text-ivory font-sans pt-28 pb-12 transition-all duration-700">
+            <div className="mx-auto w-full max-w-[1920px] px-8">
+                {/* Dashboard Stats / Pipeline Info */}
+                <div className="flex items-center justify-between mb-8 pb-6 border-b border-gold/10">
+                    <div className="flex items-center gap-10">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] tracking-luxury text-gold font-semibold mb-1 uppercase">Pipeline Status</span>
+                            <div className="flex items-center gap-3">
+                                <div className="w-2 h-2 rounded-full bg-gold animate-pulse"></div>
+                                <span className="text-sm font-light text-ivory/80 uppercase tracking-widest">Active Studio Analysis</span>
+                            </div>
                         </div>
                     </div>
+                    <div className="flex items-center gap-4">
+                        <div className="text-right">
+                           <span className="text-[10px] tracking-luxury text-ivory/30 block mb-1 uppercase">Dernière mise à jour</span>
+                           <span className="text-xs font-serif italic text-ivory/60">Aujourd'hui, 31 Mars 2026</span>
+                        </div>
+                    </div>
+                </div>
 
-                    {/* Config Card */}
-                    <div className="bg-muted border border-subtle/50 p-6">
-                        <h2 className="text-label text-gold mb-5 flex items-center gap-2">
-                            <BarChart3 size={14} /> Processing Config
-                        </h2>
-
+                <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-x-12 items-start">
+                    {/* Left Panel: Sidebar - Phase 2 Refined UI */}
+                    <aside className="space-y-[18px] animate-fade-up pl-[20px] pr-[16px] bg-[#0d0d0b] border-r border-gold/5 py-12 min-h-screen max-w-[260px] w-full">
+                        {/* Section 1: Capture */}
                         <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-label block mb-2">Height (cm)</label>
-                                    <input type="number" className="input-couture" id="heightInput"
-                                        value={formData.height} onChange={handleInputChange} min="100" max="250" step="0.1" />
-                                </div>
-                                <div>
-                                    <label className="text-label block mb-2">Weight (kg)</label>
-                                    <input type="number" className="input-couture" id="weightInput"
-                                        value={formData.weight} onChange={handleInputChange} min="30" max="200" step="0.1" />
+                            <label className="label-v2">Capture Source</label>
+                            <div 
+                                onClick={() => fileInputRef.current?.click()}
+                                className="upload-zone-v2 group cursor-pointer"
+                            >
+                                <input 
+                                    type="file" 
+                                    ref={fileInputRef} 
+                                    className="hidden" 
+                                    onChange={handleFileChange} 
+                                    accept="video/*"
+                                />
+
+                                <div className="text-center">
+                                    <UploadCloud size={20} strokeWidth={1} className="text-gold/40 group-hover:text-gold transition-colors duration-500 mb-2 mx-auto" />
+                                    <span className="text-[9px] tracking-[0.15em] text-ivory/30 uppercase group-hover:text-gold/70 transition-colors duration-500 font-light">
+                                        {file ? file.name : "Import Capture"}
+                                    </span>
                                 </div>
                             </div>
+                        </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-label block mb-2">Age</label>
-                                    <input type="number" className="input-couture" id="ageInput"
-                                        value={formData.age} onChange={handleInputChange} placeholder="Ex: 35" min="10" max="100" />
+                        <div className="divider-luxury-v2"></div>
+
+                        {/* Section 2: Biométrie */}
+                        <div className="space-y-[18px]">
+                            <h3 className="couture-group-title !text-gold/40 !text-[9px]">Biométrie</h3>
+                            
+                            <div className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <label className="label-v2">Taille (cm)</label>
+                                    <input 
+                                        type="number" 
+                                        id="heightInput"
+                                        placeholder="—"
+                                        value={formData.height} 
+                                        onChange={handleInputChange}
+                                        className="input-underline-v2" 
+                                    />
                                 </div>
-                                <div>
-                                    <label className="text-label block mb-2">Gender</label>
-                                    <select className="input-couture cursor-pointer" id="genderInput"
-                                        value={formData.gender} onChange={handleInputChange}>
-                                        <option value="men">Men</option>
-                                        <option value="women">Women</option>
+                                
+                                <div className="space-y-1.5">
+                                    <label className="label-v2">Poids (kg)</label>
+                                    <input 
+                                        type="number" 
+                                        id="weightInput"
+                                        placeholder="—"
+                                        value={formData.weight} 
+                                        onChange={handleInputChange}
+                                        className="input-underline-v2" 
+                                    />
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="label-v2">Âge</label>
+                                    <input 
+                                        type="number" 
+                                        id="ageInput"
+                                        placeholder="—"
+                                        value={formData.age} 
+                                        onChange={handleInputChange}
+                                        className="input-underline-v2" 
+                                    />
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="label-v2">Sexe</label>
+                                    <select 
+                                        id="genderInput"
+                                        value={formData.gender} 
+                                        onChange={handleInputChange}
+                                        className="input-underline-v2 appearance-none cursor-pointer"
+                                    >
+                                        <option value="men" className="bg-[#0d0d0b]">Homme</option>
+                                        <option value="women" className="bg-[#0d0d0b]">Femme</option>
                                     </select>
                                 </div>
                             </div>
-
-                            <div>
-                                <label className="text-label block mb-2">AI Preference Mode</label>
-                                <select className="input-couture cursor-pointer" id="cutInput"
-                                    value={formData.cut} onChange={handleInputChange}>
-                                    <option value="">Automatic (Recommended)</option>
-                                    <option value="ajusté">Slim Fit</option>
-                                    <option value="normal">Regular Fit</option>
-                                    <option value="large">Loose Fit</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="text-label block mb-2">Analysis Precision</label>
-                                <select className="input-couture cursor-pointer" id="qualityInput"
-                                    value={formData.quality} onChange={handleInputChange}>
-                                    <option value="fast">Fast (36 points)</option>
-                                    <option value="balanced">Balanced (72 points)</option>
-                                    <option value="high">High Detail (120 points)</option>
-                                </select>
-                            </div>
                         </div>
-                    </div>
 
-                    <button
-                        className={`w-full py-4 font-sans text-sm font-medium tracking-luxury uppercase transition-all duration-500 flex items-center justify-center gap-3 border ${(!file || loading) ? 'bg-subtle/50 text-ivory/20 border-subtle cursor-not-allowed' : 'bg-gold text-noir border-gold hover:bg-gold-light hover:shadow-glow-gold'}`}
-                        onClick={handleSubmit}
-                        disabled={!file || loading}
-                    >
-                        {loading ? (
-                            <><span className="w-4 h-4 border-2 border-noir/30 border-t-noir rounded-full animate-spin"></span> Processing...</>
-                        ) : (
-                            <><Activity size={16} /> Analyze Body Measurements</>
-                        )}
-                    </button>
+                        <div className="divider-luxury-v2"></div>
 
-                    {/* Quality Score */}
-                    {result && (
-                        <div className="bg-muted border border-subtle/50 p-6 mt-6">
-                            <h2 className="text-label text-gold mb-4 border-b border-subtle/30 pb-3">Analysis Quality</h2>
-                            <div className="flex justify-center -mt-2">
-                                <Plot
-                                    data={[{
-                                        type: "indicator",
-                                        mode: "gauge+number",
-                                        value: (result.quality_score || 0) * 100,
-                                        gauge: {
-                                            axis: { range: [0, 100], tickwidth: 1, tickcolor: "transparent" },
-                                            bar: { color: "#C6A75E" },
-                                            bgcolor: "#1A1A1A",
-                                            borderwidth: 0,
-                                            bordercolor: "transparent",
-                                            steps: [
-                                                { range: [0, 50], color: "#2A1A1A" },
-                                                { range: [50, 75], color: "#2A2A1A" },
-                                                { range: [75, 100], color: "#1A2A1A" }
-                                            ]
-                                        }
-                                    }]}
-                                    layout={{
-                                        width: 260,
-                                        height: 180,
-                                        margin: { t: 35, b: 0, l: 25, r: 25 },
-                                        paper_bgcolor: "rgba(0,0,0,0)",
-                                        font: { color: '#F5F5F0', family: "Inter, sans-serif" }
-                                    }}
-                                    config={{ responsive: true, displayModeBar: false }}
-                                />
-                            </div>
-                        </div>
-                    )}
-                </aside>
-
-                {/* Results Area */}
-                <section className="flex-grow flex flex-col h-full overflow-hidden">
-                    {result ? (
-                        <div className="flex flex-col h-full animate-fade-in">
-                            {/* Tabs Navigation */}
-                            <div className="flex overflow-x-auto gap-0 mb-6 border-b border-subtle/30 shrink-0">
-                                {[
-                                    { id: 'viewer', label: '3D Match' },
-                                    { id: 'measurements', label: 'Raw Data' },
-                                    { id: 'morphology', label: 'Morphology' },
-                                    { id: 'recommendations', label: 'AI Recs' },
-                                    { id: 'charts', label: 'Analytics' }
-                                ].map(tab => (
-                                    <button
-                                        key={tab.id}
-                                        className={`px-6 py-3 text-[11px] tracking-luxury uppercase font-medium transition-all duration-500 whitespace-nowrap border-b-2 ${activeTab === tab.id ? 'text-gold border-gold' : 'text-ivory/30 border-transparent hover:text-ivory/60'}`}
-                                        onClick={() => setActiveTab(tab.id)}
+                        {/* Section 3: Analyse */}
+                        <div className="space-y-[18px]">
+                            <h3 className="couture-group-title !text-gold/40 !text-[9px]">Analyse</h3>
+                            
+                            <div className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <label className="label-v2">Mode IA</label>
+                                    <select 
+                                        id="cutInput"
+                                        value={formData.cut} 
+                                        onChange={handleInputChange}
+                                        className="input-underline-v2 appearance-none cursor-pointer"
                                     >
-                                        {tab.label}
-                                    </button>
-                                ))}
+                                        <option value="" className="bg-[#0d0d0b]">Automatique</option>
+                                        <option value="ajusté" className="bg-[#0d0d0b]">Slim Fit</option>
+                                        <option value="normal" className="bg-[#0d0d0b]">Regular Fit</option>
+                                    </select>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="label-v2">Précision</label>
+                                    <select 
+                                        id="qualityInput"
+                                        value={formData.quality} 
+                                        onChange={handleInputChange}
+                                        className="input-underline-v2 appearance-none cursor-pointer"
+                                    >
+                                        <option value="balanced" className="bg-[#0d0d0b]">Normal</option>
+                                        <option value="high" className="bg-[#0d0d0b]">HD Analysis</option>
+                                    </select>
+                                </div>
                             </div>
+                        </div>
 
-                            {/* Tab Content Container */}
-                            <div className="flex-grow bg-muted border border-subtle/30 overflow-hidden relative min-h-[700px]">
-
-                                <div className={`absolute inset-0 transition-opacity duration-500 ${activeTab === 'viewer' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                                    <div className="w-full h-full bg-noir">
-                                        <Viewer3D url={result.mesh_url} />
+                        <button 
+                            onClick={handleSubmit}
+                            disabled={!file || loading}
+                            className="btn-luxury-cta mt-8"
+                        >
+                            <div className="flex items-center gap-1.5 opacity-60">
+                                {loading ? (
+                                    <div className="w-3 h-3 border-t border-gold rounded-full animate-spin"></div>
+                                ) : (
+                                    <div className="flex items-center gap-1">
+                                        <div className="w-2 h-[1px] bg-gold"></div>
+                                        <div className="w-1 h-1 rounded-full bg-gold animate-pulse"></div>
                                     </div>
+                                )}
+                            </div>
+                            <span className="pt-0.5">LANCER L'ANALYSE 3D</span>
+                        </button>
+                    </aside>
+
+                    {/* Right Panel: Main Workspace */}
+                    <main className="min-h-[700px] border border-luxury bg-surface/10 relative flex flex-col overflow-hidden animate-fade-in shadow-2xl">
+                        {result ? (
+                            <div className="flex flex-col h-full">
+                                {/* Tabs */}
+                                <div className="flex justify-center border-b border-luxury bg-noir/40">
+                                    {[
+                                        { id: 'viewer', label: 'Modèle 3D' },
+                                        { id: 'measurements', label: 'Ajustements & Métriques' },
+                                        { id: 'morphology', label: 'Diagnostic Morpho' }
+                                    ].map(tab => (
+                                        <button 
+                                            key={tab.id}
+                                            onClick={() => setActiveTab(tab.id)}
+                                            className={`px-10 py-6 text-[10px] tracking-luxury uppercase font-medium transition-all duration-700 relative ${activeTab === tab.id ? 'bg-gold/5 text-gold' : 'text-ivory/30 hover:text-ivory/60'}`}
+                                        >
+                                            {tab.label}
+                                            {activeTab === tab.id && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gold shadow-glow-gold/20"></div>}
+                                        </button>
+                                    ))}
                                 </div>
 
-                                <div className={`absolute inset-0 p-8 overflow-y-auto transition-opacity duration-500 ${activeTab === 'measurements' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        {['basics', 'heights', 'widths', 'functional'].map(cat => (
-                                            <div className="bg-noir/50 p-6 border border-subtle/20" key={cat}>
-                                                <h2 className="text-label text-gold mb-6 flex items-center gap-2 border-b border-subtle/20 pb-3">
-                                                    <Ruler size={14} />
-                                                    {cat === 'basics' ? 'Perimeters' : cat === 'heights' ? 'Lengths' : cat === 'widths' ? 'Widths' : 'Functional'}
-                                                </h2>
-                                                <div className="space-y-1">
-                                                    {(result?.measurements?.[cat] || []).map(renderMeasurementItem)}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className={`absolute inset-0 p-8 overflow-y-auto transition-opacity duration-500 ${activeTab === 'morphology' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-px bg-subtle/30 mb-8">
-                                        <div className="bg-noir p-5 hover:border-gold/20 border border-transparent transition-all duration-500">
-                                            <h4 className="text-label mb-2">Silhouette</h4>
-                                            <div className="font-display text-lg font-bold text-gold">{result.morphology?.silhouette?.type_fr || 'Normal'}</div>
+                                <div className="flex-grow relative">
+                                    {activeTab === 'viewer' && (
+                                        <div className="absolute inset-0">
+                                            <Viewer3D url={result.mesh_url} />
                                         </div>
-                                        <div className="bg-noir p-5 hover:border-gold/20 border border-transparent transition-all duration-500">
-                                            <h4 className="text-label mb-2">BMI Factor</h4>
-                                            <div className="font-display text-lg font-bold text-gold">{result.morphology?.silhouette?.bmi || '22'}</div>
-                                        </div>
-                                        <div className="bg-noir p-5 hover:border-gold/20 border border-transparent transition-all duration-500">
-                                            <h4 className="text-label mb-2">Proportions</h4>
-                                            <div className="font-display text-lg font-bold text-gold">{result.morphology?.proportions?.proportion_type?.fr || 'Balanced'}</div>
-                                        </div>
-                                        <div className="bg-noir p-5 hover:border-gold/20 border border-transparent transition-all duration-500">
-                                            <h4 className="text-label mb-2">Posture</h4>
-                                            <div className="font-display text-lg font-bold text-gold">{result.morphology?.posture?.type_fr || 'Straight'}</div>
-                                        </div>
-                                        <div className="bg-noir p-5 hover:border-gold/20 border border-transparent transition-all duration-500">
-                                            <h4 className="text-label mb-2">Torso/Leg Ratio</h4>
-                                            <div className="font-display text-lg font-bold text-gold">{(result.morphology?.proportions?.torso_to_legs_ratio || 0.65).toFixed(2)}</div>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-noir/50 border border-subtle/20 p-6">
-                                        <h2 className="text-label text-gold mb-6 border-b border-subtle/20 pb-3">Morphological Radar</h2>
-                                        <div className="w-full flex justify-center">
-                                            {(result?.measurements?.basics?.length > 0) ? (
-                                                <Plot
-                                                    data={[{
-                                                        type: 'scatterpolar',
-                                                        r: (result?.measurements?.basics || []).slice(0, 6).map(m => m.value_cm || 0),
-                                                        theta: (result?.measurements?.basics || []).slice(0, 6).map(m => m.name || m.key || ''),
-                                                        fill: 'toself',
-                                                        fillcolor: 'rgba(198, 167, 94, 0.15)',
-                                                        line: { color: '#C6A75E', width: 2 }
-                                                    }]}
-                                                    layout={{
-                                                        autosize: true,
-                                                        paper_bgcolor: 'rgba(0,0,0,0)',
-                                                        polar: { radialaxis: { visible: true, range: [0, 120], tickcolor: '#2A2A2A', gridcolor: '#2A2A2A' }, angularaxis: { tickfont: { family: 'Inter', color: '#666' }, gridcolor: '#2A2A2A' }, bgcolor: 'rgba(0,0,0,0)' },
-                                                        font: { color: '#F5F5F0', family: 'Inter' },
-                                                        margin: { t: 30, b: 30, l: 30, r: 30 }
-                                                    }}
-                                                    style={{ width: '100%', height: '400px', maxWidth: '600px' }}
-                                                    config={{ displayModeBar: false }}
-                                                />
-                                            ) : (
-                                                <p className="text-ivory/40 py-12">Aucune donnée de mesure disponible pour le radar.</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className={`absolute inset-0 p-8 overflow-y-auto transition-opacity duration-500 ${activeTab === 'recommendations' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <div className="bg-noir/50 border border-subtle/20 p-6 h-fit">
-                                            <h2 className="text-label text-gold mb-6 border-b border-subtle/20 pb-3 flex items-center gap-2">
-                                                <Navigation size={14} /> Routing Sizes
-                                            </h2>
-                                            <div className="space-y-3">
-                                                {Object.entries(result.fashion_recommendations?.size_recommendations || {}).map(([sys, data]) => (
-                                                    <div className="bg-muted/50 p-4 border border-subtle/20 flex items-center justify-between group hover:border-gold/20 transition-all duration-500" key={sys}>
-                                                        <div>
-                                                            <h4 className="text-sm text-ivory/70">System {sys}</h4>
-                                                            <div className="text-[10px] tracking-wider text-ivory/30 mt-1">Confidence: <span className="text-gold">{Math.round((data.confidence || 0.8) * 100)}%</span></div>
-                                                        </div>
-                                                        <div className="px-4 py-2 border border-gold/30 font-display font-bold text-gold group-hover:bg-gold/10 transition-all duration-300">
-                                                            {data.recommended_size}
+                                    )}
+                                    {activeTab === 'measurements' && (
+                                        <div className="p-16 h-full overflow-y-auto">
+                                            <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16">
+                                                {['basics', 'heights'].map(cat => (
+                                                    <div key={cat} className="space-y-8">
+                                                        <h3 className="text-label text-gold font-medium border-b border-luxury pb-4 tracking-[0.3em]">{cat === 'basics' ? 'CIRCONFÉRENCES' : 'LONGUEURS'}</h3>
+                                                        <div className="space-y-1">
+                                                            {(result?.measurements?.[cat] || []).map(renderMeasurementItem)}
                                                         </div>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
-
-                                        <div className="bg-noir/50 border border-subtle/20 p-6 h-fit">
-                                            <h2 className="text-label text-gold mb-6 border-b border-subtle/20 pb-3">Optimum Cut Logic</h2>
-                                            {result.fashion_recommendations?.cut_recommendations?.primary_recommendation ? (
-                                                <div className="bg-gold/5 p-6 border border-gold/20 relative overflow-hidden">
-                                                    <div className="absolute top-0 right-0 w-24 h-24 bg-gold/10 rounded-full blur-2xl -mr-12 -mt-12"></div>
-                                                    <h4 className="text-lg font-display font-bold text-gold mb-2 relative z-10">{result.fashion_recommendations.cut_recommendations.primary_recommendation.name_fr}</h4>
-                                                    <p className="text-ivory/50 leading-relaxed text-sm relative z-10">{result.fashion_recommendations.cut_recommendations.primary_recommendation.description}</p>
-                                                </div>
-                                            ) : (
-                                                <div className="p-6 text-center text-ivory/20">No specific cut recommendations generated.</div>
-                                            )}
+                                    )}
+                                    {activeTab === 'morphology' && (
+                                        <div className="p-16 h-full overflow-y-auto">
+                                           {/* Morphology details */}
                                         </div>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            /* Empty State with 3D Wireframe Placeholder */
+                            <div className="flex-grow flex flex-col items-center justify-center p-20 text-center relative overflow-hidden">
+                                {/* Subtle 3D Wireframe Silhouette SVG */}
+                                <div className="absolute inset-0 flex items-center justify-center opacity-[0.08] pointer-events-none scale-125 lg:scale-110 transition-transform duration-[20s] animate-float">
+                                    <svg width="400" height="800" viewBox="0 0 400 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M200 40C200 40 180 40 170 60C160 80 160 100 160 100L170 140H230L240 100C240 100 240 80 230 60C220 40 200 40 200 40Z" stroke="#C9A96E" strokeWidth="0.5"/>
+                                        <path d="M170 140L140 180L120 280L140 400L160 550L170 800" stroke="#C9A96E" strokeWidth="0.5"/>
+                                        <path d="M230 140L260 180L280 280L260 400L240 550L230 800" stroke="#C9A96E" strokeWidth="0.5"/>
+                                        <path d="M140 180C140 180 170 200 200 200C230 200 260 180 260 180" stroke="#C9A96E" strokeWidth="0.5"/>
+                                        <circle cx="200" cy="80" r="30" stroke="#C9A96E" strokeWidth="0.2"/>
+                                        <line x1="140" y1="180" x2="260" y2="180" stroke="#C9A96E" strokeWidth="0.2"/>
+                                        <line x1="120" y1="280" x2="280" y2="280" stroke="#C9A96E" strokeWidth="0.2"/>
+                                        <line x1="140" y1="400" x2="260" y2="400" stroke="#C9A96E" strokeWidth="0.2"/>
+                                    </svg>
+                                </div>
+
+                                <div className="relative z-10 max-w-lg space-y-10">
+                                    <div className="relative w-32 h-32 mx-auto">
+                                        <div className="absolute inset-0 border border-gold/10 rounded-full"></div>
+                                        <div className="absolute inset-0 border-t border-gold rounded-full animate-spin-slow"></div>
+                                        <div className="absolute inset-0 flex items-center justify-center opacity-40">
+                                            <Activity size={32} strokeWidth={1} className="text-gold" />
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="space-y-6">
+                                        <h3 className="text-3xl font-serif font-light text-ivory/90 tracking-[0.1em]">
+                                            EN ATTENTE D'ANALYSE
+                                        </h3>
+                                        <p className="text-[13px] text-ivory/40 leading-relaxed font-light uppercase tracking-widest px-10">
+                                            Importez votre capture 360° pour générer votre Digital Twin et accéder aux mesures de haute couture.
+                                        </p>
                                     </div>
                                 </div>
 
-                                <div className={`absolute inset-0 p-8 overflow-y-auto transition-opacity duration-500 ${activeTab === 'charts' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                                    <div className="bg-noir/50 border border-subtle/20 p-6 h-full flex flex-col">
-                                        <h2 className="text-label text-gold mb-6 shrink-0">Volumetric Data</h2>
-                                        <div className="flex-grow min-h-[400px]">
-                                            <Plot
-                                                data={[{
-                                                    x: (result?.measurements?.basics || []).map(m => m.name),
-                                                    y: (result?.measurements?.basics || []).map(m => m.value_cm),
-                                                    type: 'bar',
-                                                    marker: { color: '#C6A75E', border: { color: 'transparent' } }
-                                                }]}
-                                                layout={{
-                                                    paper_bgcolor: 'rgba(0,0,0,0)',
-                                                    plot_bgcolor: 'rgba(0,0,0,0)',
-                                                    font: { color: '#666', family: 'Inter' },
-                                                    margin: { t: 20, l: 40, r: 20, b: 80 },
-                                                    xaxis: { tickangle: -45, gridcolor: '#2A2A2A' },
-                                                    yaxis: { gridcolor: '#2A2A2A' }
-                                                }}
-                                                style={{ width: '100%', height: '100%' }}
-                                                config={{ displayModeBar: false, responsive: true }}
-                                            />
-                                        </div>
+                                {/* Pipeline Progress Upgrade */}
+                                <div className="absolute bottom-20 left-12 right-12 max-w-4xl mx-auto">
+                                    <div className="relative flex justify-between items-center">
+                                        {/* Background connecting line */}
+                                        <div className="absolute top-1/2 left-0 right-0 h-[0.5px] bg-gold/10 -translate-y-1/2 -z-10"></div>
+                                        
+                                        {[
+                                            { step: "01", label: "SOURCING", status: "EN ATTENTE", active: true },
+                                            { step: "02", label: "PROCESSING", status: "EN ATTENTE", active: false },
+                                            { step: "03", label: "ANALYTICS", status: "EN ATTENTE", active: false }
+                                        ].map((node, i) => (
+                                            <div key={i} className="flex flex-col items-center group">
+                                                <div className={`w-3 h-3 rounded-full border transition-all duration-1000 mb-4 bg-noir ${node.active ? 'border-gold shadow-glow-gold bg-gold scale-125' : 'border-gold/30'}`}></div>
+                                                <span className={`text-[9px] tracking-luxury uppercase mb-1 transition-colors duration-700 ${node.active ? 'text-gold' : 'text-ivory/20'}`}>{node.label}</span>
+                                                <span className={`text-[8px] tracking-widest uppercase font-light ${node.active ? 'text-ivory/60' : 'text-ivory/10'}`}>{node.status}</span>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    ) : (
-                        <div className="h-full flex items-center justify-center border-2 border-dashed border-gold/30 m-4 lg:m-0 bg-muted/30">
-                            <div className="text-center max-w-md px-8 py-16">
-                                <div className="w-24 h-24 border-2 border-gold/40 flex items-center justify-center mx-auto mb-8 rounded-full">
-                                    <Activity className="text-gold" size={40} />
-                                </div>
-                                <h3 className="text-2xl font-display font-bold text-ivory mb-3">En attente des résultats</h3>
-                                <p className="text-ivory/70 leading-relaxed text-sm mb-6">
-                                    {file
-                                        ? "Cliquez sur le bouton doré « Launch AI Analysis » en bas à gauche pour lancer l'analyse."
-                                        : "Glissez-déposez une vidéo 360° à gauche (ou cliquez pour sélectionner), puis cliquez sur « Launch AI Analysis »."}
-                                </p>
-                                {file && (
-                                    <p className="text-gold text-sm font-medium">→ Fichier sélectionné : {file.name}</p>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </section>
-            </main>
+                        )}
+                    </main>
+                </div>
+            </div>
 
-            {/* Loading Overlay */}
+            {/* Global Loading Overlay */}
             {loading && (
-                <div className="fixed inset-0 bg-noir/80 backdrop-blur-sm z-[100] flex items-center justify-center animate-fade-in">
-                    <div className="bg-muted border border-subtle p-10 max-w-sm w-full text-center">
-                        <div className="w-12 h-12 border-2 border-subtle border-t-gold rounded-full animate-spin mx-auto mb-6"></div>
-                        <h3 className="font-display text-xl font-bold text-ivory mb-2">Analyzing...</h3>
-                        <p className="text-ivory/30 text-sm mb-6">Extracting frames and building point cloud</p>
-                        <div className="w-full h-px bg-subtle overflow-hidden">
-                            <div className="h-full bg-gold w-1/2 animate-[pulse_1.5s_ease-in-out_infinite]"></div>
-                        </div>
+                <div className="fixed inset-0 bg-noir/95 backdrop-blur-md z-[100] flex flex-col items-center justify-center animate-fade-in">
+                    <div className="relative w-40 h-[1px] bg-gold/10 mb-12 overflow-hidden">
+                        <div className="h-full bg-gold w-full -translate-x-full animate-[shimmer_1.5s_infinite]"></div>
+                    </div>
+                    <div className="text-center space-y-4">
+                        <h4 className="text-2xl font-serif italic text-gold/80 tracking-wide">Orchestration Digital Twin</h4>
+                        <p className="text-[10px] tracking-[0.4em] uppercase text-ivory/40 font-light">Extraction biométrique en cours</p>
                     </div>
                 </div>
             )}
