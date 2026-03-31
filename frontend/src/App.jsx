@@ -4,7 +4,8 @@ import Home from './shared/pages/Home';
 import ProtectedRoute from './shared/components/Auth/ProtectedRoute'; // Added
 import Onboarding from './actors/client/pages/Onboarding';
 import BodyMeasurements from './actors/client/pages/BodyMeasurements';
-import DeliveryDashboard from './actors/delivery/pages/DeliveryDashboard';
+import Delivery from './actors/delivery/pages/Delivery';
+import CoutureHouse from './actors/delivery/pages/CoutureHouse';
 import ActivityDashboard from './Pages/Dashboard';
 import CoutureHouseDashboard from './actors/couturehouse/pages/Dashboard';
 import CreateDesign from './actors/couturehouse/pages/CreateDesign';
@@ -20,7 +21,7 @@ function App() {
         path="/delivery" 
         element={
           <ProtectedRoute allowedRoles={['delivery']}>
-            <DeliveryDashboard />
+            <Delivery />
           </ProtectedRoute>
         } 
       />
