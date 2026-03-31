@@ -13,6 +13,8 @@ import importlib
 body_processor_mod = importlib.import_module("actors.client.ml_pipeline.body_processor")
 BodyProcessor = body_processor_mod.BodyProcessor
 
+from tissue.skin_analyzer import AccurateSkinAnalyzer
+
 
 logger = logging.getLogger(__name__)
 
@@ -410,6 +412,119 @@ def get_run_status(request: HttpRequest, run_id: str):
     except Exception as e:
         logger.error("Error reading run status %s: %s", run_id, e)
         return JsonResponse({"error": "Error reading run status"}, status=500)
+
+
+@csrf_exempt
+def analyze_skin_tone(request: HttpRequest):
+    """
+    Analyze skin tone from an uploaded photo.
+    POST /api/client/skin-analysis/
+    Returns skin tone analysis + real fabric recommendations from the database.
+    """
+    if request.method != "POST":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    photo = request.FILES.get("photo")
+    if not photo:
+        return JsonResponse({"error": "No photo provided"}, status=400)
+
+    # Save temporary file for analysis
+    temp_filename = f"skin_analysis_{datetime.now().strftime('%Y%m%d%H%M%S')}_{photo.name}"
+    temp_path = UPLOAD_FOLDER / temp_filename
+    
+    try:
+        with open(temp_path, "wb+") as dest:
+            for chunk in photo.chunks():
+                dest.write(chunk)
+
+        # Initialize analyzer with absolute path to database
+        db_path = os.path.join(settings.BASE_DIR, "tissue", "skin_tone_colors_database.json")
+        analyzer = AccurateSkinAnalyzer(json_path=db_path)
+        
+        # Analyze
+        result = analyzer.analyze(str(temp_path))
+        
+        if not result:
+            return JsonResponse({
+                "error": "Face not detected. Please ensure your face is clearly visible and well-lit.",
+                "status": "error"
+            }, status=400)
+
+        # --- Match real fabrics from the database ---
+        try:
+            import numpy as np
+            from actors.fournisseur.models import Fabric
+
+            # Get recommended colors from the skin analysis result
+            recommended_colors = result.get("colors", [])
+            
+            # Fetch available fabrics (those with a valid RGB color and stock > 0)
+            all_fabrics = Fabric.objects.filter(quantite__gt=0).values(
+                "id", "color", "materiel", "description", "prix", "quantite"
+            )
+
+            fabric_scores = []
+            for fabric in all_fabrics:
+                fabric_rgb = fabric.get("color")
+                # color field is stored as [R, G, B]
+                if not fabric_rgb or not isinstance(fabric_rgb, list) or len(fabric_rgb) != 3:
+                    continue
+
+                f_rgb = np.array(fabric_rgb, dtype=float)
+                
+                # Find the minimum distance to any recommended color
+                min_distance = float("inf")
+                best_match_color = None
+                
+                for rec_color in recommended_colors:
+                    if not isinstance(rec_color.get("rgb"), list):
+                        continue
+                    r_rgb = np.array(rec_color["rgb"], dtype=float)
+                    dist = float(np.linalg.norm(f_rgb - r_rgb))
+                    if dist < min_distance:
+                        min_distance = dist
+                        best_match_color = rec_color
+
+                if best_match_color is None:
+                    continue
+
+                # Score: 0-100, lower distance = higher score
+                similarity_score = max(0.0, round(100 - (min_distance / 4.41), 1))
+
+                fabric_scores.append({
+                    "id": fabric["id"],
+                    "materiel": fabric["materiel"],
+                    "description": fabric["description"] or fabric["materiel"],
+                    "prix": float(fabric["prix"]),
+                    "quantite": float(fabric["quantite"]),
+                    "color": fabric["color"],
+                    "similarity_score": similarity_score,
+                    "matched_recommendation": best_match_color["name"] if best_match_color else None,
+                    "image_url": f"/api/images/{fabric['id']}",
+                })
+
+            # Sort by similarity score and return top 6
+            fabric_scores.sort(key=lambda x: x["similarity_score"], reverse=True)
+            result["fabric_recommendations"] = fabric_scores[:6]
+            result["total_fabrics_checked"] = len(fabric_scores)
+
+        except Exception as fabric_err:
+            logger.warning("Fabric matching failed (non-critical): %s", fabric_err)
+            result["fabric_recommendations"] = []
+            result["fabric_error"] = str(fabric_err)
+
+        return JsonResponse(result)
+            
+    except Exception as e:
+        logger.exception("Skin analysis error: %s", e)
+        return JsonResponse({"error": str(e), "status": "error"}, status=500)
+    finally:
+        # Cleanup temp file
+        if temp_path.exists():
+            try:
+                os.remove(temp_path)
+            except Exception:
+                pass
 
 
 def health_check(_request: HttpRequest):

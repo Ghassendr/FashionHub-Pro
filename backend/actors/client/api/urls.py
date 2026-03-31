@@ -21,6 +21,9 @@ urlpatterns = [
     path('runs/<str:run_id>', views.get_run_details, name='get_run_details'),
     path('runs/<str:run_id>/status', views.get_run_status, name='get_run_status'),
 
+    # AI Analysis
+    path('skin-analysis/', views.analyze_skin_tone, name='skin_analysis'),
+
     # Health Check
     path('health', views.health_check, name='health_check'),
 ]

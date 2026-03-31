@@ -6,6 +6,7 @@ const Layout = () => {
     return (
         <div className="min-h-screen flex flex-col bg-noir text-ivory selection:bg-gold/30 selection:text-ivory">
             <Navbar />
+            <div className="h-20 w-full bg-noir"></div> {/* Navbar Spacer */}
             <main className="flex-grow">
                 <Outlet />
             </main>

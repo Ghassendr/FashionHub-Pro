@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, LogIn, User, LogOut, ShieldCheck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import RegistrationModal from '../Auth/RegistrationModal';
 import LoginModal from '../Auth/LoginModal';
 import { useAuth } from '../../context/AuthContext';
@@ -8,10 +9,12 @@ import { useAuth } from '../../context/AuthContext';
 const Navbar = () => {
     const { user, logout, isAuthenticated, isAdmin, isLoginOpen, setIsLoginOpen, isRegisterOpen, setIsRegisterOpen } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
+    const navigate = useNavigate();
     const location = useLocation();
 
     const handleLogout = () => {
         logout();
+        navigate('/');
     };
 
     const isActive = (path) =>
@@ -88,12 +91,12 @@ const Navbar = () => {
 
                             {isAuthenticated ? (
                                 <div className="flex items-center gap-6">
-                                    <div className="flex flex-col items-end">
-                                        <div className="flex items-center gap-2 text-[11px] tracking-luxury uppercase text-gold font-medium">
+                                    <Link to="/profile" className="flex flex-col items-end group">
+                                        <div className="flex items-center gap-2 text-[11px] tracking-luxury uppercase text-gold font-medium group-hover:text-gold-light transition-colors">
                                             <User size={14} /> {user.name || (user.email && user.email.split('@')[0]) || 'User'}
                                         </div>
                                         <span className="text-[9px] text-ivory/40 uppercase tracking-tighter">{user.role} • {user.status}</span>
-                                    </div>
+                                    </Link>
                                     <button
                                         onClick={handleLogout}
                                         className="text-ivory/50 hover:text-red-400 transition-colors"

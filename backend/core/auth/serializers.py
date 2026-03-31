@@ -63,6 +63,11 @@ class RegistrationSerializer(serializers.Serializer):
             raise serializers.ValidationError("Email already exists")
         return value
 
+    def validate_username(self, value):
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("Username already exists")
+        return value
+
     def create(self, validated_data):
         profile_data = validated_data.pop('profile_data')
         verification_docs = validated_data.pop('verification_docs', {})
@@ -79,9 +84,11 @@ class RegistrationSerializer(serializers.Serializer):
             account_status=status
         )
         
-        # Helper to clean empty strings for decimal fields
+        # Helper to clean empty strings. 
+        # Don't use None for CharFields that are non-nullable.
         def clean_data(data):
-            return {k: (None if v == "" else v) for k, v in data.items()}
+            # Most of our profile fields are blank=True but NOT null=True
+            return {k: v for k, v in data.items() if v != ""}
 
         full_profile_data = {**clean_data(profile_data), **verification_docs}
 
@@ -96,3 +103,9 @@ class RegistrationSerializer(serializers.Serializer):
             Carrier.objects.create(user=user, **full_profile_data)
             
         return user
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'email', 'username', 'first_name', 'last_name', 'role', 'photo', 'info')
+        read_only_fields = ('id', 'email', 'role')

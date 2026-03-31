@@ -1,0 +1,237 @@
+{
+  "skin_tone_database": {
+    "mst_01_cool": {
+      "id": "MST_01_C",
+      "name": "Monk 01 Cool",
+      "name_fr": "Monk 01 Froid",
+      "description": "Very pale skin, burns very easily. Cool pink/blue undertones (Winter/Summer palettes).",
+      "center_rgb": [246, 237, 233],
+      "undertone": "Cool",
+      "ita_range": [55, 90],
+      "fitzpatrick": "Type I",
+      "recommended_color_families": ["cool", "vibrant", "jewel"],
+      "outfit_colors": {
+        "primary_elegant": { "name": "Sapphire Blue", "rgb": [15, 82, 186], "usage": "Formal, commanding", "hex": "#0F52BA" },
+        "secondary_soft": { "name": "Icy Lavender", "rgb": [230, 230, 250], "usage": "Delicate daytime", "hex": "#E6E6FA" },
+        "neutral_base": { "name": "Pure White", "rgb": [253, 255, 255], "usage": "Crisp contrast base", "hex": "#FDFFFF" },
+        "accent_vibrant": { "name": "Deep Fuchsia", "rgb": [193, 84, 193], "usage": "Striking accents", "hex": "#C154C1" },
+        "earth_tone": { "name": "Cool Slate", "rgb": [112, 128, 144], "usage": "Grounding neutral", "hex": "#708090" },
+        "avoid": { "name": "Warm Oranges", "examples": ["Mustard", "Rust", "Peach"] }
+      }
+    },
+    "mst_02_neutral": {
+      "id": "MST_02_N",
+      "name": "Monk 02 Neutral",
+      "name_fr": "Monk 02 Neutre",
+      "description": "Fair skin, burns easily. Balanced undertones.",
+      "center_rgb": [243, 231, 219],
+      "undertone": "Neutral",
+      "ita_range": [41, 55],
+      "fitzpatrick": "Type II",
+      "recommended_color_families": ["neutral", "pastel", "jewel"],
+      "outfit_colors": {
+        "primary_elegant": { "name": "Emerald Green", "rgb": [80, 200, 120], "usage": "Sophisticated evening", "hex": "#50C878" },
+        "secondary_soft": { "name": "Dusty Rose", "rgb": [220, 165, 165], "usage": "Soft romantic", "hex": "#DCA5A5" },
+        "neutral_base": { "name": "Dove Gray", "rgb": [109, 109, 109], "usage": "Versatile neutral", "hex": "#6D6D6D" },
+        "accent_vibrant": { "name": "Turquoise", "rgb": [64, 224, 208], "usage": "Lively pop of color", "hex": "#40E0D0" },
+        "earth_tone": { "name": "Soft Taupe", "rgb": [179, 139, 109], "usage": "Earthy contrast", "hex": "#B38B6D" },
+        "avoid": { "name": "Neon Colors", "examples": ["Neon Yellow", "Electric Green"] }
+      }
+    },
+    "mst_03_warm": {
+      "id": "MST_03_W",
+      "name": "Monk 03 Warm",
+      "name_fr": "Monk 03 Chaud",
+      "description": "Fair skin with golden/peachy undertones. Tans slightly (Spring/Autumn palettes).",
+      "center_rgb": [247, 234, 208],
+      "undertone": "Warm",
+      "ita_range": [41, 55],
+      "fitzpatrick": "Type II",
+      "recommended_color_families": ["warm", "earth", "vibrant"],
+      "outfit_colors": {
+        "primary_elegant": { "name": "Warm Navy", "rgb": [0, 0, 128], "usage": "Classic professional", "hex": "#000080" },
+        "secondary_soft": { "name": "Coral", "rgb": [255, 127, 80], "usage": "Bright daytime", "hex": "#FF7F50" },
+        "neutral_base": { "name": "Cream", "rgb": [255, 253, 208], "usage": "Soft base", "hex": "#FFFDD0" },
+        "accent_vibrant": { "name": "Golden Yellow", "rgb": [255, 215, 0], "usage": "Radiant accent", "hex": "#FFD700" },
+        "earth_tone": { "name": "Camel", "rgb": [193, 154, 107], "usage": "Warm neutral", "hex": "#C19A6B" },
+        "avoid": { "name": "Icy Pastels", "examples": ["Icy Blue", "Frosty Pink"] }
+      }
+    },
+    "mst_04_olive": {
+       "id": "MST_04_O",
+       "name": "Monk 04 Olive",
+       "name_fr": "Monk 04 Olive",
+       "description": "Light to medium skin with distinct greenish/yellowish undertones.",
+       "center_rgb": [234, 218, 186],
+       "undertone": "Warm-Olive",
+       "ita_range": [28, 41],
+       "fitzpatrick": "Type III",
+       "recommended_color_families": ["earth", "jewel", "warm"],
+       "outfit_colors": {
+          "primary_elegant": { "name": "Deep Plum", "rgb": [142, 69, 133], "usage": "Rich evening wear", "hex": "#8E4585" },
+          "secondary_soft": { "name": "Sage Green", "rgb": [140, 155, 100], "usage": "Harmonious daytime", "hex": "#8C9B64" },
+          "neutral_base": { "name": "Warm Gray", "rgb": [134, 126, 115], "usage": "Complex neutral", "hex": "#867E73" },
+          "accent_vibrant": { "name": "Burnt Orange", "rgb": [204, 85, 0], "usage": "Striking contrast", "hex": "#CC5500" },
+          "earth_tone": { "name": "Olive Drab", "rgb": [107, 142, 35], "usage": "Monochromatic anchor", "hex": "#6B8E23" },
+          "avoid": { "name": "Cool Pastels", "examples": ["Mint Green", "Lavender"] }
+       }
+    },
+    "mst_05_neutral": {
+      "id": "MST_05_N",
+      "name": "Monk 05 Neutral",
+      "name_fr": "Monk 05 Neutre",
+      "description": "Medium skin, tans well. Balanced warm and cool tones.",
+      "center_rgb": [215, 189, 150],
+      "undertone": "Neutral",
+      "ita_range": [28, 41],
+      "fitzpatrick": "Type III",
+      "recommended_color_families": ["jewel", "neutral", "muted"],
+      "outfit_colors": {
+        "primary_elegant": { "name": "Teal", "rgb": [0, 128, 128], "usage": "Universally flattering formal", "hex": "#008080" },
+        "secondary_soft": { "name": "Mauve", "rgb": [224, 176, 255], "usage": "Soft daytime elegance", "hex": "#E0B0FF" },
+        "neutral_base": { "name": "Charcoal", "rgb": [54, 69, 79], "usage": "Strong base", "hex": "#36454F" },
+        "accent_vibrant": { "name": "Ruby Red", "rgb": [224, 17, 95], "usage": "Classic bold accent", "hex": "#E0115F" },
+        "earth_tone": { "name": "Mushroom", "rgb": [186, 178, 164], "usage": "Sophisticated neutral", "hex": "#BAB2A4" },
+        "avoid": { "name": "Washed-out Neutrals", "examples": ["Pale Beige", "Light Khaki"] }
+      }
+    },
+    "mst_06_warm": {
+      "id": "MST_06_W",
+      "name": "Monk 06 Warm",
+      "name_fr": "Monk 06 Chaud",
+      "description": "Medium/tan skin with golden or bronze undertones. Tans deeply.",
+      "center_rgb": [160, 126, 86],
+      "undertone": "Warm",
+      "ita_range": [10, 28],
+      "fitzpatrick": "Type IV",
+      "recommended_color_families": ["warm", "earth", "vibrant"],
+      "outfit_colors": {
+        "primary_elegant": { "name": "Bronze", "rgb": [205, 127, 50], "usage": "Rich tonal harmony", "hex": "#CD7F32" },
+        "secondary_soft": { "name": "Terracotta", "rgb": [226, 114, 91], "usage": "Earthy casual", "hex": "#E2725B" },
+        "neutral_base": { "name": "Ivory", "rgb": [255, 255, 240], "usage": "High contrast base", "hex": "#FFFFF0" },
+        "accent_vibrant": { "name": "Magenta", "rgb": [255, 0, 255], "usage": "Vivid pop", "hex": "#FF00FF" },
+        "earth_tone": { "name": "Ochre", "rgb": [204, 119, 34], "usage": "Warm foundation", "hex": "#CC7722" },
+        "avoid": { "name": "Icy Colors", "examples": ["Silver", "Ice Blue"] }
+      }
+    },
+    "mst_07_cool": {
+      "id": "MST_07_C",
+      "name": "Monk 07 Cool",
+      "name_fr": "Monk 07 Froid",
+      "description": "Dark skin with cool reddish or bluish undertones.",
+      "center_rgb": [130, 92, 67],
+      "undertone": "Cool",
+      "ita_range": [-10, 10],
+      "fitzpatrick": "Type V",
+      "recommended_color_families": ["cool", "jewel", "vibrant"],
+      "outfit_colors": {
+        "primary_elegant": { "name": "Amethyst", "rgb": [153, 102, 204], "usage": "Regal formalwear", "hex": "#9966CC" },
+        "secondary_soft": { "name": "Powder Blue", "rgb": [176, 224, 230], "usage": "Striking soft contrast", "hex": "#B0E0E6" },
+        "neutral_base": { "name": "Navy Blue", "rgb": [0, 0, 128], "usage": "Elegant dark base", "hex": "#000080" },
+        "accent_vibrant": { "name": "Cerise", "rgb": [222, 49, 99], "usage": "Intense cool red", "hex": "#DE3163" },
+        "earth_tone": { "name": "Cool Brown", "rgb": [92, 64, 51], "usage": "Tonal grounding", "hex": "#5C4033" },
+        "avoid": { "name": "Muddy Earth Tones", "examples": ["Yellow-Brown", "Khaki"] }
+      }
+    },
+     "mst_08_warm": {
+      "id": "MST_08_W",
+      "name": "Monk 08 Warm",
+      "name_fr": "Monk 08 Chaud",
+      "description": "Dark skin with rich golden or copper undertones.",
+      "center_rgb": [96, 65, 52],
+      "undertone": "Warm",
+      "ita_range": [-30, -10],
+      "fitzpatrick": "Type V",
+      "recommended_color_families": ["warm", "vibrant", "jewel"],
+      "outfit_colors": {
+        "primary_elegant": { "name": "Marigold", "rgb": [234, 162, 33], "usage": "Stunning formal contrast", "hex": "#EAA221" },
+        "secondary_soft": { "name": "Peach", "rgb": [255, 229, 180], "usage": "Soft bright glow", "hex": "#FFE5B4" },
+        "neutral_base": { "name": "Onyx Black", "rgb": [15, 15, 15], "usage": "Deep base", "hex": "#0F0F0F" },
+        "accent_vibrant": { "name": "Tangerine", "rgb": [242, 133, 0], "usage": "High energy accent", "hex": "#F28500" },
+        "earth_tone": { "name": "Mahogany", "rgb": [192, 64, 0], "usage": "Rich warm grounding", "hex": "#C04000" },
+        "avoid": { "name": "Muted Pastels", "examples": ["Dusty Blue", "Ash Gray"] }
+      }
+    },
+    "mst_09_neutral": {
+      "id": "MST_09_N",
+      "name": "Monk 09 Neutral",
+      "name_fr": "Monk 09 Neutre",
+      "description": "Very dark skin with balanced, rich undertones.",
+      "center_rgb": [58, 49, 42],
+      "undertone": "Neutral",
+      "ita_range": [-45, -30],
+      "fitzpatrick": "Type VI",
+      "recommended_color_families": ["vibrant", "jewel", "neutral"],
+      "outfit_colors": {
+        "primary_elegant": { "name": "Cobalt Blue", "rgb": [0, 71, 171], "usage": "Vivid elegance", "hex": "#0047AB" },
+        "secondary_soft": { "name": "Blush", "rgb": [222, 93, 131], "usage": "Soft beautiful contrast", "hex": "#DE5D83" },
+        "neutral_base": { "name": "Stark White", "rgb": [255, 255, 255], "usage": "Maximum contrast", "hex": "#FFFFFF" },
+        "accent_vibrant": { "name": "Lime Green", "rgb": [50, 205, 50], "usage": "Electric pop", "hex": "#32CD32" },
+        "earth_tone": { "name": "Aubergine", "rgb": [61, 35, 20], "usage": "Deep complex grounding", "hex": "#3D2314" },
+        "avoid": { "name": "Mid-tone Grays", "examples": ["Steel Gray", "Medium Ash"] }
+      }
+    },
+    "mst_10_cool": {
+      "id": "MST_10_C",
+      "name": "Monk 10 Cool",
+      "name_fr": "Monk 10 Froid",
+      "description": "Deepest skin tones, often with rich blue or purplish undertones.",
+      "center_rgb": [41, 36, 32],
+      "undertone": "Cool",
+      "ita_range": [-90, -45],
+      "fitzpatrick": "Type VI",
+      "recommended_color_families": ["vibrant", "cool", "jewel"],
+      "outfit_colors": {
+        "primary_elegant": { "name": "Ruby", "rgb": [155, 17, 30], "usage": "Intense regal formal", "hex": "#9B111E" },
+        "secondary_soft": { "name": "Lilac", "rgb": [200, 162, 200], "usage": "Ethereal contrast", "hex": "#C8A2C8" },
+        "neutral_base": { "name": "Silver", "rgb": [192, 192, 192], "usage": "Metallic neutral", "hex": "#C0C0C0" },
+        "accent_vibrant": { "name": "Lemon Yellow", "rgb": [253, 233, 16], "usage": "Brilliant statement", "hex": "#FDE910" },
+        "earth_tone": { "name": "Indigo", "rgb": [75, 0, 130], "usage": "Deep cool grounding", "hex": "#4B0082" },
+        "avoid": { "name": "Flat Browns", "examples": ["Medium Brown", "Tan"] }
+      }
+    }
+  },
+  "color_families": {
+    "cool": {
+      "description": "Cold tones for cool undertones",
+      "hue_ranges": [200, 300],
+      "example_rgbs": [[25, 50, 120], [255, 192, 203], [148, 0, 211], [128, 128, 128], [0, 191, 255]]
+    },
+    "warm": {
+      "description": "Warm tones for warm undertones",
+      "hue_ranges": [0, 60],
+      "example_rgbs": [[193, 154, 107], [255, 127, 80], [255, 215, 0], [123, 63, 0], [128, 128, 0]]
+    },
+    "neutral": {
+      "description": "Universal neutral tones",
+      "hue_ranges": [0, 360],
+      "example_rgbs": [[0, 0, 0], [250, 250, 240], [144, 128, 112], [194, 178, 128], [0, 0, 128]]
+    },
+    "earth": {
+      "description": "Natural earth tones, olive and camel",
+      "hue_ranges": [20, 80],
+      "example_rgbs": [[123, 63, 0], [160, 120, 80], [128, 128, 0], [165, 130, 90], [105, 85, 60]]
+    },
+    "jewel": {
+      "description": "Rich, saturated jewel tones",
+      "hue_ranges": [160, 330],
+      "example_rgbs": [[0, 128, 80], [65, 105, 225], [140, 0, 80], [0, 155, 155], [170, 50, 20]]
+    },
+    "vibrant": {
+      "description": "High-saturation vibrant colours",
+      "hue_ranges": [0, 360],
+      "example_rgbs": [[255, 0, 0], [255, 215, 0], [0, 200, 255], [220, 0, 150], [0, 200, 80]]
+    }
+  },
+  "matching_rules": {
+    "tolerance_rgb_distance": 90,
+    "tolerance_hue_degrees": 30,
+    "min_stock_required": 0.5,
+    "scoring_weights": {
+      "color_similarity": 0.60,
+      "undertone_harmony": 0.25,
+      "stock_availability": 0.10,
+      "price_value": 0.05
+    }
+  }
+}

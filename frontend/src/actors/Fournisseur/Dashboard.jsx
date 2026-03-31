@@ -27,7 +27,6 @@ function Dashboard() {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [fabrics, setFabrics] = useState([]);
-  const [fabricImages, setFabricImages] = useState({});
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -54,29 +53,6 @@ function Dashboard() {
   const userInfo = authService.getUserInfo();
   const token = authService.getToken();
 
-  // Fetch image from backend (using fabric ID from MongoDB)
-  const fetchImage = async (fabricId) => {
-    try {
-      const response = await fetch(
-        `http://localhost:8000/api/images/${fabricId}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-        },
-      );
-      if (response.ok) {
-        const data = await response.json();
-        return data.image;
-      }
-    } catch (err) {
-      console.error(`Error fetching image for fabric ${fabricId}:`, err);
-    }
-    return null;
-  };
 
   // Fetch fabrics and verify token
   useEffect(() => {
@@ -161,16 +137,6 @@ function Dashboard() {
         const data = await response.json();
         const fabricsList = data.fabrics || [];
         setFabrics(fabricsList);
-
-        // Fetch all images using fabric IDs
-        const images = {};
-        for (const fabric of fabricsList) {
-          const imageData = await fetchImage(fabric._id);
-          if (imageData) {
-            images[fabric._id] = imageData;
-          }
-        }
-        setFabricImages(images);
       } else if (response.status === 401) {
         setError("Session expired. Please login again.");
         authService.logout();
@@ -719,6 +685,7 @@ function Dashboard() {
                     <th>Material</th>
                     <th>Price/m</th>
                     <th>Description</th>
+                    <th>Likes</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -726,16 +693,13 @@ function Dashboard() {
                   {fabrics.map((fabric) => (
                     <tr key={fabric._id}>
                       <td className="image-cell">
-                        {fabricImages[fabric._id] ? (
-                          <img
-                            src={fabricImages[fabric._id]}
-                            alt="Fabric"
-                            className="fabric-thumbnail"
-                            title="Fabric image"
-                          />
-                        ) : (
-                          <div className="loading-image">Loading...</div>
-                        )}
+                        <img
+                          src={`http://localhost:8000/api/images/${fabric.id || fabric._id}`}
+                          alt="Fabric"
+                          className="fabric-thumbnail"
+                          title="Fabric image"
+                          onError={(e) => { e.target.src = 'https://via.placeholder.com/80x100?text=No+Image'; }}
+                        />
                       </td>
                       <td className="colors-cell">
                         {fabric.color ? (
@@ -770,6 +734,12 @@ function Dashboard() {
                       </td>
                       <td className="description-cell">
                         {fabric.description || "-"}
+                      </td>
+                      <td className="likes-cell">
+                        <div className="flex items-center gap-1 text-gold">
+                            <TrendingUp size={14} />
+                            {fabric.likes || 0}
+                        </div>
                       </td>
                       <td className="actions-cell">
                         <button

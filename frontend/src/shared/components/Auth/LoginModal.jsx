@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { X, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const LoginModal = ({ isOpen, onClose, onSwitchToRegister }) => {
     const { login } = useAuth();
+    const navigate = useNavigate();
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -40,14 +42,26 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister }) => {
 
             setSuccessMsg(`Welcome back, ${userData.role}!`);
 
-            // Auto close after 1.5 seconds
+            // Auto close and redirect after 1.5 seconds
             setTimeout(() => {
                 onClose();
                 setFormData({ email: '', password: '', rememberMe: false });
                 setSuccessMsg('');
                 setError('');
-                // AuthContext updates state, so no reload needed if components are reactive
-            }, 1500);
+                
+                // Role-based redirection
+                if (userData.role === 'fournisseur') {
+                    navigate('/fournisseur/dashboard');
+                } else if (userData.role === 'couture_house') {
+                    navigate('/couturehouse');
+                } else if (userData.role === 'delivery') {
+                    navigate('/delivery');
+                } else if (userData.role === 'admin') {
+                    navigate('/admin/review');
+                } else {
+                    navigate('/profile'); // Default for clients
+                }
+            }, 1000);
         } catch (err) {
             setError(err.message || "Invalid email or password.");
             console.error(err);

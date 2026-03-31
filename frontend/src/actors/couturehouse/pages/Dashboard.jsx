@@ -1,13 +1,24 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, LayoutGrid, Search, Loader2 } from 'lucide-react';
+import { 
+    Plus, LayoutGrid, Search, Loader2, Home, 
+    Palette, BarChart3, Settings, LogOut, 
+    Menu, TrendingUp, Sparkles, Layers 
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import designService from '../services/designService';
 import DesignCard from '../components/DesignCard';
+import './CoutureDashboard.css';
 
 const Dashboard = () => {
     const [designs, setDesigns] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [stats, setStats] = useState({
+        total: 0,
+        published: 0,
+        likes: 0,
+        reach: 0
+    });
     const navigate = useNavigate();
 
     const fetchDesigns = async () => {
@@ -21,14 +32,20 @@ const Dashboard = () => {
             setLoading(true);
             const data = await designService.getDesigns();
             setDesigns(data);
+            
+            // Calculate Stats
+            const total = data.length;
+            const published = data.filter(d => d.status === 'published').length;
+            const likes = data.reduce((acc, d) => acc + (d.likes_count || 0), 0);
+            
+            setStats({
+                total,
+                published,
+                likes,
+                reach: Math.round((likes / (total || 1)) * 10) // Simple popularity score
+            });
         } catch (err) {
-            if (err.response?.status === 401) {
-                localStorage.removeItem('token');
-                navigate('/');
-            } else {
-                setError("Failed to load designs. Please check your connection.");
-                console.error(err);
-            }
+            console.error(err);
         } finally {
             setLoading(false);
         }
@@ -43,7 +60,7 @@ const Dashboard = () => {
             await designService.publishDesign(id);
             fetchDesigns();
         } catch (err) {
-            alert("Error publishing design");
+            console.error(err);
         }
     };
 
@@ -53,7 +70,7 @@ const Dashboard = () => {
                 await designService.archiveDesign(id);
                 fetchDesigns();
             } catch (err) {
-                alert("Error archiving design");
+                console.error(err);
             }
         }
     };
@@ -70,77 +87,151 @@ const Dashboard = () => {
     }
 
     return (
-        <div className="min-h-screen bg-zinc-950 pt-32 pb-20 px-6">
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
-                    <div>
-                        <div className="badge mb-4">Workspace Manager</div>
-                        <h1 className="text-5xl font-display text-ivory">Atelier Design</h1>
+        <div className="atelier-layout">
+            {/* Sidebar */}
+            <aside className={`atelier-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
+                <div className="sidebar-header">
+                    <div className="sidebar-logo">
+                        <Palette size={24} />
+                        {sidebarOpen && <span>ATELIER</span>}
+                    </div>
+                </div>
+
+                <nav className="flex-1 mt-6">
+                    <div className="nav-item active">
+                        <LayoutGrid size={20} />
+                        {sidebarOpen && <span>Dashboard</span>}
+                    </div>
+                    <div className="nav-item" onClick={() => navigate('/couturehouse/create')}>
+                        <Plus size={20} />
+                        {sidebarOpen && <span>New Creation</span>}
+                    </div>
+                    <div className="nav-item">
+                        <TrendingUp size={20} />
+                        {sidebarOpen && <span>Analytics</span>}
+                    </div>
+                    <div className="nav-item">
+                        <Settings size={20} />
+                        {sidebarOpen && <span>Settings</span>}
+                    </div>
+                </nav>
+
+                <div className="sidebar-footer">
+                    <div className="nav-item" onClick={() => navigate('/')}>
+                        <LogOut size={20} />
+                        {sidebarOpen && <span>Logout</span>}
+                    </div>
+                </div>
+            </aside>
+
+            {/* Main Content */}
+            <main className={`atelier-main ${!sidebarOpen ? 'expanded' : ''}`}>
+                <header className="atelier-top-bar">
+                    <div className="flex items-center gap-6">
+                        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-zinc-500 hover:text-ivory transition-colors">
+                            <Menu size={20} />
+                        </button>
+                        <div className="atelier-search">
+                            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
+                            <input type="text" placeholder="Search creations..." />
+                        </div>
                     </div>
                     
-                    <div className="flex items-center gap-4">
-                        <button 
-                            onClick={() => navigate('/couturehouse')}
-                            className="btn btn-secondary flex items-center gap-2 group"
-                        >
-                            <LayoutGrid size={20} className="group-hover:scale-110 transition-transform" />
-                            Global Activity
-                        </button>
-                        <button 
-                            onClick={() => navigate('/couturehouse/create')}
-                            className="btn btn-primary flex items-center gap-2 group"
-                        >
-                            <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
-                            Create New Design
-                        </button>
-                    </div>
-                </div>
+                    <button 
+                        onClick={() => navigate('/couturehouse/create')}
+                        className="btn btn-primary"
+                    >
+                        <Plus size={18} /> Add Design
+                    </button>
+                </header>
 
-                {/* Filters/Stats (Visual Only for now) */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-                    <div className="bg-white/5 border border-white/10 p-4 rounded-xl flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-500">
-                            <LayoutGrid size={24} />
+                <div className="atelier-content animate-in">
+                    <div className="mb-12">
+                        <span className="text-label text-gold block mb-4 uppercase text-[10px] tracking-[0.3em]">Workspace</span>
+                        <h1 className="text-5xl font-display text-ivory">Creative Atelier</h1>
+                    </div>
+
+                    {/* Stats Grid */}
+                    <div className="atelier-stats">
+                        <StatCard 
+                            icon={<Layers size={22} />} 
+                            label="Total Assets" 
+                            value={stats.total} 
+                            color="purple" 
+                        />
+                        <StatCard 
+                            icon={<Sparkles size={22} />} 
+                            label="Published" 
+                            value={stats.published} 
+                            color="blue" 
+                        />
+                        <StatCard 
+                            icon={<TrendingUp size={22} />} 
+                            label="Total Likes" 
+                            value={stats.likes} 
+                            color="gold" 
+                        />
+                        <StatCard 
+                            icon={<BarChart3 size={22} />} 
+                            label="Reach Score" 
+                            value={`${stats.reach}/10`} 
+                            color="gold" 
+                        />
+                    </div>
+
+                    {/* Content Header */}
+                    <div className="flex justify-between items-end mb-8 border-b border-white/5 pb-6">
+                        <h2 className="font-display text-2xl text-ivory/80">Active Collection</h2>
+                        <div className="flex gap-2 text-[10px] uppercase tracking-widest text-zinc-500 font-bold">
+                            <span>All</span>
+                            <span className="text-zinc-700">/</span>
+                            <span>Drafts</span>
+                            <span className="text-zinc-700">/</span>
+                            <span>Archived</span>
                         </div>
-                        <div>
-                            <div className="text-2xl font-display text-ivory">{designs.length}</div>
-                            <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Total Assets</div>
+                    </div>
+
+                    {/* Design Grid */}
+                    {designs.length === 0 ? (
+                        <div className="py-32 text-center border border-dashed border-white/10 rounded-3xl bg-white/[0.02]">
+                            <Palette size={48} className="mx-auto text-zinc-800 mb-6" />
+                            <h3 className="text-ivory/40 font-display text-xl mb-2">Atelier is Empty</h3>
+                            <p className="text-zinc-600 text-sm max-w-xs mx-auto">Your design legacy starts with a single thread. Create your first masterpiece.</p>
+                            <button 
+                                onClick={() => navigate('/couturehouse/create')}
+                                className="mt-8 btn btn-secondary"
+                            >
+                                Start Creating
+                            </button>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {designs.map(design => (
+                                <DesignCard 
+                                    key={design.id} 
+                                    design={design} 
+                                    onPublish={handlePublish}
+                                    onArchive={handleArchive}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </div>
-
-                {/* Search Bar */}
-                <div className="relative mb-10 max-w-md">
-                    <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
-                    <input 
-                        type="text" 
-                        placeholder="Search designs, categories, tags..." 
-                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-sm text-ivory focus:border-amber-500/50 focus:outline-none transition-all"
-                    />
-                </div>
-
-                {/* Design Grid */}
-                {designs.length === 0 ? (
-                    <div className="py-20 text-center border border-dashed border-white/10 rounded-3xl">
-                        <div className="badge mb-4 mx-auto">Empty Atelier</div>
-                        <p className="text-zinc-500">Start your creative journey by making your first design.</p>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {designs.map(design => (
-                            <DesignCard 
-                                key={design.id} 
-                                design={design} 
-                                onPublish={handlePublish}
-                                onArchive={handleArchive}
-                            />
-                        ))}
-                    </div>
-                )}
-            </div>
+            </main>
         </div>
     );
 };
+
+const StatCard = ({ icon, label, value, color }) => (
+    <div className="atelier-stat-card group">
+        <div className={`stat-icon ${color}`}>
+            {icon}
+        </div>
+        <div>
+            <div className="text-2xl font-display text-ivory mb-1">{value}</div>
+            <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold group-hover:text-ivory/40 transition-colors">{label}</div>
+        </div>
+    </div>
+);
 
 export default Dashboard;

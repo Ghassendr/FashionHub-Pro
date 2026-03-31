@@ -24,6 +24,17 @@ class CoutureHouseProfile(django_models.Model):
     def __str__(self):
         return self.house_name
 
+class DesignLike(django_models.Model):
+    user = django_models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=django_models.CASCADE, related_name='design_likes')
+    design_id = django_models.CharField(max_length=24) # MongoDB ObjectId is 24 chars
+    created_at = django_models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'design_id')
+
+    def __str__(self):
+        return f"{self.user.email} likes design {self.design_id}"
+
 class DesignMedia(EmbeddedDocument):
     """
     Photos et schémas liés à un design (Embedded in Design).
@@ -59,6 +70,16 @@ class Design(Document):
     fabric_suggestions = fields.StringField(blank=True)
     status = fields.StringField(choices=STATUS_CHOICES, default="draft")
     
+    MORPHOLOGY_CHOICES = [
+        ("H", "Rectangle (H)"),
+        ("A", "Pyramide (A)"),
+        ("V", "Pyramide Inversée (V)"),
+        ("X", "Sablier (X)"),
+        ("8", "Huit (8)"),
+        ("O", "Ronde (O)")
+    ]
+    morphologies = fields.ListField(fields.StringField(choices=MORPHOLOGY_CHOICES), default=list)
+
     # List of embedded media documents
     media = fields.EmbeddedDocumentListField(DesignMedia)
     

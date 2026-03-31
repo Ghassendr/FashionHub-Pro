@@ -1,7 +1,8 @@
 from django.urls import path
 from .views import (
     SignupView, LoginView, VerifyTokenView, ProfileView, LogoutView,
-    FabricListView, FabricDetailView, FabricImageView
+    FabricListView, FabricDetailView, FabricImageView,
+    PublicFabricListView, NewsFabricsView, TrendingFabricsView, LikeFabricView
 )
 
 urlpatterns = [
@@ -15,6 +16,10 @@ urlpatterns = [
     
     # Fabrics endpoints
     path('fabrics', FabricListView.as_view(), name='fournisseur-fabrics-list'),
+    path('public/fabrics', PublicFabricListView.as_view(), name='fournisseur-public-fabrics-list'),
+    path('public/fabrics/news', NewsFabricsView.as_view(), name='fournisseur-fabrics-news'),
+    path('public/fabrics/trending', TrendingFabricsView.as_view(), name='fournisseur-fabrics-trending'),
+    path('fabrics/<int:pk>/like', LikeFabricView.as_view(), name='fournisseur-fabric-like'),
     path('fabrics/<int:pk>', FabricDetailView.as_view(), name='fournisseur-fabric-detail'),
     path('images/<int:pk>', FabricImageView.as_view(), name='fournisseur-fabric-image'),
 ]

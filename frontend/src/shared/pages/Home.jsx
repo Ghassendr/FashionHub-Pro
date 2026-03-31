@@ -1,11 +1,60 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Sparkles, Ruler, TrendingUp, Shield, Eye, UserPlus } from 'lucide-react';
+import { ArrowRight, Sparkles, Ruler, TrendingUp, Shield, Eye, UserPlus, Zap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import TrendingSection from '../components/TrendingSection';
+import DesignShowcase from '../components/DesignShowcase';
+import { useState, useEffect } from 'react';
 
 const Home = () => {
     const { isAuthenticated, user, setIsRegisterOpen } = useAuth();
     const navigate = useNavigate();
+
+    const [newsFabrics, setNewsFabrics] = useState([]);
+    const [trendingFabrics, setTrendingFabrics] = useState([]);
+    const [latestDesigns, setLatestDesigns] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchFabrics = async () => {
+            const token = localStorage.getItem('token');
+            
+            const fetchData = async (url, useAuth = true) => {
+                const headers = (useAuth && token) ? { 'Authorization': `Bearer ${token}` } : {};
+                try {
+                    const res = await fetch(url, { headers });
+                    if (res.status === 401 && useAuth) {
+                        // Retry once without auth if unauthorized (expired token)
+                        return fetchData(url, false);
+                    }
+                    return await res.json();
+                } catch (err) {
+                    console.error(`Error fetching ${url}:`, err);
+                    return null;
+                }
+            };
+
+            setLoading(true);
+            try {
+                // Fetch news
+                const newsData = await fetchData('http://localhost:8000/api/public/fabrics/news');
+                setNewsFabrics(Array.isArray(newsData?.fabrics) ? newsData.fabrics : []);
+
+                // Fetch trending
+                const trendingData = await fetchData('http://localhost:8000/api/public/fabrics/trending');
+                setTrendingFabrics(Array.isArray(trendingData?.fabrics) ? trendingData.fabrics : []);
+
+                // Fetch latest designs
+                const designsData = await fetchData('http://localhost:8000/api/couturehouse/public/designs/');
+                setLatestDesigns(Array.isArray(designsData) ? designsData.slice(0, 8) : []);
+            } catch (err) {
+                console.error("Error in fetchFabrics main loop:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchFabrics();
+    }, [isAuthenticated]);
 
     const handleProtectedAction = (e, targetPath) => {
         e.preventDefault();
@@ -19,7 +68,7 @@ const Home = () => {
     return (
         <div className="min-h-screen bg-noir">
             {/* Hero — Full-bleed cinematic */}
-            <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+            <section className="relative min-h-screen flex items-center justify-center overflow-hidden -mt-20">
                 {/* Background Image */}
                 <div className="absolute inset-0">
                     <img
@@ -58,6 +107,43 @@ const Home = () => {
                     <span className="text-label text-gold/50 text-[9px]">Scroll</span>
                 </div>
             </section>
+
+            {/* Explore More - Dynamic Showcase */}
+            <section className="pt-24 border-t border-subtle/10">
+                <div className="wrapper text-center">
+                    <p className="text-label text-gold mb-4">The Collection</p>
+                    <h2 className="font-display text-4xl font-bold text-ivory">Explore More</h2>
+                    <div className="divider-gold mt-6 mb-10"></div>
+                </div>
+            </section>
+
+            {/* News Section */}
+            {!loading && newsFabrics.length > 0 && (
+                <TrendingSection 
+                    title="Latest Arrivals" 
+                    subtitle="New Arrivals" 
+                    fabrics={newsFabrics}
+                    icon={<Zap size={20} />}
+                />
+            )}
+
+            {!loading && trendingFabrics.length > 0 && (
+                <TrendingSection 
+                    title="Most Coveted" 
+                    subtitle="Trending" 
+                    fabrics={trendingFabrics}
+                    icon={<Sparkles size={20} />}
+                />
+            )}
+
+            {/* Atelier Showcase Section */}
+            {!loading && latestDesigns.length > 0 && (
+                <DesignShowcase 
+                    title="The Atelier Showcase"
+                    subtitle="Latest Masterpieces"
+                    designs={latestDesigns}
+                />
+            )}
 
             {/* Editorial Section — Precision Mapping */}
             <section className="py-32 relative">
@@ -143,6 +229,7 @@ const Home = () => {
                     </div>
                 </div>
             </section>
+
 
             {/* Editorial CTA */}
             <section className="py-32 relative overflow-hidden">

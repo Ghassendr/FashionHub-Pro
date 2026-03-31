@@ -36,6 +36,10 @@ class User(AbstractUser):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='client')
     account_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
     
+    # Profile fields
+    photo = models.ImageField(upload_to='profiles/', null=True, blank=True)
+    info = models.TextField(blank=True)
+    
     objects = UserManager()
 
     USERNAME_FIELD = 'email'

@@ -1,3 +1,4 @@
+from django.http import FileResponse
 from rest_framework import status, views
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -7,7 +8,7 @@ from core.models.user import User
 from django.shortcuts import get_object_or_404
 import base64
 
-from .models import SupplierProfile, Fabric
+from .models import SupplierProfile, Fabric, FabricLike
 from .serializers import SupplierProfileSerializer, CompleteSupplierSerializer, FabricSerializer
 from .utils import extract_main_color
 
@@ -196,7 +197,6 @@ class FabricListView(views.APIView):
 
     def get(self, request):
         fabrics = Fabric.objects.filter(user=request.user)
-        # Format for frontend expects `_id` and raw color JSON
         fabrics_data = []
         for f in fabrics:
             fabrics_data.append({
@@ -207,6 +207,7 @@ class FabricListView(views.APIView):
                 'materiel': f.materiel,
                 'prix': float(f.prix),
                 'description': f.description,
+                'likes': f.likes
             })
         return Response({'fabrics': fabrics_data})
 
@@ -246,6 +247,95 @@ class FabricListView(views.APIView):
             'fabric': response_fabric,
             'color': color
         }, status=status.HTTP_201_CREATED)
+
+class PublicFabricListView(views.APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        user = request.user
+        liked_ids = []
+        if user.is_authenticated:
+            liked_ids = FabricLike.objects.filter(user=user).values_list('fabric_id', flat=True)
+
+        fabrics_data = []
+        for f in fabrics:
+            fabrics_data.append({
+                'id': f.id,
+                'color': f.color,
+                'quantite': float(f.quantite),
+                'materiel': f.materiel,
+                'prix': float(f.prix),
+                'description': f.description,
+                'likes': f.likes,
+                'is_liked': f.id in liked_ids,
+                'created_at': f.created_at
+            })
+        return Response({'fabrics': fabrics_data})
+
+class NewsFabricsView(views.APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        fabrics = Fabric.objects.all().order_by('-created_at')[:10]
+        user = request.user
+        liked_ids = []
+        if user.is_authenticated:
+            liked_ids = FabricLike.objects.filter(user=user).values_list('fabric_id', flat=True)
+
+        fabrics_data = []
+        for f in fabrics:
+            fabrics_data.append({
+                'id': f.id,
+                'color': f.color,
+                'quantite': float(f.quantite),
+                'materiel': f.materiel,
+                'prix': float(f.prix),
+                'description': f.description,
+                'likes': f.likes,
+                'is_liked': f.id in liked_ids
+            })
+        return Response({'fabrics': fabrics_data})
+
+class TrendingFabricsView(views.APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        fabrics = Fabric.objects.all().order_by('-likes')[:10]
+        fabrics_data = []
+        for f in fabrics:
+            fabrics_data.append({
+                'id': f.id,
+                'color': f.color,
+                'quantite': float(f.quantite),
+                'materiel': f.materiel,
+                'prix': float(f.prix),
+                'description': f.description,
+                'likes': f.likes
+            })
+        return Response({'fabrics': fabrics_data})
+
+class LikeFabricView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        fabric = get_object_or_404(Fabric, pk=pk)
+        like = FabricLike.objects.filter(user=request.user, fabric=fabric).first()
+        
+        if like:
+            like.delete()
+            fabric.likes = max(0, fabric.likes - 1)
+            is_liked = False
+        else:
+            FabricLike.objects.create(user=request.user, fabric=fabric)
+            fabric.likes += 1
+            is_liked = True
+            
+        fabric.save()
+        return Response({
+            'success': True, 
+            'likes': fabric.likes,
+            'is_liked': is_liked
+        })
 
 class FabricDetailView(views.APIView):
     permission_classes = [IsAuthenticated]
@@ -302,24 +392,14 @@ class FabricDetailView(views.APIView):
         return Response({'message': 'Fabric deleted'})
 
 class FabricImageView(views.APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get(self, request, pk):
-        fabric = get_object_or_404(Fabric, pk=pk, user=request.user)
+        fabric = get_object_or_404(Fabric, pk=pk)
         if not fabric.image:
             return Response({'error': 'Image not found'}, status=status.HTTP_404_NOT_FOUND)
 
         try:
-            with open(fabric.image.path, 'rb') as f:
-                image_bytes = f.read()
-                image_b64 = base64.b64encode(image_bytes).decode('utf-8')
-                
-                # Assume jpeg for now like Flask did
-                mime_type = 'image/jpeg'
-                if fabric.image.name.lower().endswith('.png'):
-                    mime_type = 'image/png'
-                    
-                data_url = f"data:{mime_type};base64,{image_b64}"
-                return Response({'image': data_url, 'mime_type': mime_type})
+            return FileResponse(open(fabric.image.path, 'rb'))
         except Exception as e:
             return Response({'error': f'Failed to retrieve image: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
