@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
     ArrowLeft, Upload, FileText, Check, Loader2, 
     Palette, LayoutGrid, Plus, TrendingUp, Settings, 
-    LogOut, Menu 
+    LogOut, Menu, Layers 
 } from 'lucide-react';
 import designService from '../services/designService';
 import './CoutureDashboard.css';
@@ -80,7 +80,7 @@ const CreateDesign = () => {
             }
 
             alert("Design created successfully!");
-            navigate('/couturehouse/dashboard'); // Updated to go back to dashboard
+            navigate('/couturehouse/designs'); // Updated to go back to designs list
         } catch (err) {
             if (err.response?.status === 401) {
                 localStorage.removeItem('token');
@@ -106,9 +106,13 @@ const CreateDesign = () => {
                 </div>
 
                 <nav className="flex-1 mt-6">
-                    <div className="nav-item" onClick={() => navigate('/couturehouse/dashboard')}>
+                    <div className="nav-item" onClick={() => navigate('/couturehouse/fabrics')}>
+                        <Layers size={20} />
+                        {sidebarOpen && <span>Fabrics Inventory</span>}
+                    </div>
+                    <div className="nav-item" onClick={() => navigate('/couturehouse/designs')}>
                         <LayoutGrid size={20} />
-                        {sidebarOpen && <span>Dashboard</span>}
+                        {sidebarOpen && <span>My Designs</span>}
                     </div>
                     <div className="nav-item active">
                         <Plus size={20} />
@@ -144,10 +148,10 @@ const CreateDesign = () => {
 
                 <div className="atelier-content animate-in mb-20">
                     <button 
-                        onClick={() => navigate('/couturehouse/dashboard')}
+                        onClick={() => navigate('/couturehouse/designs')}
                         className="flex items-center gap-2 text-zinc-500 hover:text-ivory mb-12 transition-colors text-xs uppercase tracking-widest font-bold"
                     >
-                        <ArrowLeft size={14} /> Back to Dashboard
+                        <ArrowLeft size={14} /> Back to My Designs
                     </button>
 
                     <div className="mb-12">
@@ -203,21 +207,27 @@ const CreateDesign = () => {
                             
                             <div>
                                 <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-500 mb-4">Recommended Morphology</label>
-                                <select
-                                    name="morphologies"
-                                    value={formData.morphologies[0] || ''}
-                                    onChange={(e) => {
-                                        setFormData(prev => ({ ...prev, morphologies: [e.target.value] }));
-                                    }}
-                                    className="w-full bg-zinc-900/50 border border-white/10 rounded-xl py-3.5 px-5 text-ivory focus:border-amber-500/50 focus:outline-none transition-all cursor-pointer"
-                                >
-                                    <option value="" disabled>Select a morphology</option>
-                                    {morphologiesList.map(morph => (
-                                        <option key={morph.id} value={morph.id}>
-                                            {morph.label} - {morph.desc}
-                                        </option>
-                                    ))}
-                                </select>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                    {morphologiesList.map(morph => {
+                                        const isSelected = formData.morphologies.includes(morph.id);
+                                        return (
+                                            <button
+                                                key={morph.id}
+                                                type="button"
+                                                onClick={() => toggleMorphology(morph.id)}
+                                                className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all text-center ${
+                                                    isSelected 
+                                                        ? 'bg-amber-500/10 border-amber-500 text-amber-500' 
+                                                        : 'bg-zinc-900/50 border-white/10 text-zinc-400 hover:border-amber-500/30 hover:text-ivory'
+                                                }`}
+                                            >
+                                                <span className="font-display text-lg mb-1">{morph.id}</span>
+                                                <span className="text-[10px] uppercase tracking-widest font-bold mb-1">{morph.label.split(' (')[0]}</span>
+                                                <span className="text-[9px] text-zinc-500">{morph.desc}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         </div>
 

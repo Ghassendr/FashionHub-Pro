@@ -84,16 +84,23 @@ const DesignCard = ({ design, onPublish, onArchive, isPublic = false }) => {
                     </span>
                 </div>
 
-                {/* Heart Icon (Public and Owner both see it for visual consistency) */}
-                <button
-                    onClick={handleLike}
-                    className={`absolute top-4 right-4 p-3 rounded-full backdrop-blur-xl transition-all duration-300 z-20 shadow-2xl ${isLiked
-                        ? 'bg-red-500/30 text-red-500 scale-110'
-                        : 'bg-noir/60 text-ivory/60 hover:text-red-500 hover:bg-red-500/20 hover:scale-110'
-                        }`}
-                >
-                    <Heart size={20} fill={isLiked ? "currentColor" : "none"} />
-                </button>
+                {/* Heart Icon / Like Count */}
+                {user?.role === 'couture_house' ? (
+                    <div className="absolute top-4 right-4 px-3 py-1.5 rounded-full bg-noir/80 backdrop-blur-xl text-ivory/80 flex items-center gap-2 border border-white/5 shadow-2xl z-20">
+                        <Heart size={14} className="text-red-500" fill="currentColor" />
+                        <span className="text-[10px] font-bold">{likesCount}</span>
+                    </div>
+                ) : (
+                    <button
+                        onClick={handleLike}
+                        className={`absolute top-4 right-4 p-3 rounded-full backdrop-blur-xl transition-all duration-300 z-20 shadow-2xl ${isLiked
+                            ? 'bg-red-500/30 text-red-500 scale-110'
+                            : 'bg-noir/60 text-ivory/60 hover:text-red-500 hover:bg-red-500/20 hover:scale-110'
+                            }`}
+                    >
+                        <Heart size={20} fill={isLiked ? "currentColor" : "none"} />
+                    </button>
+                )}
             </div>
 
             {/* Details (Matching FabricCard P-6) */}

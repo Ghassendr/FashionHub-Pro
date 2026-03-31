@@ -48,12 +48,12 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister }) => {
                 setFormData({ email: '', password: '', rememberMe: false });
                 setSuccessMsg('');
                 setError('');
-                
+
                 // Role-based redirection
                 if (userData.role === 'fournisseur') {
                     navigate('/fournisseur/dashboard');
                 } else if (userData.role === 'couture_house') {
-                    navigate('/couturehouse');
+                    navigate('/couturehouse/designs');
                 } else if (userData.role === 'delivery') {
                     navigate('/delivery');
                 } else if (userData.role === 'admin') {

@@ -104,12 +104,26 @@ const Navbar = () => {
                         {/* Auth Section */}
                         <div className="flex items-center gap-6">
                             {isAuthenticated ? (
-                                <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-8">
+                                    <div 
+                                        className={`flex flex-col items-end pt-1 transition-opacity ${user?.role === 'client' ? 'cursor-pointer hover:opacity-80' : ''}`}
+                                        onClick={() => user?.role === 'client' && navigate('/profile')}
+                                    >
+                                        <div className="flex items-center gap-2 text-[10px] tracking-luxury uppercase text-gold font-bold">
+                                            <User size={12} className="opacity-80" /> 
+                                            {user.name || (user.email && user.email.split('@')[0]) || 'User'}
+                                        </div>
+                                        <span className="text-[8px] text-ivory/40 uppercase tracking-[0.2em] mt-0.5">
+                                            {user.role} {user.status ? `• ${user.status}` : ''}
+                                        </span>
+                                    </div>
+                                    <div className="h-6 w-[1px] bg-white/10"></div>
                                     <button
                                         onClick={handleLogout}
-                                        className="text-[9px] tracking-luxury uppercase text-ivory/30 hover:text-red-400 transition-all duration-500 border border-ivory/10 px-4 py-2 hover:border-red-400/30"
+                                        className="text-[9px] tracking-luxury uppercase text-ivory/40 hover:text-red-400 transition-all duration-500 flex items-center gap-2"
                                     >
-                                        Déconnexion
+                                        <LogOut size={12} />
+                                        Logout
                                     </button>
                                 </div>
                             ) : (
@@ -139,7 +153,10 @@ const Navbar = () => {
                             <Link to="/" className={`py-3 text-[11px] tracking-luxury uppercase font-medium ${isActive('/')}`} onClick={() => setIsOpen(false)}>Portal</Link>
 
                             {user?.role === 'client' && (
-                                <Link to="/client/3d-measurements" className={`py-3 text-[11px] tracking-luxury uppercase font-medium ${location.pathname.startsWith('/client') ? 'text-gold' : 'text-ivory/60 hover:text-gold transition-all duration-500'}`} onClick={() => setIsOpen(false)}>Client</Link>
+                                <Link to="/client/3d-measurements" className={`text-[10px] tracking-luxury uppercase font-medium transition-all duration-700 relative py-2 ${isActive('/client/3d-measurements') || location.pathname.startsWith('/client') ? 'text-gold' : 'text-ivory/30 hover:text-ivory/70'}`}>
+                                    CLIENT
+                                    {(isActive('/client/3d-measurements') || location.pathname.startsWith('/client')) && <div className="absolute -bottom-1 left-0 right-0 h-[1px] bg-gold animate-glow"></div>}
+                                </Link>
                             )}
 
                             {user?.role === 'delivery' && (
@@ -162,7 +179,10 @@ const Navbar = () => {
                             <div className="divider-gold mt-6 mb-4 mx-0"></div>
                             {isAuthenticated ? (
                                 <div className="flex flex-col gap-4">
-                                    <div className="flex items-center gap-3 py-3 text-[11px] tracking-luxury uppercase text-gold font-medium border-b border-subtle/20">
+                                    <div 
+                                        className={`flex items-center gap-3 py-3 text-[11px] tracking-luxury uppercase text-gold font-medium border-b border-subtle/20 transition-colors ${user?.role === 'client' ? 'cursor-pointer hover:text-ivory' : ''}`}
+                                        onClick={() => { setIsOpen(false); user?.role === 'client' && navigate('/profile'); }}
+                                    >
                                         <User size={16} /> {user.name}
                                     </div>
                                     <button

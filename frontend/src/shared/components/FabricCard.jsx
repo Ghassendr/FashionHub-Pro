@@ -3,7 +3,7 @@ import { Heart, Maximize2, ShoppingBag } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const FabricCard = ({ fabric, showLikes = false }) => {
-    const { isAuthenticated, setIsRegisterOpen } = useAuth();
+    const { user, isAuthenticated, setIsRegisterOpen } = useAuth();
     const [isLiked, setIsLiked] = useState(fabric.is_liked || false);
     const [likes, setLikes] = useState(fabric.likes || 0);
     const [isHovered, setIsHovered] = useState(false);
@@ -100,17 +100,24 @@ const FabricCard = ({ fabric, showLikes = false }) => {
                     </button>
                 </div>
 
-                {/* Heart Icon */}
-                <button 
-                    onClick={handleLike}
-                    className={`absolute top-4 right-4 p-3 rounded-full backdrop-blur-xl transition-all duration-300 z-50 pointer-events-auto shadow-2xl ${
-                        isLiked 
-                        ? 'bg-red-500/30 text-red-500 scale-110 shadow-red-500/20' 
-                        : 'bg-noir/60 text-ivory/60 hover:text-red-500 hover:bg-red-500/20 hover:scale-110'
-                    }`}
-                >
-                    <Heart size={22} fill={isLiked ? "currentColor" : "none"} />
-                </button>
+                {/* Heart Icon / Like Count */}
+                {user?.role === 'fournisseur' ? (
+                    <div className="absolute top-4 right-4 px-3 py-1.5 rounded-full bg-noir/80 backdrop-blur-xl text-ivory/80 flex items-center gap-2 border border-white/5 shadow-2xl z-50 pointer-events-auto">
+                        <Heart size={14} className="text-red-500" fill="currentColor" />
+                        <span className="text-[10px] font-bold">{likes}</span>
+                    </div>
+                ) : (
+                    <button 
+                        onClick={handleLike}
+                        className={`absolute top-4 right-4 p-3 rounded-full backdrop-blur-xl transition-all duration-300 z-50 pointer-events-auto shadow-2xl ${
+                            isLiked 
+                            ? 'bg-red-500/30 text-red-500 scale-110 shadow-red-500/20' 
+                            : 'bg-noir/60 text-ivory/60 hover:text-red-500 hover:bg-red-500/20 hover:scale-110'
+                        }`}
+                    >
+                        <Heart size={22} fill={isLiked ? "currentColor" : "none"} />
+                    </button>
+                )}
             </div>
 
             {/* Details */}

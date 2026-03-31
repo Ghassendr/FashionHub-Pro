@@ -26,7 +26,7 @@ const DesignShowcase = ({ designs, title, subtitle, icon }) => {
                     </div>
                     
                     <button 
-                        onClick={() => navigate('/couturehouse')}
+                        onClick={() => navigate('/couturehouse/designs')}
                         className="group flex items-center gap-3 text-ivory/40 hover:text-amber-500 transition-all duration-500 text-xs uppercase tracking-widest font-bold pb-2 border-b border-white/5 hover:border-amber-500/30"
                     >
                         View Full Atelier

@@ -32,7 +32,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     const fallbackMap = {
       'client': '/client/3d-measurements',
       'fournisseur': '/fournisseur/dashboard',
-      'couture_house': '/couturehouse',
+      'couture_house': '/couturehouse/designs',
       'delivery': '/delivery',
       'admin': '/admin/review'
     };

@@ -98,9 +98,13 @@ const Dashboard = () => {
                 </div>
 
                 <nav className="flex-1 mt-6">
+                    <div className="nav-item" onClick={() => navigate('/couturehouse/fabrics')}>
+                        <Layers size={20} />
+                        {sidebarOpen && <span>Fabrics Inventory</span>}
+                    </div>
                     <div className="nav-item active">
                         <LayoutGrid size={20} />
-                        {sidebarOpen && <span>Dashboard</span>}
+                        {sidebarOpen && <span>My Designs</span>}
                     </div>
                     <div className="nav-item" onClick={() => navigate('/couturehouse/create')}>
                         <Plus size={20} />

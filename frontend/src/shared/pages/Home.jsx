@@ -130,6 +130,38 @@ const Home = () => {
                     </div>
                 </div>
             </section>
+            {/* New Arrivals */}
+            {newsFabrics?.length > 0 && (
+                <div className="border-t border-subtle/30 bg-noir">
+                    <TrendingSection
+                        title="Latest Arrivals"
+                        subtitle="New Collections"
+                        icon={<Sparkles size={16} />}
+                        fabrics={newsFabrics}
+                    />
+                </div>
+            )}
+
+            {/* Trending Fabrics */}
+            {trendingFabrics?.length > 0 && (
+                <div className="border-t border-subtle/30 bg-noir">
+                    <TrendingSection
+                        title="Trending Now"
+                        subtitle="Highly Requested"
+                        icon={<TrendingUp size={16} />}
+                        fabrics={trendingFabrics}
+                        showLikes={true}
+                    />
+                </div>
+            )}
+            {/* Latest Designs Showcase */}
+            {latestDesigns?.length > 0 && (
+                <div className="border-t border-subtle/30 bg-noir">
+                    <DesignShowcase designs={latestDesigns} />
+                </div>
+            )}
+
+
 
             {/* Services Grid — Defined Spacing & Rhythm */}
             <section className="pt-20 pb-[100px] border-t border-subtle/30">

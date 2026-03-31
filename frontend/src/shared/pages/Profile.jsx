@@ -23,10 +23,10 @@ const Profile = () => {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const url = userId 
-                    ? `http://localhost:8000/api/auth/profile/${userId}/` 
+                const url = userId
+                    ? `http://localhost:8000/api/auth/profile/${userId}/`
                     : 'http://localhost:8000/api/auth/profile/';
-                    
+
                 const response = await fetch(url, {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -142,7 +142,7 @@ const Profile = () => {
                                     </div>
                                 </div>
                                 {isOwnProfile && (
-                                    <button 
+                                    <button
                                         onClick={() => setEditMode(!editMode)}
                                         className="btn-secondary px-6 py-2 text-xs"
                                     >
@@ -244,7 +244,7 @@ const Profile = () => {
 
             {/* AI Skin Analysis FAB */}
             {isOwnProfile && user?.role === 'client' && (
-                <button 
+                <button
                     onClick={() => setIsAnalysisModalOpen(true)}
                     className="fixed bottom-10 right-10 w-16 h-16 bg-gold text-noir rounded-full shadow-glow-gold flex items-center justify-center hover:scale-110 transition-transform duration-300 z-50 group"
                     title="AI Skin Tone Analysis"
@@ -256,9 +256,9 @@ const Profile = () => {
                 </button>
             )}
 
-            <SkinAnalysisModal 
-                isOpen={isAnalysisModalOpen} 
-                onClose={() => setIsAnalysisModalOpen(false)} 
+            <SkinAnalysisModal
+                isOpen={isAnalysisModalOpen}
+                onClose={() => setIsAnalysisModalOpen(false)}
                 token={token}
             />
         </div>

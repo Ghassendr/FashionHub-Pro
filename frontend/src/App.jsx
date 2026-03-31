@@ -6,9 +6,9 @@ import Onboarding from './actors/client/pages/Onboarding';
 import BodyMeasurements from './actors/client/pages/BodyMeasurements';
 import DeliveryDashboard from './actors/delivery/pages/DeliveryDashboard';
 import CoutureHouse from './actors/delivery/pages/CoutureHouse';
-import ActivityDashboard from './Pages/Dashboard';
 import CoutureHouseDashboard from './actors/couturehouse/pages/Dashboard';
 import CreateDesign from './actors/couturehouse/pages/CreateDesign';
+import CoutureHouseFabricsInventory from './actors/couturehouse/pages/FabricsInventory';
 import FournisseurDashboard from './actors/Fournisseur/Dashboard';
 import FournisseurSettings from './actors/Fournisseur/Settings';
 import ReviewDashboard from './actors/admin/pages/ReviewDashboard';
@@ -30,48 +30,38 @@ function App() {
       <Route path="/" element={<Layout />}>
         {/* Main Portal - Public */}
         <Route index element={<Home />} />
-        <Route path="profile/:userId?" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="profile/:userId?" element={<ProtectedRoute allowedRoles={['client']}><Profile /></ProtectedRoute>} />
 
         {/* Client Domain - Restricted to Clients */}
-        <Route path="client" element={<ProtectedRoute allowedRoles={['client']}><Outlet /></ProtectedRoute>}>
-          <Route path="client" element={<ProtectedRoute allowedRoles={['client']} />}>
-            <Route index element={<Navigate to="3d-measurements" replace />} />
-            <Route path="onboarding" element={<Onboarding />} />
-            <Route path="3d-measurements" element={<BodyMeasurements />} />
-          </Route>
+        <Route path="client" element={<ProtectedRoute allowedRoles={['client']} />}>
+          <Route index element={<Navigate to="3d-measurements" replace />} />
+          <Route path="onboarding" element={<Onboarding />} />
+          <Route path="3d-measurements" element={<BodyMeasurements />} />
         </Route>
 
         {/* Couture House Domain - Restricted to Couture Houses */}
-        <Route path="couturehouse" element={<ProtectedRoute allowedRoles={['couture_house']}><Outlet /></ProtectedRoute>}>
-          <Route index element={<ActivityDashboard />} />
-          <Route path="designs" element={<CoutureHouseDashboard />} />
-          <Route path="create" element={<CreateDesign />} />
-        </Route>
-        {/* Specialty Dashboards - No Public Navbar */}
         <Route path="couturehouse" element={<ProtectedRoute allowedRoles={['couture_house']} />}>
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<CoutureHouseDashboard />} />
+          <Route index element={<Navigate to="designs" replace />} />
+          <Route path="fabrics" element={<CoutureHouseFabricsInventory />} />
+          <Route path="designs" element={<CoutureHouseDashboard />} />
           <Route path="create" element={<CreateDesign />} />
         </Route>
 
         {/* Fournisseur Domain - Restricted to Suppliers */}
-        <Route path="fournisseur" element={<ProtectedRoute allowedRoles={['fournisseur']}><Outlet /></ProtectedRoute>}>
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<FournisseurDashboard />} />
-          <Route path="settings" element={<FournisseurSettings />} />
-        </Route>
         <Route path="fournisseur" element={<ProtectedRoute allowedRoles={['fournisseur']} />}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<FournisseurDashboard />} />
           <Route path="settings" element={<FournisseurSettings />} />
         </Route>
 
-        <Route path="admin/review" element={<ProtectedRoute allowedRoles={['admin']} />}>
+        {/* Admin Domain */}
+        <Route path="admin" element={<ProtectedRoute allowedRoles={['admin']} />}>
           <Route index element={<ReviewDashboard />} />
         </Route>
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
     </Routes>
   );
 }
