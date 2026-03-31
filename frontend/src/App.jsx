@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import Layout from './shared/components/Layout/Layout';
 import Home from './shared/pages/Home';
 import ProtectedRoute from './shared/components/Auth/ProtectedRoute'; // Added
@@ -31,33 +31,21 @@ function App() {
         <Route index element={<Home />} />
 
         {/* Client Domain - Restricted to Clients */}
-        <Route path="client" element={
-          <ProtectedRoute allowedRoles={['client']}>
-            <Layout /> {/* Nested Layout if needed, or just let children handle it */}
-          </ProtectedRoute>
-        }>
+        <Route path="client" element={<ProtectedRoute allowedRoles={['client']}><Outlet /></ProtectedRoute>}>
           <Route index element={<Navigate to="3d-measurements" replace />} />
           <Route path="onboarding" element={<Onboarding />} />
           <Route path="3d-measurements" element={<BodyMeasurements />} />
         </Route>
 
         {/* Couture House Domain - Restricted to Couture Houses */}
-        <Route path="couturehouse" element={
-          <ProtectedRoute allowedRoles={['couture_house']}>
-             <Layout />
-          </ProtectedRoute>
-        }>
+        <Route path="couturehouse" element={<ProtectedRoute allowedRoles={['couture_house']}><Outlet /></ProtectedRoute>}>
           <Route index element={<ActivityDashboard />} />
           <Route path="designs" element={<CoutureHouseDashboard />} />
           <Route path="create" element={<CreateDesign />} />
         </Route>
 
         {/* Fournisseur Domain - Restricted to Suppliers */}
-        <Route path="fournisseur" element={
-          <ProtectedRoute allowedRoles={['fournisseur']}>
-             <Layout />
-          </ProtectedRoute>
-        }>
+        <Route path="fournisseur" element={<ProtectedRoute allowedRoles={['fournisseur']}><Outlet /></ProtectedRoute>}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<FournisseurDashboard />} />
           <Route path="settings" element={<FournisseurSettings />} />

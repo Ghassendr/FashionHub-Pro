@@ -58,7 +58,7 @@ function Dashboard() {
   const fetchImage = async (fabricId) => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/images/${fabricId}`,
+        `http://localhost:8000/api/images/${fabricId}`,
         {
           method: "GET",
           headers: {
@@ -126,7 +126,7 @@ function Dashboard() {
     try {
       setLoading(true);
       setError("");
-      const response = await fetch("http://localhost:5000/api/fabrics", {
+      const response = await fetch("http://localhost:8000/api/fabrics", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -161,14 +161,14 @@ function Dashboard() {
       console.error("=== FETCH FABRICS ERROR ===");
       console.error("Error:", err.message || err);
       console.error("Token:", token ? "Present" : "Missing");
-      console.error("Backend URL: http://localhost:5000/api/fabrics");
+      console.error("Backend URL: http://localhost:8000/api/fabrics");
       console.error("Frontend: http://localhost:5173");
       console.log("\nDebugging Steps:");
-      console.log("1. Check if backend is running on port 5000");
+      console.log("1. Check if backend is running on port 8000");
       console.log("2. Refresh browser (F5)");
       console.log("3. Check Network tab for OPTIONS requests and CORS errors");
       setError(
-        "Cannot reach backend on http://localhost:5000. Make sure backend is running.",
+        "Cannot reach backend on http://localhost:8000. Make sure backend is running.",
       );
     } finally {
       setLoading(false);
@@ -248,8 +248,8 @@ function Dashboard() {
       setIsSubmitting(true);
       const method = editingId ? "PUT" : "POST";
       const url = editingId
-        ? `http://localhost:5000/api/fabrics/${editingId}`
-        : "http://localhost:5000/api/fabrics";
+        ? `http://localhost:8000/api/fabrics/${editingId}`
+        : "http://localhost:8000/api/fabrics";
 
       // Use FormData for file upload
       const submitData = new FormData();
@@ -303,7 +303,7 @@ function Dashboard() {
 
     try {
       setError("");
-      const response = await fetch(`http://localhost:5000/api/fabrics/${id}`, {
+      const response = await fetch(`http://localhost:8000/api/fabrics/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });

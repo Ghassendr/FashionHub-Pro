@@ -249,7 +249,7 @@
 
 
 /* ─── ALERTS ─────────────────────────────────────────────── */
-.alert {
+.settings-container .alert {
     padding: 20px 24px;
     border-radius: 4px;
     display: flex;
@@ -260,13 +260,13 @@
     backdrop-filter: blur(10px);
 }
 
-.alert-error {
+.settings-container .alert-error {
     background: rgba(150, 50, 50, 0.1);
     border: 1px solid rgba(150, 50, 50, 0.3);
     color: #ff8a8a;
 }
 
-.alert-success {
+.settings-container .alert-success {
     background: var(--accent-gold-glow);
     border: 1px solid var(--border-gold);
     color: var(--accent-gold);
@@ -282,7 +282,7 @@
     border-top: 1px solid var(--border-light);
 }
 
-.btn-primary {
+.settings-container .btn-primary {
     background: var(--text-primary);
     color: var(--bg-primary);
     border: 1px solid var(--text-primary);
@@ -299,12 +299,12 @@
     transition: all var(--transition-med);
 }
 
-.btn-primary:hover {
+.settings-container .btn-primary:hover {
     background: transparent;
     color: var(--text-primary);
 }
 
-.btn-secondary {
+.settings-container .btn-secondary {
     background: transparent;
     color: var(--text-primary);
     border: 1px solid var(--border-light);
@@ -318,7 +318,7 @@
     transition: all var(--transition-med);
 }
 
-.btn-secondary:hover {
+.settings-container .btn-secondary:hover {
     border-color: var(--text-primary);
 }
 

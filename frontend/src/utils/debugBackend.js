@@ -8,7 +8,7 @@ export const debugBackend = async () => {
   console.log("🔍 BACKEND DEBUG TEST");
   console.log("=".repeat(60));
 
-  const backendUrl = "http://localhost:5000";
+  const backendUrl = "http://localhost:8000";
   const healthUrl = `${backendUrl}/health`;
 
   // Test 1: Simple health check

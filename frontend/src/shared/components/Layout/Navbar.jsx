@@ -37,90 +37,97 @@ const Navbar = () => {
                     setIsRegisterOpen(true);
                 }}
             />
-            <nav className="fixed top-0 left-0 right-0 z-50 bg-noir/90 backdrop-blur-md border-b border-subtle/30 transition-all duration-500">
-                <div className="wrapper">
-                    <div className="flex justify-between items-center h-20">
-                        {/* Wordmark */}
-                        <Link to="/" className="group flex items-center gap-4">
-                            <span className="text-gold text-lg tracking-luxury uppercase font-sans font-medium">
-                                Maison Tissue
-                            </span>
-                        </Link>
-
-                        {/* Desktop Navigation */}
-                        <div className="hidden md:flex items-center gap-10">
-                            <Link to="/" className={`text-[11px] tracking-luxury uppercase font-medium ${isActive('/')}`}>
-                                Portal
+            <nav className="fixed top-0 left-0 right-0 z-[1000] bg-noir/90 backdrop-blur-md border-b border-gold/10 shadow-glow-gold/5 transition-all duration-500 font-sans h-[60px]">
+                <div className="mx-auto w-full max-w-[1100px] px-12 h-full">
+                    <div className="flex items-center justify-between h-full gap-8">
+                        {/* Wordmark Section */}
+                        <div className="flex items-center gap-12">
+                            <Link to="/" className="group flex items-center gap-4">
+                                <span className="text-gold text-[12px] tracking-[0.4em] uppercase font-medium whitespace-nowrap">
+                                    M A I S O N &nbsp; T I S S U E
+                                </span>
                             </Link>
 
-                            {/* Role-Based Links */}
-                            {user?.role === 'client' && (
-                                <Link to="/client/3d-measurements" className={`text-[11px] tracking-luxury uppercase font-medium ${isActive('/client/3d-measurements') || location.pathname.startsWith('/client') ? 'text-gold' : 'text-ivory/60 hover:text-gold transition-all duration-500'}`}>
-                                    Client
-                                </Link>
-                            )}
+                            <div className="h-8 w-[0.5px] bg-gold/20"></div>
 
-                            {user?.role === 'delivery' && (
-                                <Link to="/delivery" className={`text-[11px] tracking-luxury uppercase font-medium ${isActive('/delivery')}`}>
-                                    Delivery
+                            {/* Session & Project Info */}
+                            {isAuthenticated && (
+                                <div className="flex items-center gap-8 text-[9px] tracking-[0.2em] font-light uppercase text-ivory/40">
+                                    <div className="flex flex-col leading-tight">
+                                        <span className="text-gold/60 font-semibold mb-0.5">IDENTIFIANT PROJET</span>
+                                        <span className="text-ivory/60">MT-X72-SCAN-2026</span>
+                                    </div>
+                                    <div className="flex flex-col leading-tight">
+                                        <span className="text-gold/60 font-semibold mb-0.5">SESSION</span>
+                                        <span className="text-ivory/60">{user?.role === 'client' ? 'CLIENT · ACTIVE' : user?.role?.toUpperCase()}</span>
+                                    </div>
+                                    <div className="hidden lg:flex flex-col leading-tight">
+                                        <span className="text-gold/60 font-semibold mb-0.5">COURRIEL</span>
+                                        <span className="text-ivory/60 lowercase">{user.email}</span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Navigation Tabs - Full Width Center */}
+                        <div className="flex-grow flex justify-center items-center gap-12">
+                            <Link to="/" className={`text-[10px] tracking-luxury uppercase font-medium transition-all duration-700 relative py-2 ${isActive('/') ? 'text-gold' : 'text-ivory/30 hover:text-ivory/70'}`}>
+                                PORTAL
+                                {isActive('/') && <div className="absolute -bottom-1 left-0 right-0 h-[1px] bg-gold animate-glow"></div>}
+                            </Link>
+                            
+                            {user?.role === 'client' && (
+                                <Link to="/client/3d-measurements" className={`text-[10px] tracking-luxury uppercase font-medium transition-all duration-700 relative py-2 ${isActive('/client/3d-measurements') || location.pathname.startsWith('/client') ? 'text-gold' : 'text-ivory/30 hover:text-ivory/70'}`}>
+                                    CLIENT
+                                    {(isActive('/client/3d-measurements') || location.pathname.startsWith('/client')) && <div className="absolute -bottom-1 left-0 right-0 h-[1px] bg-gold animate-glow"></div>}
                                 </Link>
                             )}
 
                             {user?.role === 'couture_house' && (
-                                <Link to="/couturehouse" className={`text-[11px] tracking-luxury uppercase font-medium ${location.pathname.startsWith('/couturehouse') ? 'text-gold' : 'text-ivory/60 hover:text-gold transition-all duration-500'}`}>
-                                    Couture House
-                                </Link>
-                            )}
-
-                            {user?.role === 'fournisseur' && (
-                                <Link to="/fournisseur/dashboard" className={`text-[11px] tracking-luxury uppercase font-medium ${location.pathname.startsWith('/fournisseur') ? 'text-gold' : 'text-ivory/60 hover:text-gold transition-all duration-500'}`}>
-                                    Supplier
+                                <Link to="/couturehouse" className={`text-[10px] tracking-luxury uppercase font-medium transition-all duration-700 relative py-2 ${location.pathname.startsWith('/couturehouse') ? 'text-gold' : 'text-ivory/30 hover:text-ivory/70'}`}>
+                                    COUTURE
+                                    {location.pathname.startsWith('/couturehouse') && <div className="absolute -bottom-1 left-0 right-0 h-[1px] bg-gold animate-glow"></div>}
                                 </Link>
                             )}
 
                             {isAdmin && (
-                                <Link to="/admin/review" className={`text-[11px] tracking-luxury uppercase font-gold font-bold flex items-center gap-1 ${isActive('/admin/review')}`}>
-                                    <ShieldCheck size={14} /> Admin
+                                <Link to="/admin" className={`text-[10px] tracking-luxury uppercase font-medium transition-all duration-700 relative py-2 ${isActive('/admin') ? 'text-gold' : 'text-ivory/30 hover:text-ivory/70'}`}>
+                                    ADMIN
+                                    {isActive('/admin') && <div className="absolute -bottom-1 left-0 right-0 h-[1px] bg-gold animate-glow"></div>}
                                 </Link>
                             )}
+                        </div>
 
-                            <div className="h-4 w-px bg-subtle ml-2"></div>
-
+                        {/* Auth Section */}
+                        <div className="flex items-center gap-6">
                             {isAuthenticated ? (
-                                <div className="flex items-center gap-6">
-                                    <div className="flex flex-col items-end">
-                                        <div className="flex items-center gap-2 text-[11px] tracking-luxury uppercase text-gold font-medium">
-                                            <User size={14} /> {user.name || (user.email && user.email.split('@')[0]) || 'User'}
-                                        </div>
-                                        <span className="text-[9px] text-ivory/40 uppercase tracking-tighter">{user.role} • {user.status}</span>
-                                    </div>
+                                <div className="flex items-center gap-4">
                                     <button
                                         onClick={handleLogout}
-                                        className="text-ivory/50 hover:text-red-400 transition-colors"
-                                        title="Logout"
+                                        className="text-[9px] tracking-luxury uppercase text-ivory/30 hover:text-red-400 transition-all duration-500 border border-ivory/10 px-4 py-2 hover:border-red-400/30"
                                     >
-                                        <LogOut size={16} />
+                                        Déconnexion
                                     </button>
                                 </div>
                             ) : (
                                 <button
                                     onClick={() => setIsLoginOpen(true)}
-                                    className="btn-ghost flex items-center gap-2 text-[11px] tracking-luxury uppercase font-medium border border-gold/40 px-5 py-2 hover:bg-gold/10 transition-all duration-500"
+                                    className="text-[9px] tracking-luxury uppercase text-gold border border-gold/30 px-6 py-2 hover:bg-gold/10 transition-all duration-500"
                                 >
-                                    <LogIn size={14} /> Login
+                                    Connexion
                                 </button>
                             )}
                         </div>
-
-                        {/* Mobile Toggle */}
-                        <button
-                            className="md:hidden text-ivory/60 hover:text-gold transition-colors p-2"
-                            onClick={() => setIsOpen(!isOpen)}
-                        >
-                            {isOpen ? <X size={24} /> : <Menu size={24} />}
-                        </button>
                     </div>
                 </div>
+
+                {/* Mobile Toggle & Menu - Re-integrated for responsiveness */}
+                <button
+                    className="md:hidden absolute top-6 right-8 text-ivory/60 hover:text-gold transition-colors p-2"
+                    onClick={() => setIsOpen(!isOpen)}
+                >
+                    {isOpen ? <X size={20} /> : <Menu size={20} />}
+                </button>
 
                 {/* Mobile Menu */}
                 {isOpen && (
@@ -145,7 +152,7 @@ const Navbar = () => {
                             )}
 
                             {isAdmin && (
-                                <Link to="/admin/review" className={`py-3 text-[11px] tracking-luxury uppercase font-gold font-bold flex items-center gap-1 ${isActive('/admin/review')}`} onClick={() => setIsOpen(false)}>
+                                <Link to="/admin" className={`py-3 text-[11px] tracking-luxury uppercase text-gold font-bold flex items-center gap-1 ${isActive('/admin')}`} onClick={() => setIsOpen(false)}>
                                     <ShieldCheck size={14} /> Admin
                                 </Link>
                             )}

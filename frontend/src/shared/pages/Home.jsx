@@ -18,8 +18,8 @@ const Home = () => {
 
     return (
         <div className="min-h-screen bg-noir">
-            {/* Hero — Full-bleed cinematic */}
-            <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+            {/* Hero — Fixed Rhythm & Gaps */}
+            <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-[140px]">
                 {/* Background Image */}
                 <div className="absolute inset-0">
                     <img
@@ -31,15 +31,14 @@ const Home = () => {
                 </div>
 
                 {/* Hero Content */}
-                <div className="relative z-10 text-center px-6 max-w-4xl mx-auto animate-fade-in">
-                    <div className="divider-gold mb-10"></div>
-                    <p className="text-label text-gold mb-8">Haute Couture & Smart Logistics</p>
+                <div className="container-editorial relative z-10 text-center animate-fade-in">
+                    <p className="text-label text-gold mb-6 tracking-[0.25em]">HAUTE COUTURE & SMART LOGISTICS</p>
                     <h1 className="font-display text-5xl sm:text-6xl md:text-8xl font-bold text-ivory leading-[0.95] mb-8">
                         Where Art
                         <br />
                         <span className="italic text-gold">Meets Couture</span>
                     </h1>
-                    <p className="text-ivory/50 text-lg sm:text-xl max-w-2xl mx-auto mb-12 font-light leading-relaxed">
+                    <p className="text-ivory/50 text-lg sm:text-xl max-w-2xl mx-auto mb-10 font-light leading-relaxed">
                         A centralized platform blending precision 3D body mapping with intelligent logistics — crafted for the world's most discerning fashion houses.
                     </p>
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -50,55 +49,43 @@ const Home = () => {
                             Explore Collection <ArrowRight size={16} />
                         </button>
                     </div>
-                </div>
 
-                {/* Scroll Indicator */}
-                <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 animate-shimmer">
-                    <div className="w-px h-12 bg-gradient-to-b from-transparent to-gold/50"></div>
-                    <span className="text-label text-gold/50 text-[9px]">Scroll</span>
-                </div>
-            </section>
-
-            {/* Editorial Section — Precision Mapping */}
-            <section className="py-32 relative">
-                <div className="wrapper">
-                    <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
-                        <div className="animate-fade-in">
-                            <p className="text-label text-gold mb-6">The Atelier</p>
-                            <h2 className="font-display text-4xl md:text-5xl font-bold text-ivory mb-8 leading-tight">
-                                Precision 3D
-                                <br />
-                                <span className="italic text-ivory/60">Body Mapping</span>
-                            </h2>
-                            <div className="divider-gold mx-0 mb-8"></div>
-                            <p className="text-ivory/50 leading-relaxed mb-8 max-w-lg">
-                                Our platform seamlessly integrates AI-powered 3D body measurement technology to simulate ergonomic fits for the manufacturing floor. Every measurement, every contour — captured with couture precision.
-                            </p>
-                            <button 
-                                onClick={(e) => handleProtectedAction(e, '/client/3d-measurements')} 
-                                className="btn btn-secondary inline-flex"
-                            >
-                                Try 3D Measurements <ArrowRight size={14} />
-                            </button>
-                        </div>
-                        <div className="relative">
-                            <div className="aspect-[4/5] bg-muted border border-subtle/50 overflow-hidden">
-                                <img
-                                    src="https://images.unsplash.com/photo-1558171813-4c088753af8f?w=800&q=80&auto=format&fit=crop"
-                                    alt="Fashion Atelier"
-                                    className="w-full h-full object-cover opacity-70 hover:opacity-90 transition-opacity duration-700"
-                                />
-                            </div>
-                            <div className="absolute -bottom-6 -left-6 w-32 h-32 border border-gold/20"></div>
-                        </div>
+                    {/* Scroll Indicator — Fixed Positioning */}
+                    <div className="mt-[60px] flex flex-col items-center gap-3 animate-shimmer">
+                        <div className="w-px h-12 bg-gradient-to-b from-transparent to-gold/50"></div>
+                        <span className="text-label text-gold/50 text-[9px] tracking-[0.2em] uppercase">Scroll</span>
                     </div>
                 </div>
             </section>
 
-            {/* Services Grid */}
-            <section className="py-32 border-t border-subtle/30">
-                <div className="wrapper">
-                    <div className="text-center mb-20">
+            {/* Editorial Section — Precision Mapping Reformatted */}
+            <section className="section-rhythm relative">
+                <div className="container-editorial">
+                    <div className="flex flex-col items-center text-center">
+                        <p className="text-label text-gold mb-6">The Atelier</p>
+                        <h2 className="font-display text-4xl md:text-5xl font-bold text-ivory mb-6 leading-tight">
+                            Precision 3D
+                            <br />
+                            <span className="italic text-ivory/60">Body Mapping</span>
+                        </h2>
+                        <div className="divider-gold mb-8"></div>
+                        <p className="text-ivory/50 leading-relaxed mb-8 max-w-2xl mx-auto">
+                            Our platform seamlessly integrates AI-powered 3D body measurement technology to simulate ergonomic fits for the manufacturing floor. Every measurement, every contour — captured with couture precision.
+                        </p>
+                        <button 
+                            onClick={(e) => handleProtectedAction(e, '/client/3d-measurements')} 
+                            className="btn btn-secondary"
+                        >
+                            Try 3D Measurements <ArrowRight size={14} />
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            {/* Services Grid — Defined Spacing & Rhythm */}
+            <section className="pt-20 pb-[100px] border-t border-subtle/30">
+                <div className="container-editorial">
+                    <div className="mb-20 text-center">
                         <p className="text-label text-gold mb-6">Services</p>
                         <h2 className="font-display text-4xl md:text-5xl font-bold text-ivory mb-6">
                             The Smart Ecosystem
@@ -109,34 +96,34 @@ const Home = () => {
                         </p>
                     </div>
 
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-px bg-subtle/30">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-12 gap-x-8">
                         <ServiceCard
-                            icon={<Ruler size={20} />}
+                            icon={<Ruler size={24} />}
                             title="3D Body Mapping"
                             description="AI-powered measurements with sub-millimeter accuracy for perfect couture fits."
                         />
                         <ServiceCard
-                            icon={<TrendingUp size={20} />}
+                            icon={<TrendingUp size={24} />}
                             title="Route Intelligence"
                             description="Optimize logistics with AI-driven route matching and real-time tracking."
                         />
                         <ServiceCard
-                            icon={<Shield size={20} />}
+                            icon={<Shield size={24} />}
                             title="Secure Handling"
                             description="End-to-end protection for high-value couture shipments worldwide."
                         />
                         <ServiceCard
-                            icon={<Sparkles size={20} />}
+                            icon={<Sparkles size={24} />}
                             title="Custom Tailoring"
                             description="Step-by-step customization: silhouette, fabric, color, and embellishments."
                         />
                         <ServiceCard
-                            icon={<Eye size={20} />}
+                            icon={<Eye size={24} />}
                             title="Private Consultation"
                             description="Book exclusive sessions with our in-house stylists and couturiers."
                         />
                         <ServiceCard
-                            icon={<ArrowRight size={20} />}
+                            icon={<ArrowRight size={24} />}
                             title="Global Delivery"
                             description="Premium white-glove delivery service to your door, anywhere in the world."
                         />
@@ -144,8 +131,8 @@ const Home = () => {
                 </div>
             </section>
 
-            {/* Editorial CTA */}
-            <section className="py-32 relative overflow-hidden">
+            {/* Editorial CTA — Focused Rhythm */}
+            <section className="section-rhythm relative overflow-hidden">
                 <div className="absolute inset-0">
                     <img
                         src="https://images.unsplash.com/photo-1509631179647-0177331693ae?w=1920&q=80&auto=format&fit=crop"
@@ -154,18 +141,18 @@ const Home = () => {
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-noir via-noir/90 to-noir/70"></div>
                 </div>
-                <div className="wrapper relative z-10">
-                    <div className="max-w-2xl">
+                <div className="container-editorial relative z-10 text-center">
+                    <div className="max-w-[520px] mx-auto flex flex-col items-center">
                         <p className="text-label text-gold mb-6">Private Clients</p>
                         <h2 className="font-display text-4xl md:text-5xl font-bold text-ivory mb-8 leading-tight">
                             Book Your
                             <br />
                             <span className="italic text-gold">Private Consultation</span>
                         </h2>
-                        <p className="text-ivory/40 mb-10 leading-relaxed max-w-lg">
+                        <p className="text-ivory/40 mb-10 leading-relaxed">
                             Experience a bespoke journey tailored exclusively to your vision. From initial measurements to final delivery — every detail, perfected.
                         </p>
-                        <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex justify-center">
                             <button 
                                 onClick={(e) => handleProtectedAction(e, '/client/onboarding')} 
                                 className="btn btn-primary"
@@ -181,12 +168,12 @@ const Home = () => {
 };
 
 const ServiceCard = ({ icon, title, description }) => (
-    <div className="group bg-noir p-10 border border-subtle/10 hover:border-gold/20 transition-all duration-700 cursor-pointer">
-        <div className="text-gold/60 mb-6 group-hover:text-gold transition-colors duration-500">
+    <div className="group bg-muted/30 p-8 border border-subtle/20 hover:border-gold/40 transition-all duration-700 cursor-pointer min-h-[260px] flex flex-col items-center text-center justify-center rounded-sm">
+        <div className="text-gold/60 mb-4 group-hover:text-gold transition-all duration-500 transform group-hover:scale-110">
             {icon}
         </div>
-        <h3 className="font-display text-lg font-semibold text-ivory mb-3 tracking-wide">{title}</h3>
-        <p className="text-ivory/35 text-sm leading-relaxed">{description}</p>
+        <h3 className="font-display text-xl font-semibold text-ivory mb-[10px] tracking-wide group-hover:text-gold transition-colors duration-500">{title}</h3>
+        <p className="text-ivory/40 text-sm leading-relaxed group-hover:text-ivory/60 transition-colors duration-500">{description}</p>
     </div>
 );
 
