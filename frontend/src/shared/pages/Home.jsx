@@ -71,11 +71,7 @@ const Home = () => {
             <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-[140px]">
                 {/* Background Image */}
                 <div className="absolute inset-0">
-                    <img
-                        src="https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=1920&q=80&auto=format&fit=crop"
-                        alt="Couture Runway"
-                        className="w-full h-full object-cover opacity-40"
-                    />
+
                     <div className="absolute inset-0 bg-gradient-to-b from-noir/60 via-noir/40 to-noir"></div>
                 </div>
 

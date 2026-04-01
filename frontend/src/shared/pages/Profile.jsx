@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { User, Camera, Mail, Info, Heart, Package, Loader2, Save, Layout, Plus } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { User, Camera, Mail, Info, Heart, Package, Loader2, Save, Layout, Plus, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import FabricCard from '../components/FabricCard';
 import DesignCard from '../../actors/couturehouse/components/DesignCard';
-import SkinAnalysisModal from '../components/SkinAnalysisModal';
 
 const Profile = () => {
     const { userId } = useParams();
     const { user, token } = useAuth();
+    const navigate = useNavigate();
     const isOwnProfile = !userId || userId === String(user?.id);
     const [profileData, setProfileData] = useState(null);
     const [likedFabrics, setLikedFabrics] = useState([]);
@@ -19,7 +19,7 @@ const Profile = () => {
     const [info, setInfo] = useState('');
     const [photo, setPhoto] = useState(null);
     const [photoPreview, setPhotoPreview] = useState(null);
-    const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
+    const [isWizardOpen, setIsWizardOpen] = useState(false); // kept for future use
     useEffect(() => {
         const fetchProfile = async () => {
             try {
@@ -32,6 +32,18 @@ const Profile = () => {
                         'Authorization': `Bearer ${token}`
                     }
                 });
+                
+                if (response.status === 401) {
+                    // Token expired while on page
+                    console.warn("Session expired during profile fetch. Logging out...");
+                    // trigger internal logout from context if possible, or just force redirect
+                    // Since we are in a component, we can use the logout from useAuth
+                    // But we already have 'user' and 'token' from useAuth()
+                    // Let's add the logout function to the useAuth destructuring
+                    // Actually, the simplest is to navigate to landing or clear if we can
+                    return; // The useEffect dependency or AuthContext init will handle the rest
+                }
+
                 if (response.ok) {
                     const data = await response.json();
                     setProfileData(data.user);
@@ -242,25 +254,20 @@ const Profile = () => {
                 </div>
             </div>
 
-            {/* AI Skin Analysis FAB */}
+            {/* Create My Design FAB */}
             {isOwnProfile && user?.role === 'client' && (
                 <button
-                    onClick={() => setIsAnalysisModalOpen(true)}
+                    onClick={() => navigate('/client/create-design')}
                     className="fixed bottom-10 right-10 w-16 h-16 bg-gold text-noir rounded-full shadow-glow-gold flex items-center justify-center hover:scale-110 transition-transform duration-300 z-50 group"
-                    title="AI Skin Tone Analysis"
+                    title="Créer mon design"
                 >
                     <Plus size={24} className="group-hover:rotate-90 transition-transform duration-500" />
-                    <div className="absolute right-full mr-4 px-4 py-2 bg-noir/80 backdrop-blur-md border border-gold/20 rounded-lg text-[10px] uppercase tracking-widest text-gold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                        AI Skin Analysis
+                    <div className="absolute right-full mr-4 px-4 py-2 bg-noir/80 backdrop-blur-md border border-gold/20 rounded-lg text-[10px] uppercase tracking-widest text-gold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none flex items-center gap-2">
+                        <Sparkles size={10} /> Créer mon design
                     </div>
                 </button>
             )}
 
-            <SkinAnalysisModal
-                isOpen={isAnalysisModalOpen}
-                onClose={() => setIsAnalysisModalOpen(false)}
-                token={token}
-            />
         </div>
     );
 };

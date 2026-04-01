@@ -24,6 +24,10 @@ urlpatterns = [
     # AI Analysis
     path('skin-analysis/', views.analyze_skin_tone, name='skin_analysis'),
 
+    # Projects
+    path('projects/', views.handle_projects, name='handle_projects'),
+    path('projects/<str:project_id>', views.get_project_details, name='get_project_details'),
+
     # Health Check
     path('health', views.health_check, name='health_check'),
 ]

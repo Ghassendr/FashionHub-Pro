@@ -28,11 +28,33 @@ export const AuthProvider = ({ children }) => {
         const initAuth = async () => {
             const token = authService.getToken();
             if (token) {
-                const userData = decodeToken(token);
-                if (userData) {
+                try {
+                    // Actively verify token by fetching the profile (minimal cost check)
+                    const response = await fetch('http://localhost:8000/api/auth/profile/', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    
+                    if (response.ok) {
+                        const userData = decodeToken(token);
+                        if (userData) {
+                            setUser(userData);
+                        } else {
+                            authService.logout();
+                        }
+                    } else if (response.status === 401) {
+                        // Token invalid or expired
+                        authService.logout();
+                        setUser(null);
+                    } else {
+                        // Other error (server down?), keep visual session for now
+                        const userData = decodeToken(token);
+                        setUser(userData);
+                    }
+                } catch (err) {
+                    console.error("Auth initialization check failed:", err);
+                    // Fallback to visual decode if network is down
+                    const userData = decodeToken(token);
                     setUser(userData);
-                } else {
-                    authService.logout();
                 }
             }
             setLoading(false);

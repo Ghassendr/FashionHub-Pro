@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { 
     Plus, LayoutGrid, Search, Loader2, Home, 
     Palette, BarChart3, Settings, LogOut, 
-    Menu, TrendingUp, Sparkles, Layers 
+    Menu, TrendingUp, Sparkles, Layers, Users 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import designService from '../services/designService';
@@ -75,6 +75,22 @@ const Dashboard = () => {
         }
     };
 
+    const handleDelete = async (id) => {
+        if (window.confirm("Are you absolutely sure you want to delete this design? This action cannot be undone.")) {
+            try {
+                await designService.deleteDesign(id);
+                fetchDesigns();
+            } catch (err) {
+                console.error(err);
+                alert("Failed to delete design.");
+            }
+        }
+    };
+
+    const handleEdit = (id) => {
+        navigate(`/couturehouse/create?edit=${id}`);
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-ivory">
@@ -105,6 +121,10 @@ const Dashboard = () => {
                     <div className="nav-item active">
                         <LayoutGrid size={20} />
                         {sidebarOpen && <span>My Designs</span>}
+                    </div>
+                    <div className="nav-item" onClick={() => navigate('/couturehouse/inquiries')}>
+                        <Users size={20} />
+                        {sidebarOpen && <span>Client Inquiries</span>}
                     </div>
                     <div className="nav-item" onClick={() => navigate('/couturehouse/create')}>
                         <Plus size={20} />
@@ -216,6 +236,8 @@ const Dashboard = () => {
                                     design={design} 
                                     onPublish={handlePublish}
                                     onArchive={handleArchive}
+                                    onDelete={handleDelete}
+                                    onEdit={handleEdit}
                                 />
                             ))}
                         </div>

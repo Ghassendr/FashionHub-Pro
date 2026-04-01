@@ -103,13 +103,17 @@ class SilhouetteClassifier:
         elif shoulder_to_waist > 0.55:
             scores['athletic'] += 1
         
-        # Déterminer le type dominant
+        # Determine dominant body type (Slim/Normal/Athletic/Large)
         body_type = max(scores, key=scores.get)
         confidence = scores[body_type] / sum(scores.values()) if sum(scores.values()) > 0 else 0.5
+        
+        # --- NEW: Identify Shape Letter (A, X, H, V, 8, O) ---
+        shape_letter = self._classify_shape_letter(shoulders, chest, waist, hips, bmi)
         
         return {
             'type': body_type,
             'type_fr': self.BODY_TYPES[body_type]['fr'],
+            'shape_letter': shape_letter,
             'description': self.BODY_TYPES[body_type]['description'],
             'confidence': round(confidence, 2),
             'bmi': round(bmi, 1),
@@ -120,6 +124,36 @@ class SilhouetteClassifier:
                 'shoulder_to_waist': round(shoulder_to_waist, 3)
             }
         }
+
+    def _classify_shape_letter(self, shoulders, chest, waist, hips, bmi):
+        """
+        Classifies the visual silhouette using standard fashion letters (A, X, V, H, 8, O).
+        """
+        # Calculate key ratios for shape
+        s_h_ratio = shoulders / hips if hips > 0 else 1.0
+        w_h_ratio = waist / hips if hips > 0 else 1.0
+        w_s_ratio = waist / shoulders if shoulders > 0 else 1.0
+        
+        # 1. Circle / Apple (O)
+        if bmi > 27 and w_h_ratio > 0.9 and w_s_ratio > 0.9:
+            return 'O'
+            
+        # 2. Triangle / Pear (A)
+        if s_h_ratio < 0.95:
+             return 'A'
+             
+        # 3. Inverted Triangle (V)
+        if s_h_ratio > 1.05 and w_s_ratio < 0.85:
+            return 'V'
+            
+        # 4. Hourglass (X / 8)
+        if 0.95 <= s_h_ratio <= 1.05 and w_h_ratio < 0.75:
+            if bmi > 25:
+                return '8' # More curves
+            return 'X'
+            
+        # 5. Rectangle (H)
+        return 'H'
     
     def _get_measure(self, measurements: Dict, key: str, default: float) -> float:
         """Extrait une mesure du dictionnaire (format plat ou catégorisé)"""

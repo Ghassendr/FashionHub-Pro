@@ -146,6 +146,7 @@ class SequentialPipeline:
             },
             'measurements': measurements,
             'morphology': morphology_data,
+            'morphology_type': morphology_data.get('silhouette', {}).get('shape_letter'),
             'fashion_recommendations': fashion_data,
             'processing_time_seconds': round(time.time() - start, 2),
             'mesh_path': f"/results/{run_id}/body_mesh.glb" if mesh_ok else None,

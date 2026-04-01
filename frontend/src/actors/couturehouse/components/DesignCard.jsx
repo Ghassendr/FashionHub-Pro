@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Layout, Edit, Trash2, CheckCircle, Archive, Heart } from 'lucide-react';
 import { useAuth } from '../../../shared/context/AuthContext';
 
-const DesignCard = ({ design, onPublish, onArchive, isPublic = false }) => {
+const DesignCard = ({ design, onPublish, onArchive, onDelete, onEdit, isPublic = false }) => {
     const navigate = useNavigate();
     const { user, isAuthenticated, setIsRegisterOpen } = useAuth();
     const [isLiked, setIsLiked] = useState(design.is_liked_by_user || false);
@@ -137,17 +137,26 @@ const DesignCard = ({ design, onPublish, onArchive, isPublic = false }) => {
                                 Publish Asset
                             </button>
                         )}
-                        <button className="text-zinc-600 hover:text-ivory transition-colors">
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); onEdit && onEdit(design.id); }}
+                            className="text-zinc-600 hover:text-ivory transition-colors"
+                        >
                             <Edit size={14} />
                         </button>
                         {design.status !== 'archived' && (
                             <button
-                                onClick={() => onArchive(design.id)}
-                                className="text-zinc-600 hover:text-red-400 transition-colors"
+                                onClick={(e) => { e.stopPropagation(); onArchive && onArchive(design.id); }}
+                                className="text-zinc-600 hover:text-amber-400 transition-colors"
                             >
                                 <Archive size={14} />
                             </button>
                         )}
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onDelete && onDelete(design.id); }}
+                            className="text-zinc-600 hover:text-red-500 transition-colors"
+                        >
+                            <Trash2 size={14} />
+                        </button>
                     </div>
                 )}
             </div>

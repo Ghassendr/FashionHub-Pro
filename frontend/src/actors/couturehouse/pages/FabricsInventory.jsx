@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
     Layers, Search, Loader2, Palette, 
-    Menu, LogOut, Package, TrendingUp, Sparkles, LayoutGrid, Plus, Settings
+    Menu, LogOut, Package, TrendingUp, Sparkles, LayoutGrid, Plus, Settings, Users
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../../../services/authService';
@@ -124,6 +124,10 @@ const CoutureHouseFabricsInventory = () => {
                     <div className="nav-item" onClick={() => navigate('/couturehouse/designs')}>
                         <LayoutGrid size={20} />
                         {sidebarOpen && <span>My Designs</span>}
+                    </div>
+                    <div className="nav-item" onClick={() => navigate('/couturehouse/inquiries')}>
+                        <Users size={20} />
+                        {sidebarOpen && <span>Client Inquiries</span>}
                     </div>
                     <div className="nav-item" onClick={() => navigate('/couturehouse/create')}>
                         <Plus size={20} />

@@ -560,3 +560,68 @@ def health_check(_request: HttpRequest):
             "3d_reconstruction": True,
         },
     })
+
+# --- Client Projects ---
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework import permissions
+
+@api_view(["GET", "POST"])
+@permission_classes([permissions.IsAuthenticated])
+def handle_projects(request: HttpRequest):
+    from actors.client.models.models import ClientProject
+    from django.utils import timezone
+    import json
+
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            project = ClientProject(
+                client_id=request.user.id,
+                scan_result=data.get("scan_result", {}),
+                skin_result=data.get("skin_result", {}),
+                selected_designs=data.get("selected_designs", []),
+                selected_fabrics=data.get("selected_fabrics", []),
+                status=data.get("status", "saved"),
+                created_at=timezone.now(),
+                updated_at=timezone.now()
+            )
+            project.save()
+            return JsonResponse({"message": "Project saved successfully", "id": str(project.id)}, status=201)
+        except Exception as e:
+            logger.exception("Failed to save project: %s", e)
+            return JsonResponse({"error": str(e)}, status=400)
+
+    elif request.method == "GET":
+        projects = ClientProject.objects.filter(client_id=request.user.id).order_by("-created_at")
+        results = []
+        for p in projects:
+            results.append({
+                "id": str(p.id),
+                "status": p.status,
+                "created_at": p.created_at.isoformat() if p.created_at else None,
+                "summary": {
+                    "designs_count": len(p.selected_designs),
+                    "fabrics_count": len(p.selected_fabrics)
+                }
+            })
+        return JsonResponse({"projects": results})
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def get_project_details(request: HttpRequest, project_id: str):
+    from actors.client.models.models import ClientProject
+    try:
+        project = ClientProject.objects.get(id=project_id, client_id=request.user.id)
+        return JsonResponse({
+            "id": str(project.id),
+            "status": project.status,
+            "scan_result": project.scan_result,
+            "skin_result": project.skin_result,
+            "selected_designs": project.selected_designs,
+            "selected_fabrics": project.selected_fabrics,
+            "created_at": project.created_at.isoformat() if project.created_at else None,
+        })
+    except ClientProject.DoesNotExist:
+        return JsonResponse({"error": "Project not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)

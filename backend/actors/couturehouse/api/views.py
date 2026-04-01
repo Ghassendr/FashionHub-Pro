@@ -200,3 +200,125 @@ def toggle_design_like(request, id):
         return Response({"detail": "Design introuvable ou non publié."}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# --- Inquiries (Client Projects) ---
+from actors.client.models.models import ClientProject
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def handle_inquiries(request):
+    """
+    Get a list of ClientProjects that reference designs owned by this Couture House.
+    """
+    # 1. Get IDs of all designs owned by this house
+    my_design_ids = [str(d.id) for d in Design.objects.filter(fashion_house_id=request.user.id)]
+    
+    if not my_design_ids:
+        return Response({"inquiries": []})
+
+    # 2. Find projects that have at least one of these designs selected
+    # MongoEngine query: selected_designs__in=[...]
+    projects = ClientProject.objects.filter(selected_designs__in=my_design_ids).order_by("-created_at")
+    
+    results = []
+    for p in projects:
+        # Get client user info
+        try:
+            client_user = User.objects.get(id=p.client_id)
+            client_name = f"{client_user.first_name} {client_user.last_name}" if client_user.first_name else client_user.username
+        except User.DoesNotExist:
+            client_name = "Unknown Client"
+
+        results.append({
+            "id": str(p.id),
+            "client_name": client_name,
+            "status": p.status,
+            "created_at": p.created_at.isoformat() if p.created_at else None,
+            "summary": {
+                "designs_count": len([d for d in p.selected_designs if d in my_design_ids]),
+                "total_designs": len(p.selected_designs)
+            }
+        })
+        
+    return Response({"inquiries": results})
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def get_inquiry_details(request, id):
+    """
+    Get full details of a specific client project, ensuring it belongs to this house's designs.
+    """
+    from actors.fournisseur.models import Fabric
+    
+    try:
+        project = ClientProject.objects.get(id=id)
+        
+        # Security check: Does this project contain any of this house's designs?
+        my_design_ids = [str(d.id) for d in Design.objects.filter(fashion_house_id=request.user.id)]
+        has_access = any(d_id in my_design_ids for d_id in project.selected_designs)
+        
+        if not has_access:
+            return Response({"detail": "Non autorisé à voir ce projet."}, status=status.HTTP_403_FORBIDDEN)
+
+        # Get client user info
+        try:
+            client_user = User.objects.get(id=project.client_id)
+            client_name = f"{client_user.first_name} {client_user.last_name}" if client_user.first_name else client_user.username
+        except User.DoesNotExist:
+            client_name = "Unknown Client"
+
+        # Hydrate designs
+        hydrated_designs = []
+        for d_id in project.selected_designs:
+            try:
+                d_obj = Design.objects.get(id=d_id)
+                # Find cover or first photo
+                cover = next((m for m in d_obj.media if m.is_cover), d_obj.media[0] if d_obj.media else None)
+                image_url = f"{settings.MEDIA_URL}{cover.file}" if cover else None
+                hydrated_designs.append({
+                    "id": d_id, 
+                    "title": d_obj.title, 
+                    "is_mine": d_id in my_design_ids,
+                    "image_url": image_url
+                })
+            except Design.DoesNotExist:
+                hydrated_designs.append({
+                    "id": d_id, 
+                    "title": f"Design #{d_id[:6]}", 
+                    "is_mine": d_id in my_design_ids,
+                    "image_url": None
+                })
+
+        # Hydrate fabrics
+        hydrated_fabrics = []
+        for f_id in project.selected_fabrics:
+            try:
+                f_obj = Fabric.objects.get(id=f_id)
+                hydrated_fabrics.append({
+                    "id": f_id, 
+                    "name": f_obj.materiel,
+                    "color": f_obj.color if isinstance(f_obj.color, list) and len(f_obj.color) == 3 else None
+                })
+            except Fabric.DoesNotExist:
+                hydrated_fabrics.append({
+                    "id": f_id, 
+                    "name": f"Matière #{f_id}",
+                    "color": None
+                })
+            
+        return Response({
+            "id": str(project.id),
+            "client_id": project.client_id,
+            "client_name": client_name,
+            "status": project.status,
+            "scan_result": project.scan_result,
+            "skin_result": project.skin_result,
+            "selected_designs": hydrated_designs,
+            "selected_fabrics": hydrated_fabrics,
+            "created_at": project.created_at.isoformat() if project.created_at else None,
+        })
+    except ClientProject.DoesNotExist:
+        return Response({"detail": "Commande introuvable."}, status=status.HTTP_404_NOT_FOUND)

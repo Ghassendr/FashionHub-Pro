@@ -4,10 +4,12 @@ import Home from './shared/pages/Home';
 import ProtectedRoute from './shared/components/Auth/ProtectedRoute'; // Added
 import Onboarding from './actors/client/pages/Onboarding';
 import BodyMeasurements from './actors/client/pages/BodyMeasurements';
+import CreateDesignWizard from './actors/client/pages/CreateDesignWizard';
 import DeliveryDashboard from './actors/delivery/pages/DeliveryDashboard';
 import CoutureHouse from './actors/delivery/pages/CoutureHouse';
 import CoutureHouseDashboard from './actors/couturehouse/pages/Dashboard';
 import CreateDesign from './actors/couturehouse/pages/CreateDesign';
+import Inquiries from './actors/couturehouse/pages/Inquiries';
 import CoutureHouseFabricsInventory from './actors/couturehouse/pages/FabricsInventory';
 import FournisseurDashboard from './actors/Fournisseur/Dashboard';
 import FournisseurSettings from './actors/Fournisseur/Settings';
@@ -23,6 +25,16 @@ function App() {
         element={
           <ProtectedRoute allowedRoles={['delivery']}>
             <DeliveryDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Client Design Wizard - Standalone (no Layout wrapper) */}
+      <Route
+        path="/client/create-design"
+        element={
+          <ProtectedRoute allowedRoles={['client']}>
+            <CreateDesignWizard />
           </ProtectedRoute>
         }
       />
@@ -44,6 +56,7 @@ function App() {
           <Route index element={<Navigate to="designs" replace />} />
           <Route path="fabrics" element={<CoutureHouseFabricsInventory />} />
           <Route path="designs" element={<CoutureHouseDashboard />} />
+          <Route path="inquiries" element={<Inquiries />} />
           <Route path="create" element={<CreateDesign />} />
         </Route>
 

@@ -1,16 +1,21 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
     ArrowLeft, Upload, FileText, Check, Loader2, 
     Palette, LayoutGrid, Plus, TrendingUp, Settings, 
-    LogOut, Menu, Layers 
+    LogOut, Menu, Layers, Users 
 } from 'lucide-react';
 import designService from '../services/designService';
 import './CoutureDashboard.css';
 
 const CreateDesign = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const editId = searchParams.get('edit');
+    const isEditing = !!editId;
+
     const [loading, setLoading] = useState(false);
+    const [initialFetchLoading, setInitialFetchLoading] = useState(isEditing);
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [formData, setFormData] = useState({
         title: '',
@@ -20,14 +25,37 @@ const CreateDesign = () => {
         morphologies: []
     });
     const morphologiesList = [
-        { id: 'H', label: 'Rectangle (H)', desc: 'Shoulders & hips similar width' },
-        { id: 'A', label: 'Pyramide (A)', desc: 'Hips wider than shoulders' },
-        { id: 'V', label: 'Pyramide Inv (V)', desc: 'Shoulders wider than hips' },
-        { id: 'X', label: 'Sablier (X)', desc: 'Defined waist, balanced' },
-        { id: '8', label: 'Huit (8)', desc: 'Curvy hourglass' },
-        { id: 'O', label: 'Ronde (O)', desc: 'Curvy midsection' }
+        { id: 'H', label: 'Rectangle', desc: 'Épaules et hanches similaires.' },
+        { id: 'A', label: 'Poire', desc: 'Hanches plus larges.' },
+        { id: 'V', label: 'Triangle Inv.', desc: 'Épaules plus larges.' },
+        { id: 'X', label: 'Sablier', desc: 'Taille marquée et équilibrée.' },
+        { id: '8', label: 'Huit', desc: 'Sablier prononcé.' },
+        { id: 'O', label: 'Ronde', desc: 'Silhouette arrondie.' }
     ];
     const [files, setFiles] = useState([]);
+
+    React.useEffect(() => {
+        if (!isEditing) return;
+        const fetchDesign = async () => {
+            try {
+                const design = await designService.getDesign(editId);
+                setFormData({
+                    title: design.title || '',
+                    description: design.description || '',
+                    category: design.category || 'dress',
+                    fabric_suggestions: design.fabric_suggestions || '',
+                    morphologies: design.morphologies || []
+                });
+            } catch (err) {
+                console.error("Failed to fetch design for editing", err);
+                alert("Could not load design data.");
+                navigate('/couturehouse/designs');
+            } finally {
+                setInitialFetchLoading(false);
+            }
+        };
+        fetchDesign();
+    }, [editId, isEditing, navigate]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -60,8 +88,14 @@ const CreateDesign = () => {
 
         try {
             setLoading(true);
-            const newDesign = await designService.createDesign(formData);
-            const designId = newDesign.id || newDesign._id || newDesign.design?.id || newDesign.design?._id;
+            let designId = editId;
+            
+            if (isEditing) {
+                await designService.updateDesign(editId, formData);
+            } else {
+                const newDesign = await designService.createDesign(formData);
+                designId = newDesign.id || newDesign._id || newDesign.design?.id || newDesign.design?._id;
+            }
             
             if (!designId) throw new Error("Could not retrieve design ID.");
             
@@ -79,7 +113,7 @@ const CreateDesign = () => {
                 }
             }
 
-            alert("Design created successfully!");
+            alert(isEditing ? "Design updated successfully!" : "Design created successfully!");
             navigate('/couturehouse/designs'); // Updated to go back to designs list
         } catch (err) {
             if (err.response?.status === 401) {
@@ -113,6 +147,10 @@ const CreateDesign = () => {
                     <div className="nav-item" onClick={() => navigate('/couturehouse/designs')}>
                         <LayoutGrid size={20} />
                         {sidebarOpen && <span>My Designs</span>}
+                    </div>
+                    <div className="nav-item" onClick={() => navigate('/couturehouse/inquiries')}>
+                        <Users size={20} />
+                        {sidebarOpen && <span>Client Inquiries</span>}
                     </div>
                     <div className="nav-item active">
                         <Plus size={20} />
@@ -156,9 +194,14 @@ const CreateDesign = () => {
 
                     <div className="mb-12">
                         <span className="text-label text-gold block mb-4 uppercase text-[10px] tracking-[0.3em]">Design Asset</span>
-                        <h1 className="text-5xl font-display text-ivory">New Creation</h1>
+                        <h1 className="text-5xl font-display text-ivory">{isEditing ? 'Edit Creation' : 'New Creation'}</h1>
                     </div>
 
+                    {initialFetchLoading ? (
+                        <div className="flex justify-center items-center py-20">
+                            <Loader2 className="animate-spin text-amber-500" size={32} />
+                        </div>
+                    ) : (
                     <form onSubmit={handleSubmit} className="max-w-4xl space-y-10">
                         {/* Basic Info */}
                         <div className="bg-white/5 border border-white/10 rounded-3xl p-10 space-y-8">
@@ -221,9 +264,11 @@ const CreateDesign = () => {
                                                         : 'bg-zinc-900/50 border-white/10 text-zinc-400 hover:border-amber-500/30 hover:text-ivory'
                                                 }`}
                                             >
-                                                <span className="font-display text-lg mb-1">{morph.id}</span>
-                                                <span className="text-[10px] uppercase tracking-widest font-bold mb-1">{morph.label.split(' (')[0]}</span>
-                                                <span className="text-[9px] text-zinc-500">{morph.desc}</span>
+                                                <span className="text-[10px] uppercase tracking-[0.2em] font-black text-ivory mb-1">{morph.label}</span>
+                                                <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center mb-2">
+                                                    <span className="font-display text-xs text-gold/60">{morph.id}</span>
+                                                </div>
+                                                <span className="text-[9px] text-zinc-500 leading-relaxed font-light">{morph.desc}</span>
                                             </button>
                                         );
                                     })}
@@ -297,13 +342,14 @@ const CreateDesign = () => {
                                     </>
                                 ) : (
                                     <>
-                                        Initialize Masterpiece
+                                        {isEditing ? 'Update Masterpiece' : 'Initialize Masterpiece'}
                                         <Check size={24} className="group-hover:scale-125 transition-transform" />
                                     </>
                                 )}
                             </button>
                         </div>
                     </form>
+                    )}
                 </div>
             </main>
         </div>

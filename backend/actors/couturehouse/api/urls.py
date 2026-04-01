@@ -12,4 +12,8 @@ urlpatterns = [
     # Public & Interactive
     path('public/designs/', views.PublicDesignListView.as_view(), name='public-design-list'),
     path('designs/<str:id>/like/', views.toggle_design_like, name='design-like-toggle'),
+
+    # Inquiries
+    path('inquiries/', views.handle_inquiries, name='inquiry-list'),
+    path('inquiries/<str:id>/', views.get_inquiry_details, name='inquiry-detail'),
 ]

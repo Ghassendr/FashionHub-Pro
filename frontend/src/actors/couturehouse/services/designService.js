@@ -47,6 +47,20 @@ const designService = {
         return response.data;
     },
 
+    updateDesign: async (id, designData) => {
+        const response = await axios.patch(`${API_URL}/designs/${id}/`, designData, {
+            headers: getAuthHeader()
+        });
+        return response.data;
+    },
+
+    deleteDesign: async (id) => {
+        const response = await axios.delete(`${API_URL}/designs/${id}/`, {
+            headers: getAuthHeader()
+        });
+        return response.data;
+    },
+
     archiveDesign: async (id) => {
         const response = await axios.post(`${API_URL}/designs/${id}/archive/`, {}, {
             headers: getAuthHeader()
