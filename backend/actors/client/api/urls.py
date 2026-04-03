@@ -26,7 +26,7 @@ urlpatterns = [
 
     # Projects
     path('projects/', views.handle_projects, name='handle_projects'),
-    path('projects/<str:project_id>', views.get_project_details, name='get_project_details'),
+    path('projects/<str:project_id>/', views.get_project_details, name='get_project_details'),
 
     # Health Check
     path('health', views.health_check, name='health_check'),

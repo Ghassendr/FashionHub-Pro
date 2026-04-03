@@ -90,17 +90,42 @@ class AccurateSkinAnalyzer:
         logger.info("Initializing AccurateSkinAnalyzer...")
         
         try:
-            self.face_mesh = mp.solutions.face_mesh.FaceMesh(
-                static_image_mode=True, 
-                max_num_faces=1,
-                min_detection_confidence=0.5,  # Lowered for better detection
-                refine_landmarks=True
-            )
+            if hasattr(mp, 'solutions'):
+                self.face_mesh = mp.solutions.face_mesh.FaceMesh(
+                    static_image_mode=True, 
+                    max_num_faces=1,
+                    min_detection_confidence=0.5,
+                    refine_landmarks=True
+                )
+                self.use_legacy = True
+            else:
+                from mediapipe.tasks import python as mp_python
+                from mediapipe.tasks.python import vision
+                import urllib.request
+                
+                model_path = os.path.join(os.path.dirname(__file__), 'face_landmarker.task')
+                if not os.path.exists(model_path):
+                    logger.info("Downloading face_landmarker.task...")
+                    urllib.request.urlretrieve(
+                        "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task", 
+                        model_path
+                    )
+                
+                base_options = mp_python.BaseOptions(model_asset_path=model_path)
+                options = vision.FaceLandmarkerOptions(
+                    base_options=base_options,
+                    num_faces=1,
+                    min_face_detection_confidence=0.5,
+                    min_face_presence_confidence=0.5
+                )
+                self.face_mesh = vision.FaceLandmarker.create_from_options(options)
+                self.use_legacy = False
             logger.info("MediaPipe Face Mesh initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize Face Mesh: {e}")
             raise
         
+        self.json_path = json_path
         self.database = self._load_database(json_path)
         self.json_path = json_path
 
@@ -335,9 +360,25 @@ class AccurateSkinAnalyzer:
         
         # Detect face
         logger.info("Running face detection...")
-        results = self.face_mesh.process(img_enhanced)
         
-        if not results.multi_face_landmarks:
+        if self.use_legacy:
+            results = self.face_mesh.process(img_enhanced)
+            if not results.multi_face_landmarks:
+                results_landmarks = None
+            else:
+                results_landmarks = results.multi_face_landmarks[0]
+        else:
+            mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=img_enhanced)
+            results = self.face_mesh.detect(mp_image)
+            if not getattr(results, 'face_landmarks', None):
+                results_landmarks = None
+            else:
+                class MockLandmarks:
+                    def __init__(self, t_lms):
+                        self.landmark = t_lms
+                results_landmarks = MockLandmarks(results.face_landmarks[0])
+        
+        if not results_landmarks:
             logger.error("❌ No face detected in image")
             logger.error("Suggestions:")
             logger.error("  - Ensure face is clearly visible and well-lit")
@@ -346,10 +387,10 @@ class AccurateSkinAnalyzer:
             logger.error("  - Check image quality and resolution")
             return None
         
-        logger.info(f"✓ Face detected with {len(results.multi_face_landmarks[0].landmark)} landmarks")
+        logger.info(f"✓ Face detected with {len(results_landmarks.landmark)} landmarks")
         
         # Extract skin color
-        detected_rgb = self._extract_skin_color_advanced(img_enhanced, results.multi_face_landmarks[0])
+        detected_rgb = self._extract_skin_color_advanced(img_enhanced, results_landmarks)
         
         if detected_rgb is None:
             logger.error("❌ Could not extract skin color from detected face")

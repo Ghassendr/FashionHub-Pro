@@ -64,7 +64,7 @@ const ReviewDashboard = () => {
     const [detailModal, setDetailModal] = useState({ open: false, data: null });
     const [docsModal, setDocsModal] = useState({ open: false, data: null });
 
-    const API_URL = "http://localhost:8000/api/auth/admin";
+    const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/auth/admin`;
 
     const fetchQueue = async () => {
         try {

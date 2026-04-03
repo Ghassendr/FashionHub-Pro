@@ -5,6 +5,7 @@ import ProtectedRoute from './shared/components/Auth/ProtectedRoute'; // Added
 import Onboarding from './actors/client/pages/Onboarding';
 import BodyMeasurements from './actors/client/pages/BodyMeasurements';
 import MyCostumes from './actors/client/pages/MyCostumes';
+import CostumeDetails from './actors/client/pages/CostumeDetails';
 import PostureSpace from './actors/client/pages/PostureSpace';
 import Profile from './actors/client/pages/Profile';
 import CreateDesignWizard from './actors/client/pages/CreateDesignWizard';
@@ -54,6 +55,7 @@ function App() {
           <Route path="onboarding" element={<Onboarding />} />
           <Route path="3d-measurements" element={<BodyMeasurements />} />
           <Route path="costumes" element={<MyCostumes />} />
+          <Route path="costumes/:id" element={<CostumeDetails />} />
           <Route path="posture" element={<PostureSpace />} />
         </Route>
 

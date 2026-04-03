@@ -80,15 +80,17 @@ const AdminOverview = () => {
                 const token = localStorage.getItem('token');
                 const headers = { 'Authorization': `Bearer ${token}` };
 
+                const API = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+                
                 // Fetch comprehensive stats
-                const statsRes = await fetch('http://localhost:8000/api/auth/admin/stats/', { headers });
+                const statsRes = await fetch(`${API}/api/auth/admin/stats/`, { headers });
                 if (statsRes.ok) {
                     const data = await statsRes.json();
                     setStats(data);
                 }
 
                 // Fetch pending queue for recent activity
-                const queueRes = await fetch('http://localhost:8000/api/auth/admin/review-queue/', { headers });
+                const queueRes = await fetch(`${API}/api/auth/admin/review-queue/`, { headers });
                 if (queueRes.ok) {
                     const queue = await queueRes.json();
                     setRecentActivity(queue.slice(0, 5));
