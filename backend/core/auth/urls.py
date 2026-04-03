@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import RegisterView, MyTokenObtainPairView, ProfileView
-from .admin_views import AdminReviewQueueView, AdminReviewActionView
+from .admin_views import AdminReviewQueueView, AdminReviewActionView, AdminStatsView
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='auth_register'),
@@ -9,4 +9,5 @@ urlpatterns = [
     # Admin Review
     path('admin/review-queue/', AdminReviewQueueView.as_view(), name='admin_review_queue'),
     path('admin/review-action/<int:user_id>/', AdminReviewActionView.as_view(), name='admin_review_action'),
+    path('admin/stats/', AdminStatsView.as_view(), name='admin_stats'),
 ]

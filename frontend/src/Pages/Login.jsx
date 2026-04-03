@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AlertCircle, CheckCircle, Loader } from "lucide-react";
+import { useAuth } from "../shared/context/AuthContext";
 import "../App.css";
 
 function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -49,58 +51,28 @@ function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:8000/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          setError("Invalid email or password. Please try again.");
-        } else if (response.status === 404) {
-          setError("Account not found. Please create an account first.");
-        } else if (response.status === 500) {
-          setError("Server error. Please try again later.");
-        } else {
-          setError(data.error || "Login failed. Please try again.");
-        }
-        setLoading(false);
-        return;
-      }
-
-      // Store token and user info
-      if (!data.token || !data.user) {
-        setError("Invalid response from server. Please try again.");
-        setLoading(false);
-        return;
-      }
-
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user_id", data.user.id);
-      localStorage.setItem("user_email", data.user.email);
-      localStorage.setItem(
-        "user_name",
-        `${data.user.prenom || ""} ${data.user.nom || ""}`.trim(),
-      );
-
+      const userData = await login(formData.email, formData.password);
+      
       setSuccess(true);
       setTimeout(() => {
         setLoading(false);
-        navigate("/fournisseur/dashboard");
+        
+        // Role-based redirection
+        if (userData.role === 'fournisseur') {
+            navigate('/fournisseur/dashboard');
+        } else if (userData.role === 'couture_house') {
+            navigate('/couturehouse/designs');
+        } else if (userData.role === 'delivery') {
+            navigate('/delivery');
+        } else if (userData.role === 'admin') {
+            navigate('/admin/review');
+        } else {
+            navigate('/profile'); // Default for clients
+        }
       }, 1500);
     } catch (err) {
       console.error("Login error:", err);
-      setError(
-        "Connection error. Please check your internet connection and try again.",
-      );
+      setError(err.message || "Invalid email or password. Please try again.");
       setLoading(false);
     }
   };

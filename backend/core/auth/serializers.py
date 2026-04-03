@@ -18,6 +18,8 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['role'] = user.role
         token['account_status'] = user.account_status
         token['name'] = user.username
+        token['email'] = user.email
+        token['user_id'] = user.id
         return token
 
 class UserSerializer(serializers.ModelSerializer):
@@ -61,6 +63,11 @@ class RegistrationSerializer(serializers.Serializer):
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError("Email already exists")
+        return value
+
+    def validate_role(self, value):
+        if value == 'admin':
+            raise serializers.ValidationError("Cannot register an admin account publicly.")
         return value
 
     def validate_username(self, value):

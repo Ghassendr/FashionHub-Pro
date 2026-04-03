@@ -9,7 +9,7 @@ import { useAuth } from '../../context/AuthContext';
  * @param {React.ReactNode} children - The component(s) to render if authorized.
  */
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user, loading, isAuthenticated, isApproved } = useAuth();
   const location = useLocation();
 
   // Show nothing or a spinner while the auth status is being determined
@@ -26,7 +26,13 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 
-  // 2. Logged in but role not allowed? Redirect to their specific dashboard
+  // 2. Pro user but not approved yet? Redirect to pending verification
+  const proRoles = ['fournisseur', 'couture_house', 'delivery'];
+  if (proRoles.includes(user?.role) && !isApproved) {
+    return <Navigate to="/pending-verification" replace />;
+  }
+
+  // 3. Logged in but role not allowed? Redirect to their specific dashboard
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     // Determine the safest fallback based on their actual role
     const fallbackMap = {
