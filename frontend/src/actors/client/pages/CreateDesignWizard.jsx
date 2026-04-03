@@ -24,6 +24,7 @@ const getScoreBg = (s) => s >= 80
         ? 'bg-amber-500/10 border-amber-500/20'
         : 'bg-zinc-500/10 border-zinc-500/20';
 
+/** Référence morphotypes (alignée API / morphology_analyzer MORPHOLOGY_CATEGORIES) */
 const MORPHOLOGY_LABELS = {
     H: { name: 'Rectangle', desc: 'Épaules et hanches similaires.' },
     A: { name: 'Poire', desc: 'Hanches plus larges.' },
@@ -32,6 +33,8 @@ const MORPHOLOGY_LABELS = {
     '8': { name: 'Huit', desc: 'Sablier prononcé.' },
     O: { name: 'Ronde', desc: 'Silhouette arrondie.' },
 };
+
+const MORPHOLOGY_REFERENCE_ORDER = ['H', 'A', 'V', 'X', '8', 'O'];
 
 const CreateDesignWizard = () => {
     const { token } = useAuth();
@@ -71,7 +74,7 @@ const CreateDesignWizard = () => {
     const [fabricsLoading, setFabricsLoading] = useState(false);
     const [selectedFabrics, setSelectedFabrics] = useState([]);
 
-    /* Fetch designs */
+    /* Fetch designs — robes (category=dress) pour femme, costumes (suit) pour homme */
     useEffect(() => {
         if (step !== 3) return;
         const load = async () => {
@@ -91,6 +94,13 @@ const CreateDesignWizard = () => {
 
                 const data = await res.json();
                 let all = Array.isArray(data) ? data : [];
+                const g = bodyForm.gender;
+                all = all.filter((d) => {
+                    const cat = (d.category || '').toLowerCase();
+                    if (g === 'men') return cat === 'suit';
+                    if (g === 'women') return cat === 'dress';
+                    return true;
+                });
                 const morph = scanResult?.morphology_type || null;
 
                 const liked = all.filter(d => d.is_liked_by_user === true);
@@ -111,7 +121,7 @@ const CreateDesignWizard = () => {
             finally { setDesignsLoading(false); }
         };
         load();
-    }, [step, scanResult, token]);
+    }, [step, scanResult, token, bodyForm.gender]);
 
     /* Fetch fabrics */
     useEffect(() => {
@@ -245,7 +255,10 @@ const CreateDesignWizard = () => {
     const goNext = () => step < 4 && setStep(s => s + 1);
     const goBack = () => (step > 1 ? setStep((s) => s - 1) : navigate('/profile'));
 
-    const morph = scanResult?.morphology_type || null;
+    const morph = scanResult?.morphology_type || scanResult?.morphology?.silhouette?.shape_letter || null;
+    const silScan = scanResult?.morphology?.silhouette;
+    const morphName = silScan?.shape_name_fr || (morph ? MORPHOLOGY_LABELS[morph]?.name : null);
+    const morphDesc = silScan?.shape_description_fr || (morph ? MORPHOLOGY_LABELS[morph]?.desc : null);
 
     /* Handle Project Save */
     const [isSaving, setIsSaving] = useState(false);
@@ -419,17 +432,35 @@ const CreateDesignWizard = () => {
                                                 </div>
                                             )}
                                             {activeTab === 'morphology' && (
-                                                <div className="p-8 h-full overflow-y-auto flex items-center justify-center">
+                                                <div className="p-6 h-full overflow-y-auto flex flex-col items-center max-w-lg mx-auto w-full">
                                                     {morph ? (
-                                                        <div className="text-center space-y-4 max-w-xs">
-                                                            <div className="w-20 h-20 rounded-2xl bg-gold/10 border border-gold/20 flex items-center justify-center mx-auto">
-                                                                <span className="font-display text-3xl font-bold text-gold">{morph}</span>
+                                                        <>
+                                                            <div className="text-center space-y-3 mb-8 w-full">
+                                                                <div className="w-20 h-20 rounded-2xl bg-gold/10 border border-gold/20 flex items-center justify-center mx-auto">
+                                                                    <span className="font-display text-3xl font-bold text-gold">{morph}</span>
+                                                                </div>
+                                                                <div>
+                                                                    <h3 className="font-display text-xl text-ivory mb-2">{morphName || morph}</h3>
+                                                                    <p className="text-ivory/40 text-sm">{morphDesc}</p>
+                                                                </div>
                                                             </div>
-                                                            <div>
-                                                                <h3 className="font-display text-xl text-ivory mb-2">{MORPHOLOGY_LABELS[morph]?.name || morph}</h3>
-                                                                <p className="text-ivory/40 text-sm">{MORPHOLOGY_LABELS[morph]?.desc}</p>
-                                                            </div>
-                                                        </div>
+                                                            <p className="text-[9px] uppercase tracking-widest text-ivory/25 mb-3 w-full text-left">Morphotypes de référence</p>
+                                                            <ul className="w-full space-y-2 text-left">
+                                                                {MORPHOLOGY_REFERENCE_ORDER.map((key) => {
+                                                                    const row = MORPHOLOGY_LABELS[key];
+                                                                    const active = morph === key;
+                                                                    return (
+                                                                        <li
+                                                                            key={key}
+                                                                            className={`flex gap-3 items-start rounded-lg border px-3 py-2 text-sm transition-colors ${active ? 'border-gold/40 bg-gold/5' : 'border-white/5 bg-white/[0.02]'}`}
+                                                                        >
+                                                                            <span className={`font-display font-bold tabular-nums shrink-0 w-6 ${active ? 'text-gold' : 'text-ivory/35'}`}>{key}</span>
+                                                                            <span className="text-ivory/80"><span className="font-medium text-ivory">{row.name}</span> — {row.desc}</span>
+                                                                        </li>
+                                                                    );
+                                                                })}
+                                                            </ul>
+                                                        </>
                                                     ) : (
                                                         <p className="text-ivory/20 text-sm">Morphologie non détectée</p>
                                                     )}
@@ -481,8 +512,6 @@ const CreateDesignWizard = () => {
                     <div className="wizard-step2-layout">
                         <div className="wizard-step-header">
                             <p className="text-label text-gold">ÉTAPE 2 — TEINTE DE PEAU</p>
-                            <h1 className="wizard-h1">Votre Palette Personnelle</h1>
-                            <p className="wizard-subtitle">Photo de votre visage — l'IA analyse votre teint. <span className="text-gold/40 italic">Facultatif.</span></p>
                         </div>
 
                         <div className="wizard-step2-panels">
@@ -560,11 +589,6 @@ const CreateDesignWizard = () => {
                         <div className="wizard-select-header">
                             <div>
                                 <p className="text-label text-gold mb-1">ÉTAPE 3 — DESIGNS</p>
-                                <h1 className="wizard-h1-sm">Une robe ou un costume</h1>
-                                <p className="wizard-subtitle-sm">
-                                    {morph ? <>Morphologie <span className="text-gold">{MORPHOLOGY_LABELS[morph]?.name}</span> détectée — </> : ''}
-                                    Un seul choix : sélectionnez la pièce qui vous correspond.
-                                </p>
                             </div>
                             {selectedDesigns.length > 0 && (
                                 <div className="wizard-selection-count">
@@ -649,11 +673,6 @@ const CreateDesignWizard = () => {
                         <div className="wizard-select-header">
                             <div>
                                 <p className="text-label text-gold mb-1">ÉTAPE 4 — TISSUS</p>
-                                <h1 className="wizard-h1-sm">Choisissez vos Tissus</h1>
-                                <p className="wizard-subtitle-sm">
-                                    {skinResult ? <>Teinte <span className="text-gold">{skinResult.name}</span> — </> : ''}
-                                    Sélectionnez les tissus qui correspondent à votre style.
-                                </p>
                             </div>
                             {selectedFabrics.length > 0 && (
                                 <div className="wizard-selection-count">
@@ -787,7 +806,7 @@ const CreateDesignWizard = () => {
                             {step === 1 && !scanResult
                                 ? <span className="flex items-center gap-1.5 opacity-50"><AlertCircle size={11} /> Scan requis</span>
                                 : step === 3 && selectedDesigns.length === 0
-                                    ? <span className="flex items-center gap-1.5 opacity-50"><AlertCircle size={11} /> Choisissez une robe ou un costume</span>
+                                    ? <span className="flex items-center gap-1.5 opacity-50"><AlertCircle size={11} /> {bodyForm.gender === 'men' ? 'Choisissez un costume' : 'Choisissez une robe'}</span>
                                     : <><span>Suivant</span> <ChevronRight size={15} /></>
                             }
                         </button>

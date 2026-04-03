@@ -995,6 +995,8 @@ class BodyProcessor:
             },
             'measurements': measurements,
             'morphology': morphology_data,
+            'morphology_type': morphology_data.get('silhouette', {}).get('shape_letter'),
+            'morphology_category': morphology_data.get('silhouette', {}).get('morphology_category'),
             'fashion_recommendations': fashion_data,
             'processing_time_seconds': round(time.time() - start, 2),
             'mesh_path': f"/results/{run_id}/body_mesh.glb" if mesh_ok else None,
@@ -1117,12 +1119,15 @@ class BodyProcessor:
         return mesh
     
     def _error_result(self, run_id: str, message: str) -> Dict:
+        _morph = self._get_default_morphology()
         return {
             'id': run_id,
             'status': 'error',
             'error': message,
             'measurements': self.me._get_simulated_measurements(175.0, 70.0),
-            'morphology': self._get_default_morphology(),
+            'morphology': _morph,
+            'morphology_type': _morph.get('silhouette', {}).get('shape_letter'),
+            'morphology_category': _morph.get('silhouette', {}).get('morphology_category'),
             'fashion_recommendations': self._get_default_fashion(),
             'mesh_path': None,
             'mesh_url': None,
@@ -1131,10 +1136,16 @@ class BodyProcessor:
     
     def _get_default_morphology(self) -> Dict:
         """Returns default morphology data when analysis is not available"""
+        from .morphology_analyzer import morphology_category_for_letter
+        _cat = morphology_category_for_letter('H')
         return {
             'silhouette': {
                 'type': 'normal',
                 'type_fr': 'Normal',
+                'shape_letter': 'H',
+                'shape_name_fr': _cat['name_fr'],
+                'shape_description_fr': _cat['description_fr'],
+                'morphology_category': _cat,
                 'description': 'Silhouette équilibrée',
                 'confidence': 0.5
             },

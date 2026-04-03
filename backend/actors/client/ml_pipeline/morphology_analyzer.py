@@ -14,6 +14,53 @@ import os
 
 logger = logging.getLogger(__name__)
 
+# Morphotypes couture (mesure → lettre) — référence unique H / A / V / X / 8 / O
+MORPHOLOGY_CATEGORIES = {
+    "H": {
+        "letter": "H",
+        "name_fr": "Rectangle",
+        "description_fr": "Épaules et hanches similaires.",
+    },
+    "A": {
+        "letter": "A",
+        "name_fr": "Poire",
+        "description_fr": "Hanches plus larges.",
+    },
+    "V": {
+        "letter": "V",
+        "name_fr": "Triangle Inv.",
+        "description_fr": "Épaules plus larges.",
+    },
+    "X": {
+        "letter": "X",
+        "name_fr": "Sablier",
+        "description_fr": "Taille marquée et équilibrée.",
+    },
+    "8": {
+        "letter": "8",
+        "name_fr": "Huit",
+        "description_fr": "Sablier prononcé.",
+    },
+    "O": {
+        "letter": "O",
+        "name_fr": "Ronde",
+        "description_fr": "Silhouette arrondie.",
+    },
+}
+
+
+def morphology_category_for_letter(letter: Optional[str]) -> Dict:
+    """Libellés officiels pour une lettre de morphotype (défaut : H Rectangle)."""
+    if not letter:
+        return dict(MORPHOLOGY_CATEGORIES["H"])
+    key = str(letter).strip()
+    if key.upper() == "8":
+        key = "8"
+    else:
+        key = key.upper()
+    return dict(MORPHOLOGY_CATEGORIES.get(key, MORPHOLOGY_CATEGORIES["H"]))
+
+
 # Indices MediaPipe Pose Landmarks
 POSE_LANDMARKS = {
     'nose': 0,
@@ -107,13 +154,17 @@ class SilhouetteClassifier:
         body_type = max(scores, key=scores.get)
         confidence = scores[body_type] / sum(scores.values()) if sum(scores.values()) > 0 else 0.5
         
-        # --- NEW: Identify Shape Letter (A, X, H, V, 8, O) ---
+        # Morphotype lettre H / A / V / X / 8 / O (voir MORPHOLOGY_CATEGORIES)
         shape_letter = self._classify_shape_letter(shoulders, chest, waist, hips, bmi)
-        
+        cat = morphology_category_for_letter(shape_letter)
+
         return {
             'type': body_type,
             'type_fr': self.BODY_TYPES[body_type]['fr'],
             'shape_letter': shape_letter,
+            'shape_name_fr': cat['name_fr'],
+            'shape_description_fr': cat['description_fr'],
+            'morphology_category': cat,
             'description': self.BODY_TYPES[body_type]['description'],
             'confidence': round(confidence, 2),
             'bmi': round(bmi, 1),
@@ -127,33 +178,40 @@ class SilhouetteClassifier:
 
     def _classify_shape_letter(self, shoulders, chest, waist, hips, bmi):
         """
-        Classifies the visual silhouette using standard fashion letters (A, X, V, H, 8, O).
+        Morphotype à partir des mesures (épaules, buste, taille, hanches) et IMC.
+        Catégories : O Ronde, A Poire, V Triangle inv., X Sablier, 8 Huit, H Rectangle.
         """
-        # Calculate key ratios for shape
-        s_h_ratio = shoulders / hips if hips > 0 else 1.0
+        if hips <= 0 or shoulders <= 0:
+            return "H"
+
+        s_h_ratio = shoulders / hips
         w_h_ratio = waist / hips if hips > 0 else 1.0
         w_s_ratio = waist / shoulders if shoulders > 0 else 1.0
-        
-        # 1. Circle / Apple (O)
-        if bmi > 27 and w_h_ratio > 0.9 and w_s_ratio > 0.9:
-            return 'O'
-            
-        # 2. Triangle / Pear (A)
-        if s_h_ratio < 0.95:
-             return 'A'
-             
-        # 3. Inverted Triangle (V)
-        if s_h_ratio > 1.05 and w_s_ratio < 0.85:
-            return 'V'
-            
-        # 4. Hourglass (X / 8)
-        if 0.95 <= s_h_ratio <= 1.05 and w_h_ratio < 0.75:
-            if bmi > 25:
-                return '8' # More curves
-            return 'X'
-            
-        # 5. Rectangle (H)
-        return 'H'
+        w_c_ratio = waist / chest if chest and chest > 0 else w_h_ratio
+
+        # O — Ronde (silhouette arrondie, taille peu marquée vs hanches)
+        if bmi >= 28 and w_h_ratio >= 0.88:
+            return "O"
+        if bmi >= 26 and w_h_ratio >= 0.92 and w_c_ratio >= 0.88:
+            return "O"
+
+        # A — Poire (hanches nettement plus larges que les épaules)
+        if s_h_ratio < 0.92:
+            return "A"
+
+        # V — Triangle inversé (épaules nettement plus larges que les hanches)
+        if s_h_ratio > 1.08:
+            return "V"
+
+        # Sablier X / 8 : épaules et hanches proches, taille marquée
+        if 0.92 <= s_h_ratio <= 1.08 and w_h_ratio < 0.78:
+            return "8" if bmi >= 24 else "X"
+
+        # H — Rectangle (épaules et hanches similaires, taille peu cintrée)
+        if 0.92 <= s_h_ratio <= 1.08 and w_h_ratio >= 0.78:
+            return "H"
+
+        return "H"
     
     def _get_measure(self, measurements: Dict, key: str, default: float) -> float:
         """Extrait une mesure du dictionnaire (format plat ou catégorisé)"""
@@ -522,7 +580,13 @@ class MorphologyAnalyzer:
     
     def _generate_summary(self, silhouette: Dict, proportions: Dict, posture: Dict) -> Dict:
         """Génère un résumé textuel de l'analyse"""
+        letter = silhouette.get('shape_letter', '')
+        name = silhouette.get('shape_name_fr') or silhouette.get('type_fr', 'N/A')
         return {
-            'fr': f"Morphologie {silhouette.get('type_fr', 'N/A')} avec {proportions.get('proportion_type', {}).get('fr', 'proportions standard')}. Posture: {posture.get('type_fr', 'N/A')}.",
+            'fr': (
+                f"Morphotype {name} ({letter}) — {silhouette.get('shape_description_fr', '')} "
+                f"Proportions : {proportions.get('proportion_type', {}).get('fr', 'standard')}. "
+                f"Posture : {posture.get('type_fr', 'N/A')}."
+            ),
             'en': f"{silhouette.get('type', 'normal').capitalize()} body type with {proportions.get('proportion_type', {}).get('type', 'balanced')} proportions. Posture: {posture.get('type', 'unknown')}."
         }
