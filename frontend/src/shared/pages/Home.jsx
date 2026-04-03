@@ -20,7 +20,8 @@ const Home = () => {
             const token = localStorage.getItem('token');
 
             const fetchData = async (url, useAuth = true) => {
-                const headers = (useAuth && token) ? { 'Authorization': `Bearer ${token}` } : {};
+                const isValidToken = token && token !== 'null' && token !== 'undefined';
+                const headers = (useAuth && isValidToken) ? { 'Authorization': `Bearer ${token}` } : {};
                 try {
                     const res = await fetch(url, { headers });
                     if (res.status === 401 && useAuth) {

@@ -258,6 +258,7 @@ class PublicFabricListView(views.APIView):
             liked_ids = FabricLike.objects.filter(user=user).values_list('fabric_id', flat=True)
 
         fabrics_data = []
+        fabrics = Fabric.objects.all()
         for f in fabrics:
             fabrics_data.append({
                 'id': f.id,

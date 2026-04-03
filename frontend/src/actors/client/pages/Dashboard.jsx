@@ -1,136 +1,157 @@
-import React from 'react';
-import { Package, Clock, DollarSign, TrendingUp, ChevronRight, Truck } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-
-const data = [
-    { name: 'Mon', shipments: 4 },
-    { name: 'Tue', shipments: 7 },
-    { name: 'Wed', shipments: 5 },
-    { name: 'Thu', shipments: 11 },
-    { name: 'Fri', shipments: 9 },
-    { name: 'Sat', shipments: 3 },
-    { name: 'Sun', shipments: 2 },
-];
-
-const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-        return (
-            <div className="bg-muted border border-subtle px-4 py-3">
-                <p className="text-label mb-1">{label}</p>
-                <p className="text-gold font-display text-lg">{payload[0].value} shipments</p>
-            </div>
-        );
-    }
-    return null;
-};
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { 
+    ShoppingBag, 
+    Activity, 
+    ArrowRight, 
+    Star, 
+    ShieldCheck, 
+    ChevronRight,
+    Loader2
+} from 'lucide-react';
+import { useAuth } from '../../../shared/context/AuthContext';
 
 const Dashboard = () => {
+    const { user, token } = useAuth();
+    const navigate = useNavigate();
+    const [stats, setStats] = useState({ costumes: 0, measurements: 0 });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const res = await fetch('http://localhost:8000/api/client/projects/', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                setStats({
+                    costumes: data.projects?.length || 0,
+                    measurements: data.projects?.filter(p => p.scan_result)?.length || 0
+                });
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        if (token) fetchStats();
+    }, [token]);
+
     return (
-        <div className="wrapper pt-28 pb-16 animate-fade-in">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end mb-16 gap-4">
-                <div>
-                    <p className="text-label text-gold mb-3">Maison de Couture</p>
-                    <h1 className="font-display text-4xl md:text-5xl font-bold text-ivory">
-                        Global Activity
+        <div className="min-h-screen bg-noir text-ivory pt-28 pb-20">
+            <div className="wrapper max-w-[1200px]">
+                {/* Hero / Welcome Section */}
+                <header className="mb-20 animate-fade-up">
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="h-[1px] w-12 bg-gold/30"></div>
+                        <span className="text-[10px] tracking-luxury text-gold uppercase font-bold">Tableau de Bord Personnel</span>
+                    </div>
+                    <h1 className="font-display text-5xl md:text-7xl font-light italic text-ivory mb-8 leading-tight">
+                        Bienvenue, <br />
+                        <span className="text-gold capitalize">{user?.name || 'Monsieur'}</span>
                     </h1>
-                </div>
-                <div className="flex gap-4">
-                    <button 
-                        onClick={() => window.location.href = '/couturehouse/designs'}
-                        className="btn btn-secondary"
+                    <p className="text-ivory/30 text-sm md:text-base max-w-xl leading-relaxed uppercase tracking-[0.2em] font-light">
+                        Accédez à vos scans biométriques, vos designs personnalisés et le suivi de vos confections haute couture.
+                    </p>
+                </header>
+
+                {/* Primary Action Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-gold/10 border border-gold/10 mb-20">
+                    
+                    {/* Card 1: Posture */}
+                    <div 
+                        onClick={() => navigate('/client/posture')}
+                        className="group bg-noir p-12 transition-all duration-1000 hover:bg-gold/[0.02] cursor-pointer relative overflow-hidden"
                     >
-                        Atelier Designs
-                    </button>
-                    <button className="btn btn-primary">
-                        Export Report
-                    </button>
-                </div>
-            </div>
- 
-            {/* Stat Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-subtle/30 mb-16">
-                <StatCard icon={<Package size={18} />} label="Designs Commissioned" value="03" trend="+1" trendUp />
-                <StatCard icon={<TrendingUp size={18} />} label="Style Credits" value="850 pts" trend="+120" trendUp />
-                <StatCard icon={<Clock size={18} />} label="In Production" value="01" trend="Stable" trendUp={false} />
-                <StatCard icon={<DollarSign size={18} />} label="Total Credits" value="$1,200" trend="+5%" trendUp />
-            </div>
-
-            {/* Chart + Shipments */}
-            <div className="grid lg:grid-cols-5 gap-px bg-subtle/30">
-                {/* Chart */}
-                <div className="lg:col-span-3 bg-noir p-8 border border-subtle/20">
-                    <div className="flex justify-between items-center mb-8">
-                        <h2 className="font-display text-xl text-ivory">Weekly Activity</h2>
-                        <span className="text-label text-gold">This Week</span>
+                        <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity duration-1000 group-hover:scale-125 transform origin-top-right">
+                            <Activity size={180} strokeWidth={0.5} />
+                        </div>
+                        
+                        <div className="relative z-10">
+                            <div className="flex items-center gap-4 mb-16">
+                                <div className="w-10 h-10 rounded-full border border-gold/20 flex items-center justify-center group-hover:border-gold/60 transition-colors duration-700">
+                                    <Activity size={18} className="text-gold/40 group-hover:text-gold" />
+                                </div>
+                                <span className="text-[10px] tracking-luxury text-ivory/40 uppercase font-bold">Digital Twin</span>
+                            </div>
+                            
+                            <h2 className="font-display text-3xl text-ivory mb-4 font-light italic group-hover:text-gold transition-colors duration-700">Ma Posture & Biométrie</h2>
+                            <p className="text-xs text-ivory/20 uppercase tracking-widest mb-10 max-w-xs leading-loose">
+                                Consultez votre silhouette 3D, vos mesures exactes et votre diagnostic morphologique.
+                            </p>
+                            
+                            <div className="flex items-center gap-2 text-gold/60 group-hover:translate-x-2 transition-transform duration-700 capitalize text-[10px] tracking-widest font-bold">
+                                Explorer l'espace <ChevronRight size={14} />
+                            </div>
+                        </div>
                     </div>
-                    <div className="h-72">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={data}>
-                                <defs>
-                                    <linearGradient id="goldGradient" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#C6A75E" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#C6A75E" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#2A2A2A" />
-                                <XAxis dataKey="name" stroke="#555" tick={{ fill: '#666', fontSize: 11 }} axisLine={false} />
-                                <YAxis stroke="#555" tick={{ fill: '#666', fontSize: 11 }} axisLine={false} />
-                                <Tooltip content={<CustomTooltip />} />
-                                <Area
-                                    type="monotone"
-                                    dataKey="shipments"
-                                    stroke="#C6A75E"
-                                    strokeWidth={2}
-                                    fill="url(#goldGradient)"
-                                />
-                            </AreaChart>
-                        </ResponsiveContainer>
+
+                    {/* Card 2: Costumes */}
+                    <div 
+                        onClick={() => navigate('/client/costumes')}
+                        className="group bg-noir p-12 transition-all duration-1000 hover:bg-gold/[0.02] cursor-pointer relative overflow-hidden"
+                    >
+                        <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity duration-1000 group-hover:scale-125 transform origin-top-right">
+                            <ShoppingBag size={180} strokeWidth={0.5} />
+                        </div>
+
+                        <div className="relative z-10">
+                            <div className="flex items-center gap-4 mb-16">
+                                <div className="w-10 h-10 rounded-full border border-gold/20 flex items-center justify-center group-hover:border-gold/60 transition-colors duration-700">
+                                    <ShoppingBag size={18} className="text-gold/40 group-hover:text-gold" />
+                                </div>
+                                <span className="text-[10px] tracking-luxury text-ivory/40 uppercase font-bold">Archives Design</span>
+                            </div>
+                            
+                            <h2 className="font-display text-3xl text-ivory mb-4 font-light italic group-hover:text-gold transition-colors duration-700">Mes Costumes</h2>
+                            <p className="text-xs text-ivory/20 uppercase tracking-widest mb-10 max-w-xs leading-loose">
+                                Retrouvez vos projets de création, vos choix de tissus et l'historique de vos commandes.
+                            </p>
+                            
+                            <div className="flex items-center gap-2 text-gold/60 group-hover:translate-x-2 transition-transform duration-700 capitalize text-[10px] tracking-widest font-bold">
+                                Consulter mes designs <ChevronRight size={14} />
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {/* Recent Activity */}
-                <div className="lg:col-span-2 bg-noir p-8 border border-subtle/20">
-                    <div className="flex justify-between items-center mb-8">
-                        <h2 className="font-display text-xl text-ivory">Recent Activity</h2>
-                        <button className="text-label text-gold hover:text-gold-light transition-colors flex items-center gap-1">
-                            View All <ChevronRight size={12} />
+                {/* Secondary Status Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 animate-fade-in delay-500">
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-3">
+                            <Star size={14} className="text-gold/60" />
+                            <h3 className="text-[10px] tracking-luxury uppercase text-ivory/50 font-bold border-b border-gold/10 pb-2 flex-1">Status Fidélité</h3>
+                        </div>
+                        <div className="bg-gold/[0.03] border border-gold/5 p-6 rounded-lg group hover:border-gold/20 transition-all duration-700">
+                            <p className="text-2xl font-serif text-gold mb-1">Membre Privé</p>
+                            <p className="text-[9px] text-ivory/30 uppercase tracking-widest">Accès Prioritaire Atelier</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-3">
+                            <ShieldCheck size={14} className="text-gold/60" />
+                            <h3 className="text-[10px] tracking-luxury uppercase text-ivory/50 font-bold border-b border-gold/10 pb-2 flex-1">Sécurité Données</h3>
+                        </div>
+                        <div className="bg-gold/[0.03] border border-gold/5 p-6 rounded-lg">
+                            <p className="text-[11px] text-ivory/40 leading-relaxed uppercase tracking-widest">
+                                Vos données biométriques sont cryptées et stockées exclusivement pour la confection de vos vêtements.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col justify-end">
+                        <button 
+                            onClick={() => navigate('/client/create-design')}
+                            className="btn btn-primary w-full py-6 text-[10px] tracking-luxury uppercase font-black"
+                        >
+                            Nouvelle Création Masterclass
                         </button>
-                    </div>
-                    <div className="space-y-1">
-                        <ShipmentRow id="Gala Dress" origin="Atelier Paris" dest="Processing" status="Draft" statusColor="text-gold" />
-                        <ShipmentRow id="Silk Suit" origin="London Fabrics" dest="Shipped" status="Active" statusColor="text-emerald" />
-                        <ShipmentRow id="Summer Cape" origin="Milan Tailor" dest="Delivered" status="Completed" statusColor="text-ivory/40" />
                     </div>
                 </div>
             </div>
         </div>
     );
 };
-
-const StatCard = ({ icon, label, value, trend, trendUp }) => (
-    <div className="group bg-noir p-8 border border-subtle/10 hover:border-gold/20 transition-all duration-700">
-        <div className="flex items-center justify-between mb-6">
-            <span className="text-label">{label}</span>
-            <span className="text-gold/40 group-hover:text-gold/70 transition-colors duration-500">{icon}</span>
-        </div>
-        <div className="flex items-end gap-3">
-            <span className="font-display text-3xl font-bold text-ivory">{value}</span>
-            <span className={`text-xs font-medium mb-1 ${trendUp ? 'text-emerald' : 'text-blush'}`}>
-                {trend}
-            </span>
-        </div>
-    </div>
-);
-
-const ShipmentRow = ({ id, origin, dest, status, statusColor }) => (
-    <div className="group flex items-center justify-between py-4 border-b border-subtle/20 last:border-0 hover:bg-muted/30 px-3 -mx-3 transition-all duration-300">
-        <div>
-            <span className="font-display text-sm font-semibold text-ivory">{id}</span>
-            <p className="text-ivory/30 text-xs mt-0.5">{origin} → {dest}</p>
-        </div>
-        <span className={`text-[10px] tracking-luxury uppercase font-medium ${statusColor}`}>{status}</span>
-    </div>
-);
 
 export default Dashboard;

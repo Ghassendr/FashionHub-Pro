@@ -80,8 +80,9 @@ const CreateDesignWizard = () => {
         const load = async () => {
             setDesignsLoading(true);
             try {
+                const isValidToken = token && token !== 'null' && token !== 'undefined';
                 let res = await fetch('http://localhost:8000/api/couturehouse/public/designs/', {
-                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                    headers: isValidToken ? { 'Authorization': `Bearer ${token}` } : {}
                 });
 
                 // If 401, retry without token (it's a public endpoint)
@@ -172,9 +173,10 @@ const CreateDesignWizard = () => {
         data.append('quality', bodyForm.quality);
         const API = import.meta.env.VITE_API_URL || 'http://localhost:8000';
         try {
+            const isValidToken = token && token !== 'null' && token !== 'undefined';
             const resp = await axios.post(`${API}/api/client/videos/process`, data, { 
                 timeout: 300000,
-                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                headers: isValidToken ? { 'Authorization': `Bearer ${token}` } : {}
             });
             const result = resp.data;
             if (result?.status === 'error') { alert('Erreur: ' + (result.error || 'Inconnue')); return; }
@@ -216,11 +218,12 @@ const CreateDesignWizard = () => {
         setSkinLoading(true); setSkinError(null);
         const fd = new FormData(); fd.append('photo', skinFile);
         try {
+            const isValidToken = token && token !== 'null' && token !== 'undefined';
             const res = await fetch('http://localhost:8000/api/client/skin-analysis/', {
                 method: 'POST', 
-                headers: { 
+                headers: isValidToken ? { 
                     'Authorization': `Bearer ${token}` 
-                }, 
+                } : {}, 
                 body: fd
             });
             
