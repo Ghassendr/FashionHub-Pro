@@ -5,7 +5,7 @@ import mongoengine
 # MongoDB Connection
 mongoengine.connect(
     db="fashionhub",
-    host="localhost",
+    host="127.0.0.1",
     port=27017,
     username="admin",
     password="password",
@@ -75,7 +75,7 @@ DATABASES = {
         "NAME": "fashionhub",
         "USER": "admin",
         "PASSWORD": "password",
-        "HOST": "localhost", # Running locally outside docker for now, or use docker service name if inside
+        "HOST": "127.0.0.1", # Running locally outside docker for now, or use docker service name if inside
         "PORT": "5432",
     }
 }

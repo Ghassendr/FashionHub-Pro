@@ -14,6 +14,8 @@ class UserManager(BaseUserManager):
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('role', 'admin')
+        extra_fields.setdefault('account_status', 'active')
         return self.create_user(email, password, **extra_fields)
 
 class User(AbstractUser):
@@ -22,6 +24,7 @@ class User(AbstractUser):
         ('couture_house', 'Couture House'),
         ('fournisseur', 'Fournisseur'),
         ('delivery', 'Delivery'),
+        ('admin', 'Admin'),
     )
     
     STATUS_CHOICES = (

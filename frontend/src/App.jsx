@@ -5,7 +5,7 @@ import ProtectedRoute from './shared/components/Auth/ProtectedRoute'; // Added
 import Onboarding from './actors/client/pages/Onboarding';
 import BodyMeasurements from './actors/client/pages/BodyMeasurements';
 import CreateDesignWizard from './actors/client/pages/CreateDesignWizard';
-import DeliveryDashboard from './actors/delivery/pages/DeliveryDashboard';
+import Delivery from './actors/delivery/pages/Delivery';
 import CoutureHouse from './actors/delivery/pages/CoutureHouse';
 import CoutureHouseDashboard from './actors/couturehouse/pages/Dashboard';
 import CreateDesign from './actors/couturehouse/pages/CreateDesign';
@@ -14,7 +14,9 @@ import CoutureHouseFabricsInventory from './actors/couturehouse/pages/FabricsInv
 import FournisseurDashboard from './actors/Fournisseur/Dashboard';
 import FournisseurSettings from './actors/Fournisseur/Settings';
 import ReviewDashboard from './actors/admin/pages/ReviewDashboard';
-import Profile from './shared/pages/Profile';
+import AdminLayout from './actors/admin/components/AdminLayout';
+import AdminOverview from './actors/admin/pages/AdminOverview';
+import PendingVerification from './shared/pages/PendingVerification';
 
 function App() {
   return (
@@ -24,7 +26,7 @@ function App() {
         path="/delivery"
         element={
           <ProtectedRoute allowedRoles={['delivery']}>
-            <DeliveryDashboard />
+            <Delivery />
           </ProtectedRoute>
         }
       />
@@ -42,39 +44,49 @@ function App() {
       <Route path="/" element={<Layout />}>
         {/* Main Portal - Public */}
         <Route index element={<Home />} />
-        <Route path="profile/:userId?" element={<ProtectedRoute allowedRoles={['client']}><Profile /></ProtectedRoute>} />
 
         {/* Client Domain - Restricted to Clients */}
-        <Route path="client" element={<ProtectedRoute allowedRoles={['client']} />}>
+        <Route path="client" element={<ProtectedRoute allowedRoles={['client']}><Outlet /></ProtectedRoute>}>
           <Route index element={<Navigate to="3d-measurements" replace />} />
           <Route path="onboarding" element={<Onboarding />} />
           <Route path="3d-measurements" element={<BodyMeasurements />} />
         </Route>
 
         {/* Couture House Domain - Restricted to Couture Houses */}
-        <Route path="couturehouse" element={<ProtectedRoute allowedRoles={['couture_house']} />}>
-          <Route index element={<Navigate to="designs" replace />} />
-          <Route path="fabrics" element={<CoutureHouseFabricsInventory />} />
+        <Route path="couturehouse" element={<ProtectedRoute allowedRoles={['couture_house']}><Outlet /></ProtectedRoute>}>
+          <Route index element={<CoutureHouseDashboard />} />
           <Route path="designs" element={<CoutureHouseDashboard />} />
           <Route path="inquiries" element={<Inquiries />} />
           <Route path="create" element={<CreateDesign />} />
         </Route>
 
         {/* Fournisseur Domain - Restricted to Suppliers */}
-        <Route path="fournisseur" element={<ProtectedRoute allowedRoles={['fournisseur']} />}>
+        <Route path="fournisseur" element={<ProtectedRoute allowedRoles={['fournisseur']}><Outlet /></ProtectedRoute>}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<FournisseurDashboard />} />
           <Route path="settings" element={<FournisseurSettings />} />
         </Route>
 
-        {/* Admin Domain */}
-        <Route path="admin" element={<ProtectedRoute allowedRoles={['admin']} />}>
-          <Route index element={<ReviewDashboard />} />
-        </Route>
-
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Pending Verification Route */}
+        <Route path="pending-verification" element={<PendingVerification />} />
       </Route>
+
+      {/* Admin Dashboard (Standalone Fullscreen with AdminLayout) */}
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Navigate to="overview" replace />} />
+        <Route path="overview" element={<AdminOverview />} />
+        <Route path="review" element={<ReviewDashboard />} />
+      </Route>
+
+      {/* Fallback */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
