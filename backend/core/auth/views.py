@@ -12,6 +12,17 @@ from actors.couturehouse.api.serializers import DesignSerializer
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
+class VerifyTokenView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        return Response({
+            'valid': True,
+            'user_id': request.user.id,
+            'email': request.user.email,
+            'role': getattr(request.user, 'role', '')
+        })
+
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
@@ -37,8 +48,17 @@ class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = (MultiPartParser, FormParser)
 
-    def get(self, request):
-        user = request.user
+    def get(self, request, user_id=None):
+        if user_id:
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            try:
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            user = request.user
+            
         serializer = UserProfileSerializer(user)
         
         # Fetch liked fabrics

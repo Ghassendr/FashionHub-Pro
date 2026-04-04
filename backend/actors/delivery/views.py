@@ -4,6 +4,8 @@ from rest_framework import status
 import uuid
 import datetime
 from .db import vehicles_collection, trips_collection, orders_collection
+from .models import Carrier, Route, ShipmentRequest
+from .api.serializers import RouteSerializer, ShipmentRequestSerializer
 
 class VehicleListView(APIView):
     """
@@ -61,21 +63,21 @@ class DashboardKPIView(APIView):
             
         try:
             # Fleet stats
-            total_vehicles = vehicles_collection.count_documents({})
-            active_vehicles = vehicles_collection.count_documents({"status": "En route"})
-            idle_vehicles = vehicles_collection.count_documents({"status": "Idle"})
-            available_vehicles = vehicles_collection.count_documents({"status": "Available"})
-            maintenance_vehicles = vehicles_collection.count_documents({"status": "Maintenance"})
+            total_vehicles = len(list(vehicles_collection.find({})))
+            active_vehicles = len(list(vehicles_collection.find({"status": "En route"})))
+            idle_vehicles = len(list(vehicles_collection.find({"status": "Idle"})))
+            available_vehicles = len(list(vehicles_collection.find({"status": "Available"})))
+            maintenance_vehicles = len(list(vehicles_collection.find({"status": "Maintenance"})))
             
             # Trip stats
-            active_trips = trips_collection.count_documents({"status": "Active"})
-            completed_trips = trips_collection.count_documents({"status": "Completed"})
-            scheduled_trips = trips_collection.count_documents({"status": "Scheduled"})
+            active_trips = len(list(trips_collection.find({"status": "Active"})))
+            completed_trips = len(list(trips_collection.find({"status": "Completed"})))
+            scheduled_trips = len(list(trips_collection.find({"status": "Scheduled"})))
 
             # Order stats
-            pending_orders = orders_collection.count_documents({"status": "Pending"})
-            garment_flows = orders_collection.count_documents({"type": "Garment"})
-            fabric_flows = orders_collection.count_documents({"type": "Fabric"})
+            pending_orders = len(list(orders_collection.find({"status": "Pending"})))
+            garment_flows = len(list(orders_collection.find({"type": "Garment"})))
+            fabric_flows = len(list(orders_collection.find({"type": "Fabric"})))
 
             return Response({
                 "fleet": {
@@ -176,3 +178,47 @@ class OrderListView(APIView):
             return Response(new_order, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# --- SQL Managed Views (Carrier & Shipments) ---
+
+class ShipmentRequestListView(APIView):
+    """
+    Returns all shipment missions (Missions Libérées) for the authenticated carrier.
+    """
+    def get(self, request):
+        carrier = getattr(request.user, 'carrier_profile', None)
+        if not carrier:
+            return Response({"error": "Carrier profile not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        shipments = ShipmentRequest.objects.filter(carrier=carrier).order_by('-created_at')
+        serializer = ShipmentRequestSerializer(shipments, many=True)
+        return Response(serializer.data)
+
+class SQLRouteListView(APIView):
+    """
+    Returns all service lines for the authenticated carrier.
+    """
+    def get(self, request):
+        carrier = getattr(request.user, 'carrier_profile', None)
+        if not carrier:
+            return Response({"error": "Carrier profile not found."}, status=status.HTTP_404_NOT_FOUND)
+            
+        routes = Route.objects.filter(carrier=carrier).order_by('-created_at')
+        serializer = RouteSerializer(routes, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        carrier = getattr(request.user, 'carrier_profile', None)
+        if not carrier:
+            return Response({"error": "Carrier profile not found."}, status=status.HTTP_404_NOT_FOUND)
+            
+        data = request.data
+        route = Route.objects.create(
+            carrier=carrier,
+            start_location=data.get('start_location'),
+            end_location=data.get('end_location'),
+            services=data.get('services', []),
+            status='PENDING'
+        )
+        serializer = RouteSerializer(route)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)

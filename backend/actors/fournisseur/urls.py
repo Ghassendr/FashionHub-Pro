@@ -2,7 +2,8 @@ from django.urls import path
 from .views import (
     SignupView, LoginView, VerifyTokenView, ProfileView, LogoutView,
     FabricListView, FabricDetailView, FabricImageView,
-    PublicFabricListView, NewsFabricsView, TrendingFabricsView, LikeFabricView
+    PublicFabricListView, NewsFabricsView, TrendingFabricsView, LikeFabricView,
+    FabricOrderListView, CreateFabricOrderView
 )
 
 urlpatterns = [
@@ -22,4 +23,8 @@ urlpatterns = [
     path('fabrics/<int:pk>/like', LikeFabricView.as_view(), name='fournisseur-fabric-like'),
     path('fabrics/<int:pk>', FabricDetailView.as_view(), name='fournisseur-fabric-detail'),
     path('images/<int:pk>', FabricImageView.as_view(), name='fournisseur-fabric-image'),
+    
+    # Order management
+    path('orders', FabricOrderListView.as_view(), name='fournisseur-orders-received'),
+    path('orders/create', CreateFabricOrderView.as_view(), name='fournisseur-orders-create'),
 ]

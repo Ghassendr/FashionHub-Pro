@@ -107,7 +107,7 @@ const Navbar = () => {
                                 <div className="flex items-center gap-8">
                                     <div 
                                         className={`flex flex-col items-end pt-1 transition-opacity ${user?.role === 'client' ? 'cursor-pointer hover:opacity-80' : ''}`}
-                                        onClick={() => user?.role === 'client' && navigate('/profile')}
+                                        onClick={() => navigate('/profile')}
                                     >
                                         <div className="flex items-center gap-2 text-[10px] tracking-luxury uppercase text-gold font-bold">
                                             <User size={12} className="opacity-80" /> 
@@ -181,7 +181,7 @@ const Navbar = () => {
                                 <div className="flex flex-col gap-4">
                                     <div 
                                         className={`flex items-center gap-3 py-3 text-[11px] tracking-luxury uppercase text-gold font-medium border-b border-subtle/20 transition-colors ${user?.role === 'client' ? 'cursor-pointer hover:text-ivory' : ''}`}
-                                        onClick={() => { setIsOpen(false); user?.role === 'client' && navigate('/profile'); }}
+                                        onClick={() => { setIsOpen(false); navigate('/profile'); }}
                                     >
                                         <User size={16} /> {user.name}
                                     </div>

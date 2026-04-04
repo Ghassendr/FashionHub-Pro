@@ -33,7 +33,8 @@ const FabricCard = ({ fabric, showLikes = false }) => {
             setLikes(newLikes);
 
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:8000/api/fabrics/${fabric.id}/like`, {
+            const fabricId = fabric.id || fabric._id;
+            const response = await fetch(`http://localhost:8000/api/fournisseur/fabrics/${fabricId}/like`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -77,9 +78,13 @@ const FabricCard = ({ fabric, showLikes = false }) => {
             {/* Image Container */}
             <div className="aspect-[3/4] overflow-hidden relative">
                 <img 
-                    src={`http://localhost:8000/api/images/${fabric.id}`} 
+                    src={`http://localhost:8000/api/fournisseur/images/${fabric.id || fabric._id}`} 
                     alt={fabric.materiel}
                     className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                    onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = "https://images.unsplash.com/photo-1544445837-de12def58fa1?w=800&q=80"; // Fallback image if fabric doesn't have an image
+                    }}
                 />
                 
                 {/* Overlay on Hover */}
@@ -157,11 +162,15 @@ const FabricCard = ({ fabric, showLikes = false }) => {
                     </button>
                     
                     <div className="max-w-5xl w-full flex flex-col md:flex-row gap-12 items-center">
-                        <div className="w-full md:w-2/3 aspect-[3/4] rounded-sm overflow-hidden shadow-2xl border border-ivory/10">
+                        <div className="w-full md:w-2/3 aspect-[3/4] rounded-sm overflow-hidden shadow-2xl border border-ivory/10 flex items-center justify-center bg-noir/50">
                             <img 
-                                src={`http://localhost:8000/api/images/${fabric.id}`} 
+                                src={`http://localhost:8000/api/fournisseur/images/${fabric.id || fabric._id}`} 
                                 alt={fabric.materiel}
                                 className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = "https://images.unsplash.com/photo-1544445837-de12def58fa1?w=800&q=80";
+                                }}
                             />
                         </div>
                         

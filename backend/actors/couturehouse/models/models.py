@@ -18,8 +18,11 @@ class CoutureHouseProfile(django_models.Model):
     verification_status = django_models.CharField(max_length=20, choices=VERIFICATION_CHOICES, default='pending')
     
     # Document Verification URLs
-    commercial_register_url = django_models.URLField(max_length=500, blank=True)
-    id_card_url = django_models.URLField(max_length=500, blank=True)
+    commercial_register_url = django_models.TextField(blank=True)
+    id_card_url = django_models.TextField(blank=True)
+    portfolio_photos_url = django_models.TextField(blank=True)
+    workshop_photo_url = django_models.TextField(blank=True)
+    professional_license_url = django_models.TextField(blank=True)
     
     def __str__(self):
         return self.house_name
@@ -94,3 +97,50 @@ class Design(Document):
 
     def __str__(self):
         return f"{self.title} [{self.status}]"
+
+class LocalFabricStock(django_models.Model):
+    couture_house = django_models.ForeignKey(CoutureHouseProfile, on_delete=django_models.CASCADE, related_name='local_fabrics')
+    fabric_name = django_models.CharField(max_length=255)
+    quantity = django_models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    unit = django_models.CharField(max_length=20, default='meters')
+    updated_at = django_models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.fabric_name} ({self.quantity} {self.unit}) at {self.couture_house.house_name}"
+
+class Order(django_models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'En attente'),
+        ('in_production', 'En production'),
+        ('completed', 'Terminé'),
+        ('shipped', 'Expédié'),
+    )
+    FABRIC_STATUS_CHOICES = (
+        ('available', 'Stock disponible'),
+        ('to_order', 'À commander'),
+        ('ordered', 'Commandé'),
+        ('received', 'Reçu'),
+    )
+    
+    # Reference to MongoDB ClientProject ID
+    inquiry_id = django_models.CharField(max_length=24, blank=True)
+    
+    couture_house = django_models.ForeignKey(CoutureHouseProfile, on_delete=django_models.CASCADE, related_name='orders')
+    client_name = django_models.CharField(max_length=255)
+    client_email = django_models.EmailField(blank=True)
+    client_address = django_models.TextField(blank=True)
+    
+    # Fabric specifics
+    fabric_requested = django_models.CharField(max_length=255)
+    fabric_id = django_models.IntegerField(null=True, blank=True) # SQL ID if available
+    quantity_needed = django_models.DecimalField(max_digits=10, decimal_places=2)
+    
+    deadline = django_models.DateField(null=True, blank=True)
+    status = django_models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    fabric_status = django_models.CharField(max_length=20, choices=FABRIC_STATUS_CHOICES, default='available')
+    
+    created_at = django_models.DateTimeField(auto_now_add=True)
+    updated_at = django_models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Order #{self.id} - {self.client_name} ({self.fabric_requested})"

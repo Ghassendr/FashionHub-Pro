@@ -47,6 +47,12 @@ def serialize_profile(user):
                 documents.append({"name": "Registre Commercial", "url": profile.commercial_register_url})
             if profile.id_card_url:
                 documents.append({"name": "Carte d'Identité", "url": profile.id_card_url})
+            if profile.fabric_quality_cert_url:
+                documents.append({"name": "Certificat Qualité", "url": profile.fabric_quality_cert_url})
+            if profile.fabric_sample_photos_url:
+                documents.append({"name": "Photos Échantillons", "url": profile.fabric_sample_photos_url})
+            if profile.warehouse_photo_url:
+                documents.append({"name": "Photo Entrepôt", "url": profile.warehouse_photo_url})
 
     elif user.role == 'couture_house':
         profile = CoutureHouseProfile.objects.filter(user=user).first()
@@ -62,6 +68,12 @@ def serialize_profile(user):
                 documents.append({"name": "Registre Commercial", "url": profile.commercial_register_url})
             if profile.id_card_url:
                 documents.append({"name": "Carte d'Identité", "url": profile.id_card_url})
+            if profile.portfolio_photos_url:
+                documents.append({"name": "Portfolio Photos", "url": profile.portfolio_photos_url})
+            if profile.workshop_photo_url:
+                documents.append({"name": "Photo Atelier", "url": profile.workshop_photo_url})
+            if profile.professional_license_url:
+                documents.append({"name": "Licence Professionnelle", "url": profile.professional_license_url})
 
     elif user.role == 'delivery':
         profile = Carrier.objects.filter(user=user).first()
@@ -78,6 +90,12 @@ def serialize_profile(user):
                 documents.append({"name": "Registre Commercial", "url": profile.commercial_register_url})
             if profile.id_card_url:
                 documents.append({"name": "Carte d'Identité", "url": profile.id_card_url})
+            if profile.insurance_document_url:
+                documents.append({"name": "Document Assurance", "url": profile.insurance_document_url})
+            if profile.vehicle_photos_url:
+                documents.append({"name": "Photos Véhicules", "url": profile.vehicle_photos_url})
+            if profile.luxury_reference_url:
+                documents.append({"name": "Référence Luxe", "url": profile.luxury_reference_url})
 
     return profile_data, documents
 

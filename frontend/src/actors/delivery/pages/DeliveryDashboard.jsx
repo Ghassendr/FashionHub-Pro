@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Hexagon, LayoutDashboard, Package, Truck, 
   Map, ScanLine, Thermometer, ShieldCheck, 
@@ -10,7 +10,7 @@ import './DeliveryDashboard.css';
 
 const pageTitles = {
   overview: <>Good morning, <span style={{fontStyle:'italic', color:'var(--gold)'}}>Marc</span></>,
-  orders: <>Order <span style={{fontStyle:'italic', color:'var(--gold)'}}>Handling</span></>,
+  orders: <>Transport <span style={{fontStyle:'italic', color:'var(--gold)'}}>Missions</span></>,
   trips: <>Active <span style={{fontStyle:'italic', color:'var(--gold)'}}>Trips</span></>,
   fleet: <>Fleet <span style={{fontStyle:'italic', color:'var(--gold)'}}>Management</span></>,
   scan: <>Scan & <span style={{fontStyle:'italic', color:'var(--gold)'}}>Authenticate</span></>,
@@ -27,20 +27,22 @@ const DeliveryDashboard = () => {
   const [kpis, setKpis] = useState(null);
   const [trips, setTrips] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [shipments, setShipments] = useState([]);
   const [isRegistering, setIsRegistering] = useState(false);
-  const [isCreatingTrip, setIsCreatingTrip] = useState(false);
+  const [isCreatingLine, setIsCreatingLine] = useState(false);
   const [loading, setLoading] = useState(true);
   
   // Notification and Alting states
   const [showNotifs, setShowNotifs] = useState(false);
   const [successAlert, setSuccessAlert] = useState('');
 
-  // New trip form state
-  const [newTripStr, setNewTripStr] = useState({
-    route: '',
-    driver: 'Marc Dupont',
-    vehicle: '',
-    orders: []
+  // New line form state
+  const [newLine, setNewLine] = useState({
+    start_location: '',
+    end_location: '',
+    services: [
+      { type: 'Standard', cost: 30, nature: ['Standard'], eta: '5-7 days' }
+    ]
   });
 
   // New vehicle form state
@@ -50,6 +52,20 @@ const DeliveryDashboard = () => {
     registration: '',
     status: 'Available'
   });
+
+  // Memoized callback for TripMapPicker to prevent re-render loops and comply with Rules of Hooks
+  const handleRouteSelected = useCallback((r) => { 
+    if(r) {
+      const parts = r.split('→').map(p => p.trim());
+      setNewLine(prev => ({
+        ...prev,
+        start_location: parts[0] || prev.start_location,
+        end_location: parts[1] || prev.end_location
+      }));
+    }
+  }, []);
+
+  const NATURE_OPTIONS = ["Standard", "Secured", "Fragile", "Climate Controlled", "Guarantee"];
 
   // Time ticker
   useEffect(() => {
@@ -66,28 +82,49 @@ const DeliveryDashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch MongoDB data
+  // Fetch MongoDB Dashboard Data
   const fetchDashboardData = async () => {
+    const token = localStorage.getItem('token');
     setLoading(true);
     try {
-      const vehRes = await fetch('http://localhost:8000/api/mongo/delivery/vehicles/');
-      const kpiRes = await fetch('http://localhost:8000/api/mongo/delivery/kpis/');
-      const tripsRes = await fetch('http://localhost:8000/api/mongo/delivery/trips/');
-      const ordersRes = await fetch('http://localhost:8000/api/mongo/delivery/orders/');
-      
-      if (vehRes.ok) setVehicles(await vehRes.json());
-      if (kpiRes.ok) setKpis(await kpiRes.json());
-      if (tripsRes.ok) setTrips(await tripsRes.json());
-      if (ordersRes.ok) setOrders(await ordersRes.json());
+      // Parallel fetches for efficiency
+      const [vRes, kRes, tRes, oRes] = await Promise.all([
+        fetch('http://localhost:8000/api/mongo/delivery/vehicles/', { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch('http://localhost:8000/api/mongo/delivery/kpis/', { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch('http://localhost:8000/api/mongo/delivery/trips/', { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch('http://localhost:8000/api/mongo/delivery/orders/', { headers: { 'Authorization': `Bearer ${token}` } })
+      ]);
+
+      if (vRes.ok) setVehicles(await vRes.json());
+      if (kRes.ok) setKpis(await kRes.json());
+      if (tRes.ok) setTrips(await tRes.json());
+      if (oRes.ok) setOrders(await oRes.json());
     } catch (err) {
-      console.error("Error connecting to MongoDB backend:", err);
+      console.error("Error fetching MongoDB dashboard data:", err);
     } finally {
       setLoading(false);
     }
   };
 
+  // Fetch SQL Shipments
+  const fetchShipments = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch('http://localhost:8000/api/delivery/shipments/', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setShipments(await res.json());
+      }
+    } catch (err) {
+      console.error("Error fetching SQL shipments:", err);
+    }
+  };
+
   useEffect(() => {
     fetchDashboardData();
+    fetchShipments();
+    fetchRoutes();
   }, []);
 
   // Handle vehicle registration submit
@@ -112,39 +149,81 @@ const DeliveryDashboard = () => {
     }
   };
 
-  const handleCreateTripSubmit = async (e) => {
-    e.preventDefault();
+  const [routes, setRoutes] = useState([]);
+  
+  const fetchRoutes = async () => {
+    const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:8000/api/mongo/delivery/trips/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          route: newTripStr.route || "Paris Region",
-          driver: newTripStr.driver,
-          vehicle: newTripStr.vehicle || "Unassigned",
-          orders: newTripStr.orders,
-          eta: "14:30",
-          type: "Mixed Flow",
-          progress: 5
-        })
+      const res = await fetch('http://localhost:8000/api/delivery/routes/', {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (res.ok) {
-        setIsCreatingTrip(false);
-        setNewTripStr({ route: '', driver: 'Marc Dupont', vehicle: '', orders: [] });
-        fetchDashboardData();
-        setSuccessAlert('✅ Trip assigned successfully and dispatched! All selected orders are now en route.');
-        setTimeout(() => setSuccessAlert(''), 5000);
-      }
+      if (res.ok) setRoutes(await res.json());
     } catch (err) {
-      console.error("Error creating trip:", err);
+      console.error("Error fetching routes:", err);
     }
   };
 
-  const handleOpenTripModal = () => {
-    setIsCreatingTrip(true);
+  const handleCreateLineSubmit = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch('http://localhost:8000/api/delivery/routes/', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newLine)
+      });
+      if (res.ok) {
+        setIsCreatingLine(false);
+        setNewLine({
+          start_location: '',
+          end_location: '',
+          services: [{ type: 'Standard', cost: 30, nature: ['Standard'], eta: '5-7 days' }]
+        });
+        fetchRoutes();
+        setSuccessAlert('✅ New Service Line created successfully!');
+        setTimeout(() => setSuccessAlert(''), 5000);
+      }
+    } catch (err) {
+      console.error("Error creating line:", err);
+    }
   };
 
-  const isTripValid = newTripStr.route.length > 2 && newTripStr.vehicle !== '' && newTripStr.orders.length > 0;
+  const addServiceField = () => {
+    setNewLine({
+      ...newLine,
+      services: [...newLine.services, { type: 'Premium', cost: 100, nature: ['Secured'], eta: '2 days' }]
+    });
+  };
+
+  const updateServiceField = (index, field, value) => {
+    const updated = [...newLine.services];
+    updated[index][field] = value;
+    
+    // Auto-adjust ETA based on type if changing type
+    if (field === 'type') {
+      if (value === 'Standard') updated[index].eta = '7 Days';
+      if (value === 'Fast') updated[index].eta = '3 Days';
+      if (value === 'Express') updated[index].eta = '48h';
+      if (value === 'Urgent') updated[index].eta = '24h';
+    }
+    
+    setNewLine({ ...newLine, services: updated });
+  };
+
+  const adjustEtaDays = (index, delta) => {
+    const updated = [...newLine.services];
+    const current = parseInt(updated[index].eta) || 1;
+    const newVal = Math.max(1, current + delta);
+    updated[index].eta = `${newVal} Day${newVal > 1 ? 's' : ''}`;
+    setNewLine({ ...newLine, services: updated });
+  };
+
+  const removeServiceField = (index) => {
+    setNewLine({ ...newLine, services: newLine.services.filter((_, i) => i !== index) });
+  };
 
   return (
     <div className="delivery-board">
@@ -162,73 +241,133 @@ const DeliveryDashboard = () => {
         </div>
       )}
 
-      {/* Trip Creation Modal Overlay */}
-      {isCreatingTrip && (
+      {/* Service Line Creation Modal Overlay */}
+      {isCreatingLine && (
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 10000,
           display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)'
         }}>
           <div style={{
             background: 'var(--noir-muted)', border: '0.5px solid var(--gold-border)',
-            width: '450px', padding: '24px', position: 'relative'
+            width: '600px', padding: '24px', position: 'relative', maxHeight: '90vh', overflowY: 'auto'
           }} className="fade-in">
             <button 
-              onClick={() => setIsCreatingTrip(false)}
+              onClick={() => setIsCreatingLine(false)}
               style={{position:'absolute', top:'20px', right:'20px', background:'none', border:'none', color:'var(--ivory-60)', cursor:'pointer'}}
             >
               <X size={18} />
             </button>
-            <div style={{fontFamily:'Playfair Display, serif', fontSize:'18px', color:'var(--gold)', marginBottom:'18px'}}>
-              Plan New Trip
+            <div style={{fontFamily:'Playfair Display, serif', fontSize:'22px', color:'var(--gold)', marginBottom:'24px'}}>
+              Define New Service Line
             </div>
-            <form onSubmit={handleCreateTripSubmit} style={{display:'flex', flexDirection:'column', gap:'12px'}}>
-              <div>
-                <label style={{fontSize:'10px', color:'var(--ivory-60)', textTransform:'uppercase', letterSpacing:'0.1em'}}>Route / Destination</label>
-                <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
-                  <input required type="text" placeholder="e.g. Paris Hub → Milan" value={newTripStr.route} onChange={e => setNewTripStr({...newTripStr, route: e.target.value})} style={{flex:1, background:'var(--noir-subtle)', border:'0.5px solid var(--noir-border)', color:'var(--ivory)', padding:'10px', marginTop:'6px', outline:'none'}} />
-                </div>
-                <TripMapPicker onRouteSelected={(r) => { if(r) setNewTripStr(prev => ({...prev, route: r})) }} />
-              </div>
-              
+            <form onSubmit={handleCreateLineSubmit} style={{display:'flex', flexDirection:'column', gap:'20px'}}>
               <div style={{display:'flex', gap:'12px'}}>
                 <div style={{flex:1}}>
-                  <label style={{fontSize:'10px', color:'var(--ivory-60)', textTransform:'uppercase', letterSpacing:'0.1em'}}>Vehicle</label>
-                  <select required value={newTripStr.vehicle} onChange={e => setNewTripStr({...newTripStr, vehicle: e.target.value})} style={{width:'100%', background:'var(--noir-subtle)', border:'0.5px solid var(--noir-border)', color:'var(--ivory)', padding:'10px', marginTop:'6px'}}>
-                    <option value="" disabled>Select Vehicle</option>
-                    {vehicles.length === 0 ? <option disabled>No vehicles registered</option> : vehicles.map(v => (
-                      <option key={v._id} value={v.registration}>{v.type} ({v.registration})</option>
-                    ))}
-                  </select>
+                  <label style={{fontSize:'10px', color:'var(--ivory-60)', textTransform:'uppercase', letterSpacing:'0.1em'}}>Source City</label>
+                  <input required type="text" placeholder="e.g. Nice" value={newLine.start_location} onChange={e => setNewLine({...newLine, start_location: e.target.value})} style={{width:'100%', background:'var(--noir-subtle)', border:'0.5px solid var(--noir-border)', color:'var(--ivory)', padding:'10px', marginTop:'6px'}} />
                 </div>
                 <div style={{flex:1}}>
-                  <label style={{fontSize:'10px', color:'var(--ivory-60)', textTransform:'uppercase', letterSpacing:'0.1em'}}>Driver</label>
-                  <select value={newTripStr.driver} onChange={e => setNewTripStr({...newTripStr, driver: e.target.value})} style={{width:'100%', background:'var(--noir-subtle)', border:'0.5px solid var(--noir-border)', color:'var(--ivory)', padding:'10px', marginTop:'6px'}}>
-                    <option>Marc Dupont</option>
-                    <option>Remy Antoine</option>
-                    <option>Lucia Mendes</option>
-                  </select>
+                  <label style={{fontSize:'10px', color:'var(--ivory-60)', textTransform:'uppercase', letterSpacing:'0.1em'}}>Destination City</label>
+                  <input required type="text" placeholder="e.g. Sousse" value={newLine.end_location} onChange={e => setNewLine({...newLine, end_location: e.target.value})} style={{width:'100%', background:'var(--noir-subtle)', border:'0.5px solid var(--noir-border)', color:'var(--ivory)', padding:'10px', marginTop:'6px'}} />
                 </div>
               </div>
+              
+              <div style={{height:'300px', width:'100%', overflow:'hidden', border:'0.5px solid var(--noir-border)'}}>
+                <TripMapPicker onRouteSelected={handleRouteSelected} />
+              </div>
 
-              <div>
-                <label style={{fontSize:'10px', color:'var(--ivory-60)', textTransform:'uppercase', letterSpacing:'0.1em'}}>Select Orders ({newTripStr.orders.length} selected)</label>
-                <div style={{background:'var(--noir-subtle)', border:'0.5px solid var(--noir-border)', padding:'10px', marginTop:'6px', maxHeight:'150px', overflowY:'auto'}}>
-                  {orders.filter(o => o.status === "Pending").length === 0 ? (
-                    <div style={{fontSize:'11px', color:'var(--ivory-30)', padding:'8px'}}>No pending orders available. Please wait for dispatch.</div>
-                  ) : orders.filter(o => o.status === "Pending").map(o => (
-                    <label key={o._id} style={{display:'flex', alignItems:'center', gap:'8px', padding:'6px 8px', fontSize:'12px', color:'var(--ivory)', cursor:'pointer', borderBottom:'0.5px solid rgba(255,255,255,0.05)'}}>
-                      <input 
-                        type="checkbox" 
-                        checked={newTripStr.orders.includes(o.order_id)}
-                        onChange={(e) => {
-                          const updated = e.target.checked 
-                            ? [...newTripStr.orders, o.order_id] 
-                            : newTripStr.orders.filter(id => id !== o.order_id);
-                          setNewTripStr({...newTripStr, orders: updated});
-                        }}
-                      />
-                      <span style={{color:'var(--gold)'}}>{o.order_id}</span> - {o.house}
-                    </label>
+              <div style={{borderTop:'0.5px solid var(--noir-border)', pt:'20px'}}>
+                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px'}}>
+                  <label style={{fontSize:'10px', color:'var(--gold)', textTransform:'uppercase', letterSpacing:'0.1em'}}>Supported Services</label>
+                  <button type="button" onClick={addServiceField} style={{background:'none', border:'0.5px solid var(--gold)', color:'var(--gold)', fontSize:'9px', padding:'4px 8px', cursor:'pointer'}}>+ Add Service</button>
+                </div>
+                
+                <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
+                  {newLine.services.map((s, idx) => (
+                    <div key={idx} style={{background:'rgba(255,255,255,0.02)', padding:'16px', border:'0.5px solid rgba(255,255,255,0.05)', position:'relative'}}>
+                      {idx > 0 && <button type="button" onClick={() => removeServiceField(idx)} style={{position:'absolute', top:'8px', right:'8px', color:'rgba(255,0,0,0.5)', background:'none', border:'none', cursor:'pointer'}}>✕</button>}
+                      <div style={{display:'flex', flexDirection:'column', gap:'16px', marginBottom:'20px'}}>
+                        <div>
+                          <label style={{fontSize:'9px', color:'var(--ivory-30)', textTransform:'uppercase', letterSpacing:'0.1em', display:'block', marginBottom:'8px'}}>Rapidity (Tiers)</label>
+                          <div style={{display:'flex', gap:'8px'}}>
+                            {[
+                              { id: 'Standard', icon: Truck, label: 'Standard' },
+                              { id: 'Fast', icon: Clock, label: 'Fast' },
+                              { id: 'Express', icon: CarFront, label: 'Express' },
+                              { id: 'Urgent', icon: ShieldCheck, label: 'Urgent' }
+                            ].map(tier => (
+                              <div 
+                                key={tier.id}
+                                onClick={() => updateServiceField(idx, 'type', tier.id)}
+                                style={{
+                                  flex:1, 
+                                  padding:'12px', 
+                                  background: s.type === tier.id ? 'var(--gold-bg)' : 'rgba(255,255,255,0.02)',
+                                  border: s.type === tier.id ? '1px solid var(--gold)' : '0.5px solid var(--noir-border)',
+                                  borderRadius: '4px',
+                                  textAlign:'center',
+                                  cursor:'pointer',
+                                  transition: '0.2s'
+                                }}
+                              >
+                                <tier.icon size={16} style={{color: s.type === tier.id ? 'var(--gold)' : 'var(--ivory-30)', marginBottom:'4px'}} />
+                                <div style={{fontSize:'10px', color: s.type === tier.id ? 'var(--gold)' : 'var(--ivory-60)', fontWeight:'bold'}}>{tier.label}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div style={{display:'flex', gap:'20px', alignItems:'flex-end'}}>
+                          <div style={{flex:1}}>
+                            <label style={{fontSize:'9px', color:'var(--ivory-30)', textTransform:'uppercase', letterSpacing:'0.1em'}}>Service Cost (€)</label>
+                            <input type="number" value={s.cost} onChange={e => updateServiceField(idx, 'cost', e.target.value)} style={{width:'100%', background:'var(--noir-subtle)', border:'0.5px solid var(--noir-border)', color:'var(--ivory)', padding:'10px', marginTop:'6px'}} />
+                          </div>
+                          
+                          <div style={{flex:1}}>
+                            <label style={{fontSize:'9px', color:'var(--ivory-30)', textTransform:'uppercase', letterSpacing:'0.1em', display:'block', marginBottom:'6px'}}>Delivery Window (ETA)</label>
+                            <div style={{display:'flex', alignItems:'center', background:'var(--noir-subtle)', border:'0.5px solid var(--noir-border)', padding:'4px'}}>
+                              <button type="button" onClick={() => adjustEtaDays(idx, -1)} style={{width:'32px', height:'32px', background:'rgba(255,255,255,0.05)', border:'none', color:'var(--ivory)', cursor:'pointer'}}>–</button>
+                              <div style={{flex:1, textAlign:'center', fontSize:'12px', color:'var(--ivory)', fontWeight:'bold'}}>{s.eta}</div>
+                              <button type="button" onClick={() => adjustEtaDays(idx, 1)} style={{width:'32px', height:'32px', background:'rgba(255,255,255,0.05)', border:'none', color:'var(--ivory)', cursor:'pointer'}}>+</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <label style={{fontSize:'9px', color:'var(--ivory-30)', textTransform:'uppercase', letterSpacing:'0.1em', display:'block', marginBottom:'12px'}}>Nature of Delivery (Attributes)</label>
+                        <div style={{display:'flex', flexWrap:'wrap', gap:'8px'}}>
+                          {NATURE_OPTIONS.map(opt => {
+                            const isActive = s.nature.includes(opt);
+                            return (
+                              <div 
+                                key={opt} 
+                                onClick={() => {
+                                  const currentNature = [...s.nature];
+                                  const updatedNature = isActive 
+                                    ? currentNature.filter(n => n !== opt)
+                                    : [...currentNature, opt];
+                                  updateServiceField(idx, 'nature', updatedNature);
+                                }}
+                                style={{
+                                  fontSize:'10px', 
+                                  padding:'6px 12px', 
+                                  background: isActive ? 'rgba(111,207,151,0.1)' : 'transparent',
+                                  border: isActive ? '1px solid #6FCF97' : '0.5px solid var(--noir-border)',
+                                  color: isActive ? '#6FCF97' : 'var(--ivory-30)',
+                                  borderRadius: '20px',
+                                  cursor:'pointer',
+                                  transition: '0.2s',
+                                  userSelect: 'none'
+                                }}
+                              >
+                                {isActive && <span style={{marginRight:'5px'}}>✓</span>}
+                                {opt}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -236,15 +375,9 @@ const DeliveryDashboard = () => {
               <button 
                 type="submit" 
                 className="topbar-btn" 
-                disabled={!isTripValid} 
-                style={{
-                  marginTop:'12px', padding:'12px', transition:'all 0.2s',
-                  background: isTripValid ? '' : 'var(--noir-subtle)', 
-                  color: isTripValid ? '' : 'var(--ivory-30)',
-                  cursor: isTripValid ? 'pointer' : 'not-allowed'
-                }}
+                style={{marginTop:'12px', padding:'16px', background:'var(--gold)', color:'black', fontWeight:'900'}}
               >
-                {isTripValid ? 'Confirm & Dispatch' : 'Complete Form to Dispatch'}
+                Register Service Line
               </button>
             </form>
           </div>
@@ -351,7 +484,7 @@ const DeliveryDashboard = () => {
             <div className="driver-avatar">MD</div>
             <div>
               <div className="driver-name">Marc Dupont</div>
-              <div class="driver-role">Paris Hub · Driver</div>
+              <div className="driver-role">Paris Hub · Driver</div>
             </div>
             <div className="duty-dot has-tip">
               <span className="tip">On duty</span>
@@ -390,7 +523,7 @@ const DeliveryDashboard = () => {
                 </div>
               )}
             </div>
-            <button className="topbar-btn" onClick={handleOpenTripModal}>+ New Trip</button>
+            <button className="topbar-btn" onClick={() => setIsCreatingLine(true)}>+ New Line</button>
           </div>
         </div>
 
@@ -523,10 +656,10 @@ const DeliveryDashboard = () => {
               </div>
               <div className="panel-body">
                 <div className="qaction-grid">
-                  <div className="qaction" onClick={handleOpenTripModal}>
+                  <div className="qaction" onClick={() => setIsCreatingLine(true)}>
                     <Map className="qa-icon" style={{color: 'var(--gold)'}} />
-                    <div className="qa-label">Generate Trip</div>
-                    <div className="qa-sub">Assign vehicles & orders</div>
+                    <div className="qa-label">Generate Line</div>
+                    <div className="qa-sub">Register new service routes</div>
                   </div>
                   <div className="qaction" onClick={() => setActiveTab('scan')}>
                     <ScanLine className="qa-icon" style={{color: 'var(--ivory)'}} />
@@ -634,14 +767,38 @@ const DeliveryDashboard = () => {
             </div>
           </div>
 
-          {/* PAGE: Orders */}
+          {/* PAGE: Orders (Transport Missions) */}
           <div className={`page ${activeTab === 'orders' ? 'active' : ''}`}>
             <div className="panel fade-in d1">
-              <div className="panel-header"><div className="panel-title">Active Orders</div></div>
-              <div className="panel-body">
-                Order creation is removed from this dashboard per configuration.
-                <br/><br/>
-                Wait for Couture Houses to dispatch new fabric or garment flows.
+              <div className="panel-header">
+                <div className="panel-title">Missions de Transport (Atelier Workflow)</div>
+                <button className="panel-action" onClick={fetchShipments}><Clock size={10} style={{display:'inline', marginBottom:'-2px'}}/> Refresh</button>
+              </div>
+              <div className="panel-body" style={{padding:0}}>
+                {shipments.length === 0 ? (
+                  <div style={{padding:'40px', textAlign:'center', color:'var(--ivory-30)'}}>
+                    <Truck size={32} style={{margin:'0 auto 12px', opacity:0.3}} />
+                    Aucune mission de transport en attente.<br/>Les commandes fabric provenant des ateliers s'afficheront ici.
+                  </div>
+                ) : (
+                  <div className="order-list">
+                    {shipments.map(s => (
+                      <div className="order-row" key={s.id} style={{padding:'20px', borderBottom:'0.5px solid var(--noir-border)'}}>
+                        <div className={`order-indicator ${s.status === 'pending' ? 'ind-pending' : 'ind-live'}`}></div>
+                        <div className="order-info">
+                          <div className="order-id" style={{color:'var(--gold)'}}>MISSION #{s.id}</div>
+                          <div className="order-route" style={{color:'var(--ivory)', fontSize:'14px', margin:'4px 0'}}>{s.source_name} → {s.dest_name}</div>
+                          <div className="order-meta">Status: <span style={{textTransform:'uppercase', fontWeight:'bold'}}>{s.status.replace('_', ' ')}</span></div>
+                        </div>
+                        <div style={{marginLeft:'auto', textAlign:'right'}}>
+                           <div style={{fontSize:'10px', color:'var(--ivory-30)', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'4px'}}>Itinéraire</div>
+                           <div style={{color:'var(--gold)', fontSize:'12px'}}>{s.route_details?.start_location || 'Nice'} → {s.route_details?.end_location || 'Sousse'}</div>
+                        </div>
+                        <button className="panel-action" style={{marginLeft:'20px', background:'var(--gold)', color:'black', padding:'6px 12px', borderRadius:'4px', fontSize:'10px', fontWeight:'900'}}>PRÉPARER PRISE EN CHARGE</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -723,25 +880,39 @@ const DeliveryDashboard = () => {
           <div className={`page ${activeTab === 'trips' ? 'active' : ''}`}>
             <div className="panel fade-in d1">
               <div className="panel-header">
-                <div className="panel-title">Active Trips Management</div>
-                <button className="panel-action" onClick={handleOpenTripModal}>
-                  <Plus size={10} style={{display:'inline', marginBottom:'-2px'}}/> Create Trip
+                <div className="panel-title">Service Lines Registry (SQL)</div>
+                <button className="panel-action" onClick={() => setIsCreatingLine(true)}>
+                  <Plus size={10} style={{display:'inline', marginBottom:'-2px'}}/> New Line
                 </button>
               </div>
               <div className="panel-body" style={{padding:0}}>
-                <div className="order-list">
-                  {trips.length === 0 ? <div style={{padding:'40px', textAlign:'center', color:'var(--ivory-30)', fontSize:'12px'}}>No active trips found.</div> : trips.map(t => (
-                    <div className="order-row" key={t._id} style={{padding:'20px', borderBottom:'1px solid var(--noir-border)'}}>
-                      <div className="order-indicator ind-live"></div>
-                      <div className={`order-type-badge badge-${t.type?.toLowerCase() || 'garment'}`}>{t.type}</div>
-                      <div className="order-info">
-                        <div className="order-id" style={{fontSize:'14px', marginBottom:'4px'}}>{t.trip_id}</div>
-                        <div className="order-route" style={{fontSize:'16px', color:'var(--gold)', fontFamily:'"Playfair Display",serif'}}>{t.route}</div>
-                        <div className="order-meta" style={{marginTop:'6px'}}>{t.driver} · ETA {t.eta}</div>
+                <div style={{display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'1px', background:'var(--noir-border)'}}>
+                  {routes.length === 0 ? (
+                    <div style={{padding:'40px', gridColumn:'1/-1', textAlign:'center', color:'var(--ivory-30)'}}>No service lines defined.</div>
+                  ) : routes.map(r => (
+                    <div key={r.id} style={{background:'var(--noir-muted)', padding:'24px'}}>
+                      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'16px'}}>
+                        <div style={{fontFamily:'"Playfair Display",serif', fontSize:'22px', color:'var(--gold)'}}>{r.start_location} → {r.end_location}</div>
+                        <div style={{fontSize:'10px', color:'var(--ivory-30)', textTransform:'uppercase', letterSpacing:'0.2em'}}>Active Route</div>
                       </div>
-                      <div className="order-progress" style={{width:'30%'}}>
-                        <div className="progress-mini" style={{height:'6px'}}><div className="progress-fill" style={{width:`${t.progress}%`}}></div></div>
-                        <div className="progress-pct" style={{marginTop:'8px', fontSize:'12px'}}>{t.progress}% completed</div>
+                      
+                      <div style={{display:'flex', flexDirection:'column', gap:'12px'}}>
+                        {r.services?.map((s, idx) => (
+                          <div key={idx} style={{background:'rgba(255,255,255,0.02)', border:'0.5px solid rgba(198,167,94,0.1)', padding:'14px', borderRadius:'2px'}}>
+                            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px'}}>
+                              <span style={{fontSize:'12px', fontWeight:'bold', color:'var(--gold)', letterSpacing:'0.05em'}}>{s.type.toUpperCase()}</span>
+                              <span style={{fontSize:'16px', color:'var(--ivory)', fontWeight:'900'}}>{s.cost}€</span>
+                            </div>
+                            <div style={{fontSize:'10px', color:'var(--ivory-60)', marginBottom:'8px'}}>ETA: {s.eta}</div>
+                            <div className="flex flex-wrap gap-2">
+                              {s.nature?.map((n, i) => (
+                                <span key={i} style={{fontSize:'8px', padding:'2px 6px', background:'rgba(111,207,151,0.05)', color:'#6FCF97', border:'0.5px solid rgba(111,207,151,0.2)', borderRadius:'1px', textTransform:'uppercase'}}>
+                                  {n}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   ))}
@@ -749,7 +920,6 @@ const DeliveryDashboard = () => {
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>

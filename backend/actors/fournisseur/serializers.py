@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import SupplierProfile, Fabric
+from .models import SupplierProfile, Fabric, FabricOrder
 from django.contrib.auth.models import User
 
 class UserSerializer(serializers.ModelSerializer):
@@ -32,3 +32,10 @@ class FabricSerializer(serializers.ModelSerializer):
         if obj.image:
             return obj.image.url
         return None
+
+class FabricOrderSerializer(serializers.ModelSerializer):
+    fabric_name = serializers.ReadOnlyField(source='fabric.materiel')
+    
+    class Meta:
+        model = FabricOrder
+        fields = '__all__'

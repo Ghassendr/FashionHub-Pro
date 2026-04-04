@@ -37,11 +37,11 @@ const Home = () => {
             setLoading(true);
             try {
                 // Fetch news
-                const newsData = await fetchData('http://localhost:8000/api/public/fabrics/news');
+                const newsData = await fetchData('http://localhost:8000/api/fournisseur/public/fabrics/news');
                 setNewsFabrics(Array.isArray(newsData?.fabrics) ? newsData.fabrics : []);
 
                 // Fetch trending
-                const trendingData = await fetchData('http://localhost:8000/api/public/fabrics/trending');
+                const trendingData = await fetchData('http://localhost:8000/api/fournisseur/public/fabrics/trending');
                 setTrendingFabrics(Array.isArray(trendingData?.fabrics) ? trendingData.fabrics : []);
 
                 // Fetch latest designs

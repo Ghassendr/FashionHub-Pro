@@ -1,6 +1,6 @@
 from rest_framework import serializers as drf_serializers
 from rest_framework_mongoengine import serializers
-from ..models import Design, DesignMedia, DesignLike, CoutureHouseProfile
+from ..models import Design, DesignMedia, DesignLike, CoutureHouseProfile, Order, LocalFabricStock
 
 class DesignMediaSerializer(serializers.EmbeddedDocumentSerializer):
     class Meta:
@@ -45,3 +45,13 @@ class DesignWriteSerializer(serializers.DocumentSerializer):
         model = Design
         fields = ["id", "title", "description", "category", "fabric_suggestions", "morphologies"]
         read_only_fields = ["id"]
+
+class OrderSerializer(drf_serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = '__all__'
+
+class LocalFabricStockSerializer(drf_serializers.ModelSerializer):
+    class Meta:
+        model = LocalFabricStock
+        fields = '__all__'

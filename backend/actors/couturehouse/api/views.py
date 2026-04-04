@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
@@ -7,8 +8,11 @@ from rest_framework_mongoengine import generics
 from django.http import FileResponse
 import os
 
-from ..models import Design, DesignMedia, DesignLike
-from .serializers import DesignSerializer, DesignWriteSerializer, DesignMediaSerializer
+from ..models import Design, DesignMedia, DesignLike, Order, LocalFabricStock, CoutureHouseProfile
+from .serializers import (
+    DesignSerializer, DesignWriteSerializer, DesignMediaSerializer,
+    OrderSerializer, LocalFabricStockSerializer
+)
 
 class IsFashionHouseOwner(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
@@ -322,3 +326,163 @@ def get_inquiry_details(request, id):
         })
     except ClientProject.DoesNotExist:
         return Response({"detail": "Commande introuvable."}, status=status.HTTP_404_NOT_FOUND)
+
+# --- Orders (Production) ---
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def handle_orders(request):
+    """
+    Get all production orders for this house.
+    """
+    house_profile = get_object_or_404(CoutureHouseProfile, user=request.user)
+    orders = Order.objects.filter(couture_house=house_profile).order_by("-created_at")
+    serializer = OrderSerializer(orders, many=True)
+    return Response({"orders": serializer.data})
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def create_order_from_inquiry(request, id):
+    """
+    Convert a ClientProject (Inquiry) into a Production Order.
+    """
+    try:
+        project = ClientProject.objects.get(id=id)
+        house_profile = get_object_or_404(CoutureHouseProfile, user=request.user)
+
+        # Get client info
+        try:
+            client_user = User.objects.get(id=project.client_id)
+            client_name = f"{client_user.first_name} {client_user.last_name}" or client_user.username
+            client_email = client_user.email
+        except User.DoesNotExist:
+            client_name = "Unknown Client"
+            client_email = ""
+
+        # Use the first fabric selected as primary for now
+        fabric_id = project.selected_fabrics[0] if project.selected_fabrics else None
+        fabric_name = "To be defined"
+        if fabric_id:
+            from actors.fournisseur.models import Fabric
+            try:
+                f = Fabric.objects.get(id=fabric_id)
+                fabric_name = f.materiel
+            except: pass
+
+        # Create Order
+        order = Order.objects.create(
+            inquiry_id=id,
+            couture_house=house_profile,
+            client_name=client_name,
+            client_email=client_email,
+            fabric_requested=fabric_name,
+            fabric_id=fabric_id,
+            quantity_needed=2.5, # Default estimation
+            status='pending'
+        )
+        
+        # Update project status
+        project.status = 'sent' # Or archived
+        project.save()
+
+        return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
+    except Exception as e:
+        return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def get_order_details(request, id):
+    """
+    Get full order info plus stock analysis.
+    """
+    order = get_object_or_404(Order, id=id)
+    
+    # Check local stock
+    stock = LocalFabricStock.objects.filter(
+        couture_house=order.couture_house, 
+        fabric_name__iexact=order.fabric_requested
+    ).first()
+    
+    local_qty = stock.quantity if stock else 0
+    is_available = local_qty >= order.quantity_needed
+    
+    # Check supplier stock if local is low
+    supplier_stock = 0
+    fabric_price = 0
+    fabric_nature = ""
+    fabric_image_url = ""
+    if order.fabric_id:
+        from actors.fournisseur.models import Fabric
+        try:
+            f = Fabric.objects.get(id=order.fabric_id)
+            supplier_stock = f.quantite
+            fabric_price = float(f.prix)
+            fabric_nature = f.materiel
+            if f.image:
+                fabric_image_url = f.image.url
+        except: pass
+
+    data = OrderSerializer(order).data
+    data['stock_analysis'] = {
+        'is_available_locally': is_available,
+        'local_quantity': float(local_qty),
+        'needed_quantity': float(order.quantity_needed),
+        'supplier_available_quantity': float(supplier_stock),
+        'fabric_price': fabric_price,
+        'fabric_nature': fabric_nature,
+        'fabric_image_url': fabric_image_url
+    }
+    
+    # Fetch 3D info from inquiry if linked
+    if order.inquiry_id:
+        try:
+            project = ClientProject.objects.get(id=order.inquiry_id)
+            data['scan_result'] = project.scan_result
+            data['skin_result'] = project.skin_result
+        except: pass
+
+    return Response(data)
+    
+@api_view(["PATCH"])
+@permission_classes([permissions.IsAuthenticated])
+def update_order_quantity(request, id):
+    """
+    Allow Couture House to manually set the required quantity for an order.
+    """
+    order = get_object_or_404(Order, id=id)
+    # Check ownership
+    house = get_object_or_404(CoutureHouseProfile, user=request.user)
+    if order.couture_house != house:
+        return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+        
+    qty = request.data.get('quantity_needed')
+    if qty is not None:
+        try:
+            order.quantity_needed = float(qty)
+            order.save()
+            return Response({"success": True, "quantity_needed": order.quantity_needed})
+        except (ValueError, TypeError):
+            return Response({"error": "Invalid quantity value"}, status=status.HTTP_400_BAD_REQUEST)
+            
+    return Response({"error": "Missing quantity_needed"}, status=status.HTTP_400_BAD_REQUEST)
+
+# --- Local Stock ---
+
+@api_view(["GET", "POST"])
+@permission_classes([permissions.IsAuthenticated])
+def handle_local_stock(request):
+    house = get_object_or_404(CoutureHouseProfile, user=request.user)
+    if request.method == "GET":
+        stocks = LocalFabricStock.objects.filter(couture_house=house)
+        return Response(LocalFabricStockSerializer(stocks, many=True).data)
+    
+    # Add or Update stock
+    fabric_name = request.data.get('fabric_name')
+    qty = request.data.get('quantity', 0)
+    
+    stock, created = LocalFabricStock.objects.get_or_create(
+        couture_house=house, fabric_name=fabric_name
+    )
+    stock.quantity = qty
+    stock.save()
+    return Response(LocalFabricStockSerializer(stock).data)

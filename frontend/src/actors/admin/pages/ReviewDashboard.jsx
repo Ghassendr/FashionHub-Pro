@@ -283,14 +283,23 @@ const ReviewDashboard = () => {
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-4 p-4 bg-surface/40 border border-subtle/20 rounded-sm hover:border-gold/30 hover:bg-surface transition-all duration-300 group"
                                 >
-                                    <div className="w-10 h-10 bg-gold/10 rounded-sm flex items-center justify-center shrink-0">
-                                        <FileText size={18} className="text-gold" />
+                                    <div className="w-16 h-16 bg-gold/5 rounded-sm flex items-center justify-center shrink-0 overflow-hidden border border-subtle/20">
+                                        {doc.url?.startsWith('data:image') ? (
+                                            <img src={doc.url} alt={doc.name} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <FileText size={20} className="text-gold" />
+                                        )}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-ivory text-sm font-medium">{doc.name}</p>
-                                        <p className="text-ivory/30 text-xs truncate">{doc.url}</p>
+                                        <p className="text-ivory/30 text-xs truncate">
+                                            {doc.url?.startsWith('data:image') ? 'Image Content' : doc.url}
+                                        </p>
                                     </div>
-                                    <ExternalLink size={14} className="text-ivory/20 group-hover:text-gold transition-colors shrink-0" />
+                                    <div className="flex flex-col items-center gap-2">
+                                        <ExternalLink size={14} className="text-ivory/20 group-hover:text-gold transition-colors shrink-0" />
+                                        <span className="text-[10px] text-ivory/20 group-hover:text-gold uppercase tracking-widest transition-colors font-medium">View</span>
+                                    </div>
                                 </a>
                             ))
                         ) : (

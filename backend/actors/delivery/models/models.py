@@ -1,4 +1,5 @@
 from django.db import models
+from django.db import models as django_models
 from django.conf import settings
 
 class Carrier(models.Model):
@@ -19,9 +20,16 @@ class Carrier(models.Model):
     delivery_time_guarantee = models.CharField(max_length=100, blank=True)
     insurance_coverage = models.CharField(max_length=255, blank=True)
     
-    # Document Verification URLs
-    commercial_register_url = models.URLField(max_length=500, blank=True)
-    id_card_url = models.URLField(max_length=500, blank=True)
+    # Quality of Service Metrics
+    rating = models.DecimalField(max_digits=3, decimal_places=2, default=4.50)
+    review_count = models.IntegerField(default=12)
+    
+    # Document Verification URLs (Stored as Base64/Texts)
+    commercial_register_url = models.TextField(blank=True)
+    id_card_url = models.TextField(blank=True)
+    insurance_document_url = models.TextField(blank=True)
+    vehicle_photos_url = models.TextField(blank=True)
+    luxury_reference_url = models.TextField(blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     
@@ -53,6 +61,7 @@ class Route(models.Model):
     distance_km = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     estimated_duration_mins = models.IntegerField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    services = models.JSONField(default=list) # [{ "type": "standard", "cost": 30, "nature": ["standard"], "eta": "5-7 days" }]
     created_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
@@ -66,3 +75,34 @@ class Schedule(models.Model):
     
     def __str__(self):
         return f"Schedule for {self.route.id} at {self.departure_time}"
+
+class ShipmentRequest(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'En attente'),
+        ('accepted', 'Accepté'),
+        ('picked_up', 'Récupéré'),
+        ('in_transit', 'En transit'),
+        ('delivered', 'Livré'),
+        ('cancelled', 'Annulé'),
+    )
+    
+    carrier = models.ForeignKey(Carrier, on_delete=models.CASCADE, related_name='shipments')
+    route = models.ForeignKey(Route, on_delete=models.SET_NULL, null=True, related_name='shipments')
+    
+    # Origins/Destinations can be many actors, so we store names and IDs
+    source_name = models.CharField(max_length=255)
+    dest_name = models.CharField(max_length=255)
+    
+    # Link to the underlying order (optional, could be a fabric order or a client order)
+    fabric_order_id = models.IntegerField(null=True, blank=True)
+    
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    
+    pickup_time = models.DateTimeField(null=True, blank=True)
+    delivery_time = models.DateTimeField(null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = django_models.DateTimeField(auto_now=True) if 'django_models' in globals() else models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Shipment #{self.id} - {self.source_name} to {self.dest_name}"

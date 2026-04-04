@@ -5,18 +5,21 @@ import ProtectedRoute from './shared/components/Auth/ProtectedRoute'; // Added
 import Onboarding from './actors/client/pages/Onboarding';
 import BodyMeasurements from './actors/client/pages/BodyMeasurements';
 import CreateDesignWizard from './actors/client/pages/CreateDesignWizard';
-import Delivery from './actors/delivery/pages/Delivery';
-import CoutureHouse from './actors/delivery/pages/CoutureHouse';
+import DeliveryDashboard from './actors/delivery/pages/DeliveryDashboard';
 import CoutureHouseDashboard from './actors/couturehouse/pages/Dashboard';
 import CreateDesign from './actors/couturehouse/pages/CreateDesign';
 import Inquiries from './actors/couturehouse/pages/Inquiries';
+import CommandesEnCours from './actors/couturehouse/pages/CommandesEnCours';
+import OrderDetail from './actors/couturehouse/pages/OrderDetail';
 import CoutureHouseFabricsInventory from './actors/couturehouse/pages/FabricsInventory';
 import FournisseurDashboard from './actors/Fournisseur/Dashboard';
 import FournisseurSettings from './actors/Fournisseur/Settings';
+import SupplierFabricOrders from './actors/Fournisseur/SupplierFabricOrders';
 import ReviewDashboard from './actors/admin/pages/ReviewDashboard';
 import AdminLayout from './actors/admin/components/AdminLayout';
 import AdminOverview from './actors/admin/pages/AdminOverview';
 import PendingVerification from './shared/pages/PendingVerification';
+import Profile from './shared/pages/Profile';
 
 function App() {
   return (
@@ -26,10 +29,18 @@ function App() {
         path="/delivery"
         element={
           <ProtectedRoute allowedRoles={['delivery']}>
-            <Delivery />
+            <DeliveryDashboard />
           </ProtectedRoute>
         }
       />
+
+      {/* Fournisseur Dashboards - Standalone Fullscreen */}
+      <Route path="/fournisseur" element={<ProtectedRoute allowedRoles={['fournisseur']}><Outlet /></ProtectedRoute>}>
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<FournisseurDashboard />} />
+        <Route path="orders" element={<SupplierFabricOrders />} />
+        <Route path="settings" element={<FournisseurSettings />} />
+      </Route>
 
       {/* Client Design Wizard - Standalone (no Layout wrapper) */}
       <Route
@@ -57,15 +68,17 @@ function App() {
           <Route index element={<CoutureHouseDashboard />} />
           <Route path="designs" element={<CoutureHouseDashboard />} />
           <Route path="inquiries" element={<Inquiries />} />
+          <Route path="orders" element={<CommandesEnCours />} />
+          <Route path="orders/:id" element={<OrderDetail />} />
           <Route path="create" element={<CreateDesign />} />
+          <Route path="fabrics" element={<CoutureHouseFabricsInventory />} />
         </Route>
 
-        {/* Fournisseur Domain - Restricted to Suppliers */}
-        <Route path="fournisseur" element={<ProtectedRoute allowedRoles={['fournisseur']}><Outlet /></ProtectedRoute>}>
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<FournisseurDashboard />} />
-          <Route path="settings" element={<FournisseurSettings />} />
-        </Route>
+
+
+        {/* User Profile */}
+        <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="profile/:userId" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
 
         {/* Pending Verification Route */}
         <Route path="pending-verification" element={<PendingVerification />} />

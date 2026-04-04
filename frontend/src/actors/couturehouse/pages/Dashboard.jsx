@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { 
     Plus, LayoutGrid, Search, Loader2, Home, 
     Palette, BarChart3, Settings, LogOut, 
-    Menu, TrendingUp, Sparkles, Layers, Users 
+    Menu, TrendingUp, Sparkles, Layers, Users, Clock
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import designService from '../services/designService';
@@ -125,6 +125,10 @@ const Dashboard = () => {
                     <div className="nav-item" onClick={() => navigate('/couturehouse/inquiries')}>
                         <Users size={20} />
                         {sidebarOpen && <span>Client Inquiries</span>}
+                    </div>
+                    <div className="nav-item" onClick={() => navigate('/couturehouse/orders')}>
+                        <Clock size={20} />
+                        {sidebarOpen && <span>Commandes en cours</span>}
                     </div>
                     <div className="nav-item" onClick={() => navigate('/couturehouse/create')}>
                         <Plus size={20} />

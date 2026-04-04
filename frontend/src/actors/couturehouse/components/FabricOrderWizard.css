@@ -1,0 +1,79 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;900&family=Playfair+Display:ital,wght@0,400;0,900;1,400;1,900&family=Inter:wght@400;700&display=swap');
+
+.wizard-step {
+    animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.wizard-box {
+    background: linear-gradient(135deg, #090909 0%, #111111 100%);
+    position: relative;
+    box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.8);
+}
+
+.wizard-progress-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 4px;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.03);
+    overflow: hidden;
+}
+
+.wizard-btn-next {
+    padding: 1.25rem 2.5rem;
+    background: #D4AF37;
+    color: #000;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-size: 11px;
+    border-radius: 1rem;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 2rem;
+    border: none;
+    box-shadow: 0 10px 30px -5px rgba(212, 175, 55, 0.2);
+}
+
+.wizard-btn-next:hover {
+    background: #fdf6e3;
+    transform: translateY(-2px);
+    box-shadow: 0 20px 40px -10px rgba(212, 175, 55, 0.3);
+}
+
+.wizard-btn-prev {
+    padding: 1.25rem 2.5rem;
+    background: rgba(255, 255, 255, 0.03);
+    color: #aaa;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-size: 11px;
+    border-radius: 1rem;
+    border: 1px border-white/5;
+    transition: all 0.4s;
+    margin-top: 2rem;
+}
+
+.wizard-btn-prev:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.summary-item {
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px border-white/5;
+    border-radius: 1.25rem;
+}

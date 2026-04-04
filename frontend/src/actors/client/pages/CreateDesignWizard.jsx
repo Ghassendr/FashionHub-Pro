@@ -134,7 +134,7 @@ const CreateDesignWizard = () => {
                 const skinFabrics = skinResult?.fabric_recommendations || [];
                 
                 // Fetch trending fabrics to use as "design matched" fallback
-                const res = await fetch('http://localhost:8000/api/public/fabrics/trending');
+                const res = await fetch('http://localhost:8000/api/fournisseur/public/fabrics/trending');
                 const data = await res.json();
                 let trending = Array.isArray(data?.fabrics) ? data.fabrics : [];
                 

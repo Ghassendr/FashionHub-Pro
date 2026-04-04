@@ -3,7 +3,7 @@ import {
     Users, Search, Loader2, ArrowLeft, 
     Palette, LayoutGrid, Plus, TrendingUp, Settings, 
     LogOut, Menu, Layers, Eye, Calendar, User, 
-    ChevronRight, Ruler, Sparkles, CheckCircle2
+    ChevronRight, Ruler, Sparkles, CheckCircle2, Clock
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Viewer3D from '../../client/components/Viewer3D';
@@ -50,6 +50,24 @@ const Inquiries = () => {
         }
     };
 
+    const handleAcceptInquiry = async (id) => {
+        try {
+            setDetailLoading(true);
+            const response = await fetch(`http://localhost:8000/api/couturehouse/inquiries/${id}/convert/`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const newOrder = await response.json();
+                navigate(`/couturehouse/orders/${newOrder.id}`);
+            }
+        } catch (err) {
+            console.error("Failed to accept inquiry", err);
+        } finally {
+            setDetailLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (!token) {
             navigate('/');
@@ -85,7 +103,11 @@ const Inquiries = () => {
                     </div>
                     <div className="nav-item active">
                         <Users size={20} />
-                        {sidebarOpen && <span>Client Inquiries</span>}
+                        {sidebarOpen && <span>Demandes Clients</span>}
+                    </div>
+                    <div className="nav-item" onClick={() => navigate('/couturehouse/orders')}>
+                        <Clock size={20} />
+                        {sidebarOpen && <span>Commandes en cours</span>}
                     </div>
                     <div className="nav-item" onClick={() => navigate('/couturehouse/fabrics')}>
                         <Layers size={20} />
@@ -333,9 +355,17 @@ const Inquiries = () => {
                                     </section>
 
                                     <div className="pt-10 border-t border-white/5">
-                                        <button className="btn btn-primary w-full py-5 flex items-center justify-center gap-4 group">
-                                            <CheckCircle2 size={20} />
-                                            Prendre en charge la commande
+                                        <button 
+                                            onClick={() => handleAcceptInquiry(selectedInquiry.id)}
+                                            disabled={detailLoading}
+                                            className="btn btn-primary w-full py-5 flex items-center justify-center gap-4 group"
+                                        >
+                                            {detailLoading ? <Loader2 className="animate-spin" /> : (
+                                                <>
+                                                    <CheckCircle2 size={20} />
+                                                    Prendre en charge la commande
+                                                </>
+                                            )}
                                         </button>
                                     </div>
                                 </div>

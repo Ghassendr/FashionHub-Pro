@@ -16,4 +16,13 @@ urlpatterns = [
     # Inquiries
     path('inquiries/', views.handle_inquiries, name='inquiry-list'),
     path('inquiries/<str:id>/', views.get_inquiry_details, name='inquiry-detail'),
+    path('inquiries/<str:id>/convert/', views.create_order_from_inquiry, name='inquiry-convert'),
+
+    # Production Orders
+    path('orders/', views.handle_orders, name='order-list'),
+    path('orders/<int:id>/', views.get_order_details, name='order-detail'),
+    path('orders/<int:id>/update-quantity/', views.update_order_quantity, name='update_order_quantity'),
+
+    # Local Stock
+    path('atelier/stock/', views.handle_local_stock, name='atelier-stock'),
 ]

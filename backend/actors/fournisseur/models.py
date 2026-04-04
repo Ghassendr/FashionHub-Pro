@@ -37,9 +37,12 @@ class SupplierProfile(models.Model):
     )
     verification_status = models.CharField(max_length=20, choices=VERIFICATION_CHOICES, default='pending')
     
-    # Document Verification URLs
-    commercial_register_url = models.URLField(max_length=500, blank=True)
-    id_card_url = models.URLField(max_length=500, blank=True)
+    # Document Verification URLs (Stored as Base64/Texts)
+    commercial_register_url = models.TextField(blank=True)
+    id_card_url = models.TextField(blank=True)
+    fabric_quality_cert_url = models.TextField(blank=True)
+    fabric_sample_photos_url = models.TextField(blank=True)
+    warehouse_photo_url = models.TextField(blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -73,3 +76,36 @@ class FabricLike(models.Model):
 
     def __str__(self):
         return f"{self.user.email} likes {self.fabric.materiel}"
+
+class FabricOrder(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'En attente'),
+        ('confirmed', 'Confirmé'),
+        ('shipped', 'Expédié'),
+        ('delivered', 'Livré'),
+        ('cancelled', 'Annulé'),
+    )
+    DELIVERY_TYPE_CHOICES = (
+        ('standard', 'Standard'),
+        ('rapide', 'Rapide'),
+        ('urgent', 'Urgent'),
+    )
+    
+    supplier = models.ForeignKey(SupplierProfile, on_delete=models.CASCADE, related_name='received_orders')
+    # Using string reference to avoid circular import with couturehouse
+    couture_house_id = models.IntegerField() # SQL ID of CoutureHouseProfile
+    couture_house_name = models.CharField(max_length=255)
+    
+    fabric = models.ForeignKey(Fabric, on_delete=models.CASCADE, related_name='orders')
+    quantity = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    delivery_type = models.CharField(max_length=20, choices=DELIVERY_TYPE_CHOICES, default='standard')
+    delivery_preference = models.CharField(max_length=255, blank=True)
+    
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Fabric Order #{self.id} - {self.fabric.materiel} for {self.couture_house_name}"

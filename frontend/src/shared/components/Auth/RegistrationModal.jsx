@@ -42,6 +42,7 @@ const RegistrationModal = ({ isOpen, onClose, onSwitchToLogin }) => {
         portfolioPhotos: '',
         workshopPhoto: '',
         ownerId: '',
+        professionalLicense: '',
         // Fournisseur
         fabricQualityCert: '',
         fabricSamplePhotos: '',
@@ -57,11 +58,23 @@ const RegistrationModal = ({ isOpen, onClose, onSwitchToLogin }) => {
     const handleChange = (e) => {
         setError(''); // Clear previous errors
 
-        const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
-        }));
+        const { name, value, type, checked, files } = e.target;
+        
+        if (type === 'file' && files && files[0]) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setFormData(prev => ({
+                    ...prev,
+                    [name]: reader.result // Base64 encoding
+                }));
+            };
+            reader.readAsDataURL(files[0]);
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                [name]: type === 'checkbox' ? checked : value
+            }));
+        }
     };
 
     const handleRoleSelect = (selectedRole) => {
@@ -128,11 +141,11 @@ const RegistrationModal = ({ isOpen, onClose, onSwitchToLogin }) => {
         if (role !== 'Client' && step === 4) {
             let requiredStep3 = [];
             if (role === 'Couture House') {
-                requiredStep3 = ['commercialRegister', 'ownerId'];
+                requiredStep3 = ['commercialRegister', 'ownerId', 'portfolioPhotos', 'workshopPhoto', 'professionalLicense'];
             } else if (role === 'Fournisseur') {
-                requiredStep3 = ['commercialRegister', 'warehousePhoto'];
+                requiredStep3 = ['commercialRegister', 'ownerId', 'fabricSamplePhotos', 'warehousePhoto']; // fabricQualityCert is optional
             } else if (role === 'Delivery') {
-                requiredStep3 = ['commercialRegister', 'vehiclePhotos'];
+                requiredStep3 = ['commercialRegister', 'ownerId', 'insuranceDocument', 'vehiclePhotos']; // luxuryReference is optional
             }
 
             for (const field of requiredStep3) {
@@ -184,16 +197,35 @@ const RegistrationModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                 };
             }
 
+            // Prepare verification_docs based on role
+            let verification_docs = {
+                commercial_register_url: formData.commercialRegister,
+            };
+
+            if (backendRole === 'couture_house') {
+                verification_docs.id_card_url = formData.ownerId;
+                verification_docs.portfolio_photos_url = formData.portfolioPhotos;
+                verification_docs.workshop_photo_url = formData.workshopPhoto;
+                verification_docs.professional_license_url = formData.professionalLicense;
+            } else if (backendRole === 'fournisseur') {
+                verification_docs.id_card_url = formData.ownerId;
+                verification_docs.fabric_quality_cert_url = formData.fabricQualityCert;
+                verification_docs.fabric_sample_photos_url = formData.fabricSamplePhotos;
+                verification_docs.warehouse_photo_url = formData.warehousePhoto;
+            } else if (backendRole === 'delivery') {
+                verification_docs.id_card_url = formData.ownerId;
+                verification_docs.insurance_document_url = formData.insuranceDocument;
+                verification_docs.vehicle_photos_url = formData.vehiclePhotos;
+                verification_docs.luxury_reference_url = formData.luxuryReference;
+            }
+
             const payload = {
-                username: formData.email, // Use full email as unique username (avoid random numbers)
+                username: formData.email,
                 email: formData.email,
                 password: formData.password,
                 role: backendRole,
                 profile_data: profile_data,
-                verification_docs: {
-                    commercial_register_url: formData.commercialRegister,
-                    id_card_url: formData.ownerId || formData.commercialRegister // Simplified mapping
-                }
+                verification_docs: verification_docs
             };
 
             await authService.signup(payload);
@@ -382,12 +414,14 @@ const RegistrationModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                         <p className="text-xs text-gold/60 -mt-2 mb-2">⚡ IMPORTANT: Portfolio is the main criteria for Haute Couture validation.</p>
                         <FileInput name="workshopPhoto" label="Workshop Photo *" onChange={handleChange} />
                         <FileInput name="ownerId" label="Owner ID *" onChange={handleChange} />
+                        <FileInput name="professionalLicense" label="Professional License *" onChange={handleChange} />
                     </div>
                 )}
 
                 {role === 'Fournisseur' && (
                     <div className="space-y-4">
                         <FileInput name="commercialRegister" label="Commercial Register *" onChange={handleChange} />
+                        <FileInput name="ownerId" label="Owner ID (ID Card) *" onChange={handleChange} />
                         <FileInput name="fabricQualityCert" label="Fabric Quality Certificate (if available)" required={false} onChange={handleChange} />
                         <FileInput name="fabricSamplePhotos" label="3 Fabric Sample Photos (high resolution) *" onChange={handleChange} />
                         <FileInput name="warehousePhoto" label="Warehouse Photo *" onChange={handleChange} />
@@ -397,6 +431,7 @@ const RegistrationModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                 {role === 'Delivery' && (
                     <div className="space-y-4">
                         <FileInput name="commercialRegister" label="Commercial Register *" onChange={handleChange} />
+                        <FileInput name="ownerId" label="Owner ID (ID Card) *" onChange={handleChange} />
                         <FileInput name="insuranceDocument" label="Insurance Document *" onChange={handleChange} />
                         <FileInput name="vehiclePhotos" label="Vehicle Photos *" onChange={handleChange} />
                         <FileInput name="luxuryReference" label="Luxury goods reference (optional but strong)" required={false} onChange={handleChange} />

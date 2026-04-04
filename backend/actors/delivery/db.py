@@ -1,13 +1,9 @@
-from pymongo import MongoClient
+from mongoengine.connection import get_db
 import os
 
-# Create a singleton MongoDB client to avoid multiple connection pools
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
-DB_NAME = "projet_ctr_delivery"
-
+# Use the existing authenticated connection from mongoengine (initialized in settings.py)
 try:
-    client = MongoClient(MONGO_URI)
-    db = client[DB_NAME]
+    db = get_db()
     
     # Collections
     vehicles_collection = db["vehicles"]
@@ -15,5 +11,7 @@ try:
     orders_collection = db["orders"]
     
 except Exception as e:
-    print(f"Error connecting to MongoDB: {e}")
-    db = None
+    print(f"Error accessing MongoDB via mongoengine: {e}")
+    vehicles_collection = None
+    trips_collection = None
+    orders_collection = None

@@ -8,8 +8,11 @@ from core.models.user import User
 from django.shortcuts import get_object_or_404
 import base64
 
-from .models import SupplierProfile, Fabric, FabricLike
-from .serializers import SupplierProfileSerializer, CompleteSupplierSerializer, FabricSerializer
+from .models import SupplierProfile, Fabric, FabricLike, FabricOrder
+from .serializers import (
+    SupplierProfileSerializer, CompleteSupplierSerializer, 
+    FabricSerializer, FabricOrderSerializer
+)
 from .utils import extract_main_color
 
 class SignupView(views.APIView):
@@ -403,3 +406,67 @@ class FabricImageView(views.APIView):
             return FileResponse(open(fabric.image.path, 'rb'))
         except Exception as e:
             return Response({'error': f'Failed to retrieve image: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# --- Fabric Orders ---
+
+class FabricOrderListView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        profile = getattr(request.user, 'supplier_profile', None)
+        if not profile:
+            return Response({'error': 'Supplier profile not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        orders = FabricOrder.objects.filter(supplier=profile).order_by('-created_at')
+        serializer = FabricOrderSerializer(orders, many=True)
+        return Response({'orders': serializer.data})
+
+class CreateFabricOrderView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        data = request.data
+        fabric_id = data.get('fabric_id')
+        qty = float(data.get('quantity', 0))
+        
+        fabric = get_object_or_404(Fabric, id=fabric_id)
+        
+        # 1. Constraint: Cannot order more than supplier has
+        if qty > float(fabric.quantite):
+            return Response({
+                'error': f'Insufficient stock. Supplier only has {fabric.quantite}m available.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        supplier_profile = getattr(fabric.user, 'supplier_profile', None)
+        
+        # 2. Create the order
+        order = FabricOrder.objects.create(
+            supplier=supplier_profile,
+            couture_house_id=data.get('couture_house_id'),
+            couture_house_name=data.get('couture_house_name', 'Unknown House'),
+            fabric=fabric,
+            quantity=qty,
+            delivery_type=data.get('delivery_type', 'standard'),
+            delivery_preference=data.get('delivery_preference', '')
+        )
+        
+        # 3. Create Shipment Request (for the selected carrier)
+        carrier_id = data.get('carrier_id')
+        if carrier_id:
+            from actors.delivery.models import Carrier, ShipmentRequest, Route
+            try:
+                carrier = Carrier.objects.get(id=carrier_id)
+                route = Route.objects.filter(carrier=carrier, id=data.get('route_id')).first()
+                
+                ShipmentRequest.objects.create(
+                    carrier=carrier,
+                    route=route,
+                    source_name=supplier_profile.nomOrganization,
+                    dest_name=data.get('couture_house_name'),
+                    fabric_order_id=order.id,
+                    status='pending'
+                )
+            except Exception as e:
+                print(f"Failed to create shipment request: {str(e)}")
+
+        return Response(FabricOrderSerializer(order).data, status=status.HTTP_201_CREATED)
