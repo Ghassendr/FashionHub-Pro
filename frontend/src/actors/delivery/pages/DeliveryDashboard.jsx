@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { 
   Hexagon, LayoutDashboard, Package, Truck, 
   Map, ScanLine, Thermometer, ShieldCheck, 
@@ -20,8 +21,20 @@ const pageTitles = {
 };
 
 const DeliveryDashboard = () => {
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('overview');
   const [currentTime, setCurrentTime] = useState('');
+
+  // Update tab based on URL query param
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab && pageTitles[tab]) {
+      setActiveTab(tab);
+    } else {
+      setActiveTab('overview');
+    }
+  }, [location]);
   
   const [vehicles, setVehicles] = useState([]);
   const [kpis, setKpis] = useState(null);
@@ -310,58 +323,8 @@ const DeliveryDashboard = () => {
         </div>
       )}
 
-      {/* Sidebar */}
-      <aside className="sidebar">
-        <div className="sidebar-logo">
-          <div className="logo-mark">MT</div>
-          <div className="logo-text">Maison <span>Tissue</span></div>
-        </div>
-
-        <div className="sidebar-section-label">Main</div>
-        <div className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>
-          <LayoutDashboard className="nav-icon" /> Overview
-        </div>
-        <div className={`nav-item ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}>
-          <Package className="nav-icon" /> Order Handling
-          <span className="nav-badge-count">3</span>
-        </div>
-        <div className={`nav-item ${activeTab === 'trips' ? 'active' : ''}`} onClick={() => setActiveTab('trips')}>
-          <Map className="nav-icon" /> Active Trips
-        </div>
-        <div className={`nav-item ${activeTab === 'fleet' ? 'active' : ''}`} onClick={() => setActiveTab('fleet')}>
-          <Truck className="nav-icon" /> Fleet
-        </div>
-
-        <div className="sidebar-section-label">Operations</div>
-        <div className={`nav-item ${activeTab === 'scan' ? 'active' : ''}`} onClick={() => setActiveTab('scan')}>
-          <ScanLine className="nav-icon" /> Scan & Auth
-        </div>
-        <div className={`nav-item ${activeTab === 'climate' ? 'active' : ''}`} onClick={() => setActiveTab('climate')}>
-          <Thermometer className="nav-icon" /> Climate Logs
-        </div>
-        <div className={`nav-item ${activeTab === 'compliance' ? 'active' : ''}`} onClick={() => setActiveTab('compliance')}>
-          <ShieldCheck className="nav-icon" /> Compliance Docs
-        </div>
-        <div className={`nav-item ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>
-          <History className="nav-icon" /> History
-        </div>
-
-        <div className="sidebar-bottom">
-          <div className="driver-card">
-            <div className="driver-avatar">MD</div>
-            <div>
-              <div className="driver-name">Marc Dupont</div>
-              <div class="driver-role">Paris Hub · Driver</div>
-            </div>
-            <div className="duty-dot has-tip">
-              <span className="tip">On duty</span>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main */}
-      <div className="main-area">
+      {/* Main Content Area (Sidebar Removed) */}
+      <div className="w-full">
         {/* Topbar */}
         <div className="topbar">
           <div className="topbar-title">{pageTitles[activeTab]}</div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, ShieldCheck, Clock, CheckCircle, XCircle, TrendingUp, Scissors, Truck, Package, MapPin, Globe, LayoutGrid } from 'lucide-react';
+import { Users, ShieldCheck, Clock, CheckCircle, XCircle, TrendingUp, Scissors, Truck, Package, MapPin, Globe, LayoutGrid, CreditCard, Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const StatCard = ({ icon: Icon, label, value, accent, onClick }) => (
@@ -72,6 +72,7 @@ const AdminOverview = () => {
         suppliers: { fabric_origins: [] }
     });
     const [recentActivity, setRecentActivity] = useState([]);
+    const [cardStatuses, setCardStatuses] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -94,6 +95,13 @@ const AdminOverview = () => {
                 if (queueRes.ok) {
                     const queue = await queueRes.json();
                     setRecentActivity(queue.slice(0, 5));
+                }
+
+                // Fetch card statuses
+                const cardRes = await fetch(`${API}/api/auth/admin/card-status/`, { headers });
+                if (cardRes.ok) {
+                    const cardData = await cardRes.json();
+                    setCardStatuses(cardData.users || []);
                 }
             } catch (error) {
                 console.error('Failed to fetch admin stats:', error);
@@ -274,6 +282,86 @@ const AdminOverview = () => {
                         </div>
                     </div>
                 </div>
+            </div>
+            {/* ── Bank Card Status Section ────────────────── */}
+            <div className="bg-[#111113] border border-subtle/20 rounded-sm p-6">
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-sm bg-gold/10 flex items-center justify-center">
+                            <CreditCard size={16} className="text-gold" />
+                        </div>
+                        <div>
+                            <h2 className="font-display text-lg text-ivory uppercase tracking-wider">Statuts Cartes Bancaires</h2>
+                            <p className="text-[10px] text-ivory/25 uppercase tracking-widest mt-0.5">
+                                {cardStatuses.filter(u => u.has_card).length}/{cardStatuses.length} cartes liées
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3 text-[10px] text-ivory/30 uppercase tracking-widest">
+                        <span className="flex items-center gap-1.5"><span className="text-emerald-400">✅</span> Liée</span>
+                        <span className="flex items-center gap-1.5"><span className="text-red-400">❌</span> Manquante</span>
+                    </div>
+                </div>
+
+                {loading ? (
+                    <div className="flex items-center justify-center py-10">
+                        <div className="w-6 h-6 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left font-sans">
+                            <thead>
+                                <tr className="border-b border-subtle/10">
+                                    {['Utilisateur', 'Email', 'Rôle', 'Statut Carte', 'Action'].map((col, i) => (
+                                        <th key={i} className="pb-4 text-[10px] uppercase tracking-widest text-ivory/30 font-semibold pr-6">{col}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-subtle/5">
+                                {cardStatuses.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} className="py-8 text-center text-ivory/20 text-xs italic">Aucun utilisateur trouvé.</td>
+                                    </tr>
+                                ) : cardStatuses.map((u) => (
+                                    <tr key={u.id} className="group hover:bg-white/[0.015] transition-colors">
+                                        <td className="py-4 pr-6">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-sm bg-gradient-to-br from-gold/20 to-gold/5 flex items-center justify-center text-gold text-xs font-bold uppercase">
+                                                    {u.name?.charAt(0) || '?'}
+                                                </div>
+                                                <span className="text-ivory/80 text-sm">{u.name}</span>
+                                            </div>
+                                        </td>
+                                        <td className="py-4 pr-6 text-ivory/40 text-xs font-mono">{u.email}</td>
+                                        <td className="py-4 pr-6">
+                                            <span className="px-2 py-0.5 bg-ivory/5 border border-ivory/10 rounded-sm text-[9px] uppercase tracking-widest text-ivory/40">
+                                                {u.role?.replace('_', ' ')}
+                                            </span>
+                                        </td>
+                                        <td className="py-4 pr-6">
+                                            <span className={`text-sm font-bold ${
+                                                u.has_card ? 'text-emerald-400' : 'text-red-400'
+                                            }`}>
+                                                {u.card_status_label}
+                                            </span>
+                                        </td>
+                                        <td className="py-4">
+                                            {!u.has_card && (
+                                                <button
+                                                    title={`Relancer ${u.name}`}
+                                                    className="flex items-center gap-1.5 text-[9px] uppercase tracking-widest text-amber-400/70 hover:text-amber-400 border border-amber-400/20 hover:border-amber-400/50 px-3 py-1.5 transition-all rounded-sm"
+                                                    onClick={() => alert(`📧 Relance envoyée à ${u.email}`)}
+                                                >
+                                                    <Bell size={11} /> Relancer
+                                                </button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
         </div>
     );

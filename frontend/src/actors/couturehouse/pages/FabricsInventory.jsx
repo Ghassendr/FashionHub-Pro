@@ -11,7 +11,6 @@ const CoutureHouseFabricsInventory = () => {
     const [fabrics, setFabrics] = useState([]);
     const [fabricImages, setFabricImages] = useState({});
     const [loading, setLoading] = useState(true);
-    const [sidebarOpen, setSidebarOpen] = useState(true);
     const [stats, setStats] = useState({
         total: 0,
         available: 0
@@ -89,11 +88,6 @@ const CoutureHouseFabricsInventory = () => {
         fetchFabrics();
     }, []);
 
-    const handleLogout = () => {
-        authService.logout();
-        navigate('/');
-    };
-
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-ivory">
@@ -106,150 +100,103 @@ const CoutureHouseFabricsInventory = () => {
     }
 
     return (
-        <div className="atelier-layout">
-            {/* Sidebar */}
-            <aside className={`atelier-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
-                <div className="sidebar-header">
-                    <div className="sidebar-logo">
-                        <Palette size={24} />
-                        {sidebarOpen && <span>ATELIER</span>}
+        <div className="animate-fade-in p-6 lg:p-12 max-w-[1600px] mx-auto min-h-screen">
+            {/* Context Header */}
+            <div className="mb-12 border-b border-gold/10 pb-8">
+                <div className="flex items-center gap-4 mb-4">
+                    <span className="text-[10px] tracking-[0.3em] uppercase text-gold font-bold bg-gold/10 px-4 py-1.5 rounded-full border border-gold/20 flex items-center gap-2">
+                        <Layers size={12} /> Material Marketplace
+                    </span>
+                </div>
+                <h1 className="text-4xl md:text-5xl font-display text-ivory italic flex items-center gap-4">
+                    Supplier Fabrics
+                </h1>
+                <p className="text-ivory/40 mt-4 max-w-2xl font-light leading-relaxed">
+                    Browse the finest materials curated from our global network of top-tier weavers and suppliers.
+                </p>
+            </div>
+
+            <div className="atelier-content">
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                    <div className="atelier-stat-card group">
+                        <div className="stat-icon purple">
+                            <Package size={22} />
+                        </div>
+                        <div>
+                            <div className="text-2xl font-display text-ivory mb-1">{stats.total}</div>
+                            <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold group-hover:text-ivory/40 transition-colors">Total Supplier Fabrics</div>
+                        </div>
+                    </div>
+                    <div className="atelier-stat-card group">
+                        <div className="stat-icon blue">
+                            <Sparkles size={22} />
+                        </div>
+                        <div>
+                            <div className="text-2xl font-display text-ivory mb-1">{stats.available}</div>
+                            <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold group-hover:text-ivory/40 transition-colors">In Stock</div>
+                        </div>
                     </div>
                 </div>
 
-                <nav className="flex-1 mt-6">
-                    <div className="nav-item active">
-                        <Layers size={20} />
-                        {sidebarOpen && <span>Fabrics Inventory</span>}
-                    </div>
-                    <div className="nav-item" onClick={() => navigate('/couturehouse/designs')}>
-                        <LayoutGrid size={20} />
-                        {sidebarOpen && <span>My Designs</span>}
-                    </div>
-                    <div className="nav-item" onClick={() => navigate('/couturehouse/inquiries')}>
-                        <Users size={20} />
-                        {sidebarOpen && <span>Client Inquiries</span>}
-                    </div>
-                    <div className="nav-item" onClick={() => navigate('/couturehouse/create')}>
-                        <Plus size={20} />
-                        {sidebarOpen && <span>New Creation</span>}
-                    </div>
-                    <div className="nav-item">
-                        <TrendingUp size={20} />
-                        {sidebarOpen && <span>Analytics</span>}
-                    </div>
-                    <div className="nav-item">
-                        <Settings size={20} />
-                        {sidebarOpen && <span>Settings</span>}
-                    </div>
-                </nav>
-
-                <div className="sidebar-footer">
-                    <div className="nav-item" onClick={handleLogout}>
-                        <LogOut size={20} />
-                        {sidebarOpen && <span>Logout</span>}
+                <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-white/5 pb-6">
+                    <h2 className="font-display text-2xl text-ivory/80">Available Materials</h2>
+                    <div className="atelier-search max-w-md w-full relative">
+                        <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
+                        <input type="text" placeholder="Search fabrics..." className="bg-white/5 border border-white/10 rounded-xl py-2.5 pl-12 pr-4 w-full text-ivory outline-none focus:border-gold/50 transition-colors" />
                     </div>
                 </div>
-            </aside>
 
-            {/* Main Content */}
-            <main className={`atelier-main ${!sidebarOpen ? 'expanded' : ''}`}>
-                <header className="atelier-top-bar">
-                    <div className="flex items-center gap-6">
-                        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-zinc-500 hover:text-ivory transition-colors">
-                            <Menu size={20} />
-                        </button>
-                        <div className="atelier-search">
-                            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
-                            <input type="text" placeholder="Search available fabrics..." />
-                        </div>
+                {/* Fabric Grid */}
+                {fabrics.length === 0 ? (
+                    <div className="py-32 text-center border border-dashed border-white/10 rounded-3xl bg-white/[0.02]">
+                        <Layers size={48} className="mx-auto text-zinc-800 mb-6" />
+                        <h3 className="text-ivory/40 font-display text-xl mb-2">No Fabrics Found</h3>
+                        <p className="text-zinc-600 text-sm max-w-xs mx-auto">There are currently no fabrics listed by suppliers.</p>
                     </div>
-                </header>
-
-                <div className="atelier-content animate-in">
-                    <div className="mb-12">
-                        <span className="text-label text-gold block mb-4 uppercase text-[10px] tracking-[0.3em]">Marketplace</span>
-                        <h1 className="text-5xl font-display text-ivory">Supplier Fabrics</h1>
-                        <p className="text-zinc-500 mt-4 max-w-2xl">Browse the finest materials curated from our global network of top-tier weavers and suppliers.</p>
-                    </div>
-
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-                        <div className="atelier-stat-card group">
-                            <div className="stat-icon purple">
-                                <Package size={22} />
-                            </div>
-                            <div>
-                                <div className="text-2xl font-display text-ivory mb-1">{stats.total}</div>
-                                <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold group-hover:text-ivory/40 transition-colors">Total Supplier Fabrics</div>
-                            </div>
-                        </div>
-                        <div className="atelier-stat-card group">
-                            <div className="stat-icon blue">
-                                <Sparkles size={22} />
-                            </div>
-                            <div>
-                                <div className="text-2xl font-display text-ivory mb-1">{stats.available}</div>
-                                <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold group-hover:text-ivory/40 transition-colors">In Stock</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Content Header */}
-                    <div className="flex justify-between items-end mb-8 border-b border-white/5 pb-6">
-                        <h2 className="font-display text-2xl text-ivory/80">Available Materials</h2>
-                    </div>
-
-                    {/* Fabric Grid */}
-                    {fabrics.length === 0 ? (
-                        <div className="py-32 text-center border border-dashed border-white/10 rounded-3xl bg-white/[0.02]">
-                            <Layers size={48} className="mx-auto text-zinc-800 mb-6" />
-                            <h3 className="text-ivory/40 font-display text-xl mb-2">No Fabrics Found</h3>
-                            <p className="text-zinc-600 text-sm max-w-xs mx-auto">There are currently no fabrics listed by suppliers.</p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {fabrics.map(fabric => (
-                                <div key={fabric._id} className="design-card group bg-noir/40 border border-white/5 rounded-2xl overflow-hidden hover:bg-noir/60 transition-colors">
-                                    <div className="aspect-[4/5] overflow-hidden relative bg-zinc-900 flex items-center justify-center">
-                                        {fabricImages[fabric._id] ? (
-                                            <img 
-                                                src={fabricImages[fabric._id]} 
-                                                alt={fabric.materiel} 
-                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-80 group-hover:opacity-100"
-                                            />
-                                        ) : (
-                                            <div className="text-xs text-zinc-600 uppercase tracking-widest">No Image</div>
-                                        )}
-                                        <div className="absolute top-4 right-4 bg-noir/90 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 flex items-center gap-1.5">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                            <span className="text-[9px] uppercase tracking-widest text-ivory/70">{fabric.quantite}m Available</span>
-                                        </div>
-                                    </div>
-                                    <div className="p-6">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div>
-                                                <h3 className="text-lg font-display text-ivory group-hover:text-gold transition-colors">{fabric.materiel || "Unknown Material"}</h3>
-                                                <p className="text-xs text-zinc-500 mt-1 line-clamp-2">{fabric.description || "No description provided."}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                                            {fabric.color && Array.isArray(fabric.color) && fabric.color.length === 3 ? (
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-4 h-4 rounded-full border border-white/20" style={{ backgroundColor: `rgb(${fabric.color[0]}, ${fabric.color[1]}, ${fabric.color[2]})` }}></div>
-                                                    <span className="text-[10px] text-zinc-500 font-mono tracking-wider">RGB({fabric.color.join(',')})</span>
-                                                </div>
-                                            ) : (
-                                                <span className="text-[10px] text-zinc-500 uppercase">Multi-color</span>
-                                            )}
-                                            <span className="text-sm font-display text-gold">${parseFloat(fabric.prix).toFixed(2)}/m</span>
-                                        </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {fabrics.map(fabric => (
+                            <div key={fabric._id} className="design-card group bg-noir/40 border border-white/5 rounded-2xl overflow-hidden hover:bg-noir/60 transition-colors">
+                                <div className="aspect-[4/5] overflow-hidden relative bg-zinc-900 flex items-center justify-center">
+                                    {fabricImages[fabric._id] ? (
+                                        <img 
+                                            src={fabricImages[fabric._id]} 
+                                            alt={fabric.materiel} 
+                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-80 group-hover:opacity-100"
+                                        />
+                                    ) : (
+                                        <div className="text-xs text-zinc-600 uppercase tracking-widest">No Image</div>
+                                    )}
+                                    <div className="absolute top-4 right-4 bg-noir/90 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 flex items-center gap-1.5">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                        <span className="text-[9px] uppercase tracking-widest text-ivory/70">{fabric.quantite}m Available</span>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </main>
+                                <div className="p-6">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div>
+                                            <h3 className="text-lg font-display text-ivory group-hover:text-gold transition-colors">{fabric.materiel || "Unknown Material"}</h3>
+                                            <p className="text-xs text-zinc-500 mt-1 line-clamp-2">{fabric.description || "No description provided."}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                                        {fabric.color && Array.isArray(fabric.color) && fabric.color.length === 3 ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-4 h-4 rounded-full border border-white/20" style={{ backgroundColor: `rgb(${fabric.color[0]}, ${fabric.color[1]}, ${fabric.color[2]})` }}></div>
+                                                <span className="text-[10px] text-zinc-500 font-mono tracking-wider">RGB({fabric.color.join(',')})</span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-[10px] text-zinc-500 uppercase">Multi-color</span>
+                                        )}
+                                        <span className="text-sm font-display text-gold">${parseFloat(fabric.prix).toFixed(2)}/m</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

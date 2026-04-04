@@ -10,9 +10,11 @@ import {
     Camera,
     Loader2,
     Palette,
-    Layers
+    Layers,
+    CreditCard
 } from 'lucide-react';
 import { useAuth } from '../../../shared/context/AuthContext';
+import BankCardManager from '../../../shared/components/BankCard/BankCardManager';
 
 const Profile = () => {
     const { token, user: authUser } = useAuth();
@@ -168,6 +170,8 @@ const Profile = () => {
                         </div>
                     </div>
                 </div>
+
+
 
                 <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-20 items-start">
                     
