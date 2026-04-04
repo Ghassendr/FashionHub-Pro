@@ -1,273 +1,286 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { User, Camera, Mail, Info, Heart, Package, Loader2, Save, Layout, Plus, Sparkles } from 'lucide-react';
+import { 
+    User, 
+    Mail, 
+    Shield, 
+    Heart, 
+    Edit3, 
+    Check, 
+    X, 
+    Camera,
+    Loader2,
+    Palette,
+    Layers
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import FabricCard from '../components/FabricCard';
-import DesignCard from '../../actors/couturehouse/components/DesignCard';
 
 const Profile = () => {
-    const { userId } = useParams();
-    const { user, token } = useAuth();
-    const navigate = useNavigate();
-    const isOwnProfile = !userId || userId === String(user?.id);
+    const { token, user: authUser } = useAuth();
     const [profileData, setProfileData] = useState(null);
-    const [likedFabrics, setLikedFabrics] = useState([]);
-    const [likedDesigns, setLikedDesigns] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [updating, setUpdating] = useState(false);
-    const [editMode, setEditMode] = useState(false);
-    const [info, setInfo] = useState('');
-    const [photo, setPhoto] = useState(null);
-    const [photoPreview, setPhotoPreview] = useState(null);
-    const [isWizardOpen, setIsWizardOpen] = useState(false); // kept for future use
+    const [editing, setEditing] = useState(false);
+    const [formData, setFormData] = useState({ name: '', info: '' });
+    const [saving, setSaving] = useState(false);
+
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const url = userId
-                    ? `http://localhost:8000/api/auth/profile/${userId}/`
-                    : 'http://localhost:8000/api/auth/profile/';
-
-                const response = await fetch(url, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
+                const res = await fetch('http://localhost:8000/api/auth/profile/', {
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
-                
-                if (response.status === 401) {
-                    // Token expired while on page
-                    console.warn("Session expired during profile fetch. Logging out...");
-                    // trigger internal logout from context if possible, or just force redirect
-                    // Since we are in a component, we can use the logout from useAuth
-                    // But we already have 'user' and 'token' from useAuth()
-                    // Let's add the logout function to the useAuth destructuring
-                    // Actually, the simplest is to navigate to landing or clear if we can
-                    return; // The useEffect dependency or AuthContext init will handle the rest
-                }
-
-                if (response.ok) {
-                    const data = await response.json();
-                    setProfileData(data.user);
-                    setLikedFabrics(data.liked_fabrics || []);
-                    setLikedDesigns(data.liked_designs || []);
-                    setInfo(data.user.info || '');
-                    if (data.user.photo) {
-                        setPhotoPreview(`http://localhost:8000${data.user.photo}`);
-                    }
-                }
+                if (!res.ok) throw new Error("Erreur de chargement");
+                const data = await res.json();
+                setProfileData(data);
+                setFormData({
+                    name: data.user.first_name || data.user.username,
+                    info: data.user.info || ''
+                });
             } catch (err) {
-                console.error("Error fetching profile:", err);
+                console.error(err);
             } finally {
                 setLoading(false);
             }
         };
-
-        if (token) {
-            fetchProfile();
-        }
+        if (token) fetchProfile();
     }, [token]);
 
-    const handlePhotoChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setPhoto(file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setPhotoPreview(reader.result);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const handleUpdateProfile = async (e) => {
-        e.preventDefault();
-        setUpdating(true);
-
+    const handleSave = async () => {
+        setSaving(true);
         try {
-            const formData = new FormData();
-            formData.append('info', info);
-            if (photo) {
-                formData.append('photo', photo);
-            }
-
-            const response = await fetch('http://localhost:8000/api/auth/profile/', {
+            const res = await fetch('http://localhost:8000/api/auth/profile/', {
                 method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
                 },
-                body: formData
+                body: JSON.stringify({
+                    first_name: formData.name,
+                    info: formData.info
+                })
             });
-
-            if (response.ok) {
-                const updatedUser = await response.json();
-                setProfileData(updatedUser);
-                setEditMode(false);
+            if (res.ok) {
+                const updated = await res.json();
+                setProfileData(prev => ({ ...prev, user: updated }));
+                setEditing(false);
             }
         } catch (err) {
-            console.error("Error updating profile:", err);
+            console.error(err);
         } finally {
-            setUpdating(false);
+            setSaving(false);
         }
     };
 
     if (loading) {
         return (
             <div className="min-h-screen bg-noir flex items-center justify-center">
-                <Loader2 className="text-gold animate-spin" size={48} />
+                <Loader2 className="w-10 h-10 text-gold animate-spin" />
             </div>
         );
     }
 
+    const { user, liked_fabrics, liked_designs } = profileData;
+
     return (
-        <div className="min-h-screen bg-noir pt-20 pb-20">
-            <div className="wrapper">
-                {/* Profile Header */}
-                <div className="relative mb-20">
-                    <div className="flex flex-col md:flex-row gap-12 items-center md:items-start text-center md:text-left">
+        <div className="min-h-screen bg-noir text-ivory pt-32 pb-20">
+            <div className="wrapper max-w-[1200px]">
+                
+                {/* Profile Header Block */}
+                <div className="relative mb-24 animate-fade-up">
+                    <div className="flex flex-col md:flex-row items-center md:items-end gap-12">
                         {/* Avatar Section */}
                         <div className="relative group">
-                            <div className="w-48 h-48 rounded-full overflow-hidden border-2 border-gold/20 bg-muted flex items-center justify-center">
-                                {photoPreview ? (
-                                    <img src={photoPreview} alt="Profile" className="w-full h-full object-cover" />
+                            <div className="w-40 h-40 rounded-full border border-gold/20 p-1 bg-gold/[0.02] flex items-center justify-center overflow-hidden">
+                                {user.photo ? (
+                                    <img src={user.photo} alt="Profile" className="w-full h-full object-cover rounded-full" />
                                 ) : (
-                                    <User size={80} className="text-ivory/20" />
+                                    <User size={60} strokeWidth={0.5} className="text-gold/40" />
                                 )}
                             </div>
-                            {editMode && (
-                                <label className="absolute inset-0 flex items-center justify-center bg-noir/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-full">
-                                    <Camera size={32} className="text-gold" />
-                                    <input type="file" className="hidden" onChange={handlePhotoChange} accept="image/*" />
-                                </label>
-                            )}
+                            <button className="absolute bottom-2 right-2 w-10 h-10 bg-gold rounded-full flex items-center justify-center text-noir hover:scale-110 transition-transform shadow-glow-gold/20 border border-noir">
+                                <Camera size={16} />
+                            </button>
                         </div>
 
                         {/* Info Section */}
-                        <div className="flex-1">
-                            <div className="flex justify-between items-start mb-6">
-                                <div>
-                                    <h1 className="font-display text-4xl md:text-5xl font-bold text-ivory mb-2 uppercase tracking-tight">
-                                        {profileData?.username || 'Member'}
-                                    </h1>
-                                    <div className="flex items-center gap-4 text-gold/60 text-sm tracking-widest uppercase">
-                                        <span className="flex items-center gap-1"><Mail size={14} /> {profileData?.email}</span>
-                                        <span className="h-1 w-1 bg-gold/40 rounded-full"></span>
-                                        <span className="flex items-center gap-1"><Package size={14} /> {profileData?.role}</span>
-                                    </div>
-                                </div>
-                                {isOwnProfile && (
-                                    <button
-                                        onClick={() => setEditMode(!editMode)}
-                                        className="btn-secondary px-6 py-2 text-xs"
-                                    >
-                                        {editMode ? 'Cancel' : 'Edit Profile'}
-                                    </button>
-                                )}
+                        <div className="flex-1 text-center md:text-left space-y-4">
+                            <div className="flex items-center justify-center md:justify-start gap-4 mb-2">
+                                <span className="text-[10px] tracking-luxury text-gold uppercase font-bold border border-gold/20 px-4 py-1 rounded-full bg-gold/5">
+                                    {user.role} {user.account_status === 'active' ? '· Vérifié' : ''}
+                                </span>
                             </div>
-
-                            <div className="divider-gold mx-0 mb-8 w-24"></div>
-
-                            {editMode ? (
-                                <form onSubmit={handleUpdateProfile} className="space-y-6 max-w-xl">
-                                    <div>
-                                        <label className="text-label text-gold/40 mb-2 block">Biography / Professional Info</label>
-                                        <textarea
-                                            className="input-couture w-full h-32"
-                                            value={info}
-                                            onChange={(e) => setInfo(e.target.value)}
-                                            placeholder="Tell us about yourself..."
-                                        />
-                                    </div>
-                                    <button
-                                        type="submit"
-                                        disabled={updating}
-                                        className="btn btn-primary flex items-center gap-2"
-                                    >
-                                        {updating ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                                        Save Changes
-                                    </button>
-                                </form>
+                            
+                            {editing ? (
+                                <input 
+                                    type="text"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    className="bg-transparent border-b border-gold text-4xl md:text-6xl font-display font-light text-ivory outline-none w-full md:w-auto"
+                                    autoFocus
+                                />
                             ) : (
-                                <div className="max-w-2xl">
-                                    <p className="text-ivory/50 leading-relaxed text-lg font-light italic">
-                                        {profileData?.info || "Design your legacy. Add information about your creative journey or business needs here in your profile settings."}
-                                    </p>
+                                <h1 className="font-display text-4xl md:text-6xl font-light text-ivory tracking-tight italic">
+                                    {user.first_name || user.username}
+                                </h1>
+                            )}
+                            
+                            <div className="flex flex-col md:flex-row items-center gap-6 text-ivory/30 text-xs tracking-widest uppercase mt-4">
+                                <div className="flex items-center gap-2">
+                                    <Mail size={14} className="text-gold/60" />
+                                    <span>{user.email}</span>
                                 </div>
+                                <div className="hidden md:block w-1.5 h-1.5 rounded-full bg-gold/20"></div>
+                                <div className="flex items-center gap-2">
+                                    <Shield size={14} className="text-gold/60" />
+                                    <span>Membre depuis {new Date(user.date_joined).getFullYear()}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-4">
+                            {editing ? (
+                                <>
+                                    <button 
+                                        onClick={handleSave}
+                                        disabled={saving}
+                                        className="btn btn-primary px-8 py-3 text-[10px] tracking-luxury flex items-center gap-2"
+                                    >
+                                        {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                                        Enregistrer
+                                    </button>
+                                    <button 
+                                        onClick={() => { setEditing(false); setFormData({ name: user.first_name, info: user.info }); }}
+                                        className="btn btn-secondary px-8 py-3 text-[10px] tracking-luxury flex items-center gap-2"
+                                    >
+                                        <X size={14} />
+                                        Annuler
+                                    </button>
+                                </>
+                            ) : (
+                                <button 
+                                    onClick={() => setEditing(true)}
+                                    className="btn btn-secondary px-8 py-3 text-[10px] tracking-luxury flex items-center gap-2"
+                                >
+                                    <Edit3 size={14} />
+                                    Modifier le Profil
+                                </button>
                             )}
                         </div>
                     </div>
                 </div>
-                {/* Liked Fabrics Selection */}
-                <div className="pt-20 border-t border-subtle/10">
-                    <div className="flex items-center gap-4 mb-12">
-                        <Heart size={24} className="text-red-500" fill="currentColor" />
-                        <div>
-                            <h2 className="font-display text-3xl font-bold text-ivory">
-                                {isOwnProfile ? 'Your Collection' : `${profileData?.username}'s Selection`}
-                            </h2>
-                            <p className="text-label text-gold/40">Recently Liked Fabrics</p>
-                        </div>
-                    </div>
 
-                    {likedFabrics.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                            {likedFabrics.map(fabric => (
-                                <FabricCard key={fabric.id} fabric={fabric} showLikes={false} />
-                            ))}
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-20 items-start">
+                    
+                    {/* Left: Bio / Info */}
+                    <aside className="space-y-12 animate-fade-in delay-200">
+                        <div className="p-10 bg-gold/[0.02] border border-gold/5 relative group">
+                            <div className="absolute top-0 left-0 w-8 h-[1px] bg-gold/50"></div>
+                            <div className="absolute top-0 left-0 w-[1px] h-8 bg-gold/50"></div>
+                            
+                            <h3 className="text-label text-gold mb-8 uppercase tracking-[0.3em]">À Propos de moi</h3>
+                            {editing ? (
+                                <textarea 
+                                    value={formData.info}
+                                    onChange={(e) => setFormData({ ...formData, info: e.target.value })}
+                                    className="bg-noir/40 border border-gold/20 w-full h-40 p-4 text-sm text-ivory/70 font-light resize-none focus:border-gold outline-none transition-colors"
+                                    placeholder="Partagez quelques mots sur votre style..."
+                                />
+                            ) : (
+                                <p className="text-sm text-ivory/40 leading-relaxed font-light italic">
+                                    {user.info || "Aucune information de style renseignée. Cliquez sur modifier pour compléter votre profil."}
+                                </p>
+                            )}
                         </div>
-                    ) : (
-                        <div className="py-20 text-center border border-dashed border-subtle/20 rounded-lg">
-                            <div className="text-ivory/10 mb-6 flex justify-center">
-                                <Heart size={64} />
+                        
+                        <div className="space-y-6">
+                            <h3 className="text-[10px] tracking-luxury uppercase text-ivory/30 font-bold border-b border-gold/10 pb-4">Activité Récente</h3>
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between text-xs py-2 border-b border-white/5">
+                                    <span className="text-ivory/20 uppercase tracking-widest">Dernière Connexion</span>
+                                    <span className="text-ivory/60">Aujourd'hui</span>
+                                </div>
+                                <div className="flex items-center justify-between text-xs py-2 border-b border-white/5">
+                                    <span className="text-ivory/20 uppercase tracking-widest">Designs Likés</span>
+                                    <span className="text-gold/60">{liked_designs.length}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-xs py-2 border-b border-white/5">
+                                    <span className="text-ivory/20 uppercase tracking-widest">Commandes</span>
+                                    <span className="text-gold/60">02</span>
+                                </div>
                             </div>
-                            <h3 className="text-ivory/40 font-display text-xl">Your collection is empty</h3>
-                            <p className="text-ivory/20 max-w-xs mx-auto mt-2">Discover our premium fabrics in the portal and heart your favorites to see them here.</p>
                         </div>
-                    )}
-                </div>
+                    </aside>
 
-                {/* Liked Designs Selection */}
-                <div className="pt-20 mt-20 border-t border-subtle/10">
-                    <div className="flex items-center gap-4 mb-12">
-                        <Heart size={24} className="text-amber-500" fill="currentColor" />
-                        <div>
-                            <h2 className="font-display text-3xl font-bold text-ivory">
-                                {isOwnProfile ? 'Atelier Favorites' : 'Inspired Ateliers'}
-                            </h2>
-                            <p className="text-label text-gold/40">Recently Liked Designs</p>
-                        </div>
-                    </div>
-
-                    {likedDesigns.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                            {likedDesigns.map(design => (
-                                <DesignCard key={design.id} design={design} isPublic={true} />
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="py-20 text-center border border-dashed border-subtle/20 rounded-lg">
-                            <div className="text-ivory/10 mb-6 flex justify-center">
-                                <Layout size={64} />
+                    {/* Right: Liked Items */}
+                    <main className="space-y-16 animate-fade-in delay-400">
+                        
+                        {/* Liked Fabrics */}
+                        <section>
+                            <div className="flex items-center justify-between mb-10 border-b border-gold/10 pb-6">
+                                <div className="flex items-center gap-4">
+                                    <Palette size={18} className="text-gold/60" />
+                                    <h2 className="font-display text-2xl text-ivory italic">Mes Coups de Cœur Textiles</h2>
+                                </div>
+                                <span className="text-[10px] tracking-luxury text-ivory/30 uppercase">{liked_fabrics.length} articles</span>
                             </div>
-                            <h3 className="text-ivory/40 font-display text-xl">No designs favorited yet</h3>
-                            <p className="text-ivory/20 max-w-xs mx-auto mt-2">Explore the Atelier Showcase on the home page and save your favorite inspirations.</p>
-                        </div>
-                    )}
+                            
+                            {liked_fabrics.length === 0 ? (
+                                <div className="py-20 text-center border border-dashed border-gold/10 bg-gold/[0.01]">
+                                    <p className="text-[10px] tracking-luxury uppercase text-ivory/20 italic">Aucun tissu sauvegardé</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    {liked_fabrics.map(fabric => (
+                                        <div key={fabric.id} className="bg-[#0a0a09] border border-gold/5 p-6 group hover:border-gold/20 transition-all duration-700">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <span className="text-[9px] uppercase tracking-luxury text-gold font-bold">Fabric Noir</span>
+                                                <Heart size={14} className="text-red-500 fill-red-500" />
+                                            </div>
+                                            <h4 className="font-display text-lg text-ivory mb-2 capitalize">{fabric.materiel}</h4>
+                                            <p className="text-[10px] text-ivory/30 uppercase tracking-[0.2em] line-clamp-2 leading-relaxed">
+                                                {fabric.description}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </section>
+
+                        {/* Liked Designs */}
+                        <section>
+                            <div className="flex items-center justify-between mb-10 border-b border-gold/10 pb-6">
+                                <div className="flex items-center gap-4">
+                                    <Layers size={18} className="text-gold/60" />
+                                    <h2 className="font-display text-2xl text-ivory italic">Silhouettes Favoris</h2>
+                                </div>
+                                <span className="text-[10px] tracking-luxury text-ivory/30 uppercase">{liked_designs.length} articles</span>
+                            </div>
+
+                            {liked_designs.length === 0 ? (
+                                <div className="py-20 text-center border border-dashed border-gold/10 bg-gold/[0.01]">
+                                    <p className="text-[10px] tracking-luxury uppercase text-ivory/20 italic">Aucun design sauvegardé</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    {liked_designs.map(design => (
+                                        <div key={design.id} className="bg-[#0a0a09] border border-gold/5 p-6 group hover:border-gold/20 transition-all duration-700">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <span className="text-[9px] uppercase tracking-luxury text-gold font-bold">Concept {design.type || 'Haut'}</span>
+                                                <Heart size={14} className="text-red-500 fill-red-500" />
+                                            </div>
+                                            <h4 className="font-display text-lg text-ivory mb-2 capitalize">{design.title || design.name || "Modèle Design"}</h4>
+                                            <div className="flex items-center justify-between mt-6">
+                                                <span className="text-serif text-gold font-medium italic">{design.prix || '---'}€</span>
+                                                <button className="text-[8px] tracking-luxury uppercase font-bold text-ivory/40 group-hover:text-gold transition-colors">Commander</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </section>
+                    </main>
                 </div>
             </div>
-
-            {/* Create My Design FAB */}
-            {isOwnProfile && user?.role === 'client' && (
-                <button
-                    onClick={() => navigate('/client/create-design')}
-                    className="fixed bottom-10 right-10 w-16 h-16 bg-gold text-noir rounded-full shadow-glow-gold flex items-center justify-center hover:scale-110 transition-transform duration-300 z-50 group"
-                    title="Créer mon design"
-                >
-                    <Plus size={24} className="group-hover:rotate-90 transition-transform duration-500" />
-                    <div className="absolute right-full mr-4 px-4 py-2 bg-noir/80 backdrop-blur-md border border-gold/20 rounded-lg text-[10px] uppercase tracking-widest text-gold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none flex items-center gap-2">
-                        <Sparkles size={10} /> Créer mon design
-                    </div>
-                </button>
-            )}
-
         </div>
     );
 };

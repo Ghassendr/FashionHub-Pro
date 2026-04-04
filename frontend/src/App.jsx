@@ -6,7 +6,7 @@ import Onboarding from './actors/client/pages/Onboarding';
 import BodyMeasurements from './actors/client/pages/BodyMeasurements';
 import MyCostumes from './actors/client/pages/MyCostumes';
 import PostureSpace from './actors/client/pages/PostureSpace';
-import Profile from './actors/client/pages/Profile';
+// import Profile from './actors/client/pages/Profile'; // Removed to unify
 import CreateDesignWizard from './actors/client/pages/CreateDesignWizard';
 import DeliveryDashboard from './actors/delivery/pages/DeliveryDashboard';
 import CoutureHouseDashboard from './actors/couturehouse/pages/Dashboard';
@@ -81,12 +81,9 @@ function App() {
 
 
 
-        {/* User Profile */}
+        {/* User Profile - Unified Noir & Gold Design */}
         <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="profile/:userId" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-
-        {/* Profile - Standard Protected Route */}
-        <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
 
         {/* Pending Verification Route */}
         <Route path="pending-verification" element={<PendingVerification />} />
