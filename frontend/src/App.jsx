@@ -4,6 +4,9 @@ import Home from './shared/pages/Home';
 import ProtectedRoute from './shared/components/Auth/ProtectedRoute'; // Added
 import Onboarding from './actors/client/pages/Onboarding';
 import BodyMeasurements from './actors/client/pages/BodyMeasurements';
+import MyCostumes from './actors/client/pages/MyCostumes';
+import PostureSpace from './actors/client/pages/PostureSpace';
+import Profile from './actors/client/pages/Profile';
 import CreateDesignWizard from './actors/client/pages/CreateDesignWizard';
 import DeliveryDashboard from './actors/delivery/pages/DeliveryDashboard';
 import CoutureHouseDashboard from './actors/couturehouse/pages/Dashboard';
@@ -58,9 +61,11 @@ function App() {
 
         {/* Client Domain - Restricted to Clients */}
         <Route path="client" element={<ProtectedRoute allowedRoles={['client']}><Outlet /></ProtectedRoute>}>
-          <Route index element={<Navigate to="3d-measurements" replace />} />
+          <Route index element={<Navigate to="posture" replace />} />
           <Route path="onboarding" element={<Onboarding />} />
           <Route path="3d-measurements" element={<BodyMeasurements />} />
+          <Route path="costumes" element={<MyCostumes />} />
+          <Route path="posture" element={<PostureSpace />} />
         </Route>
 
         {/* Couture House Domain - Restricted to Couture Houses */}
@@ -79,6 +84,9 @@ function App() {
         {/* User Profile */}
         <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="profile/:userId" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+
+        {/* Profile - Standard Protected Route */}
+        <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
 
         {/* Pending Verification Route */}
         <Route path="pending-verification" element={<PendingVerification />} />

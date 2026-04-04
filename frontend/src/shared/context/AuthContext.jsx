@@ -76,7 +76,7 @@ export const AuthProvider = ({ children }) => {
 
     const value = {
         user,
-        token: authService.getToken(),
+        token: authService.getToken() === 'null' || authService.getToken() === 'undefined' ? null : authService.getToken(),
         loading,
         login,
         logout,

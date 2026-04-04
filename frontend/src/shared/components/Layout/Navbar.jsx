@@ -80,10 +80,16 @@ const Navbar = () => {
                             </Link>
 
                             {user?.role === 'client' && (
-                                <Link to="/client/3d-measurements" className={`text-[10px] tracking-luxury uppercase font-medium transition-all duration-700 relative py-2 ${isActive('/client/3d-measurements') || location.pathname.startsWith('/client') ? 'text-gold' : 'text-ivory/30 hover:text-ivory/70'}`}>
-                                    CLIENT
-                                    {(isActive('/client/3d-measurements') || location.pathname.startsWith('/client')) && <div className="absolute -bottom-1 left-0 right-0 h-[1px] bg-gold animate-glow"></div>}
-                                </Link>
+                                <>
+                                    <Link to="/client/posture" className={`text-[10px] tracking-luxury uppercase font-medium transition-all duration-700 relative py-2 ${location.pathname.startsWith('/client/posture') ? 'text-gold' : 'text-ivory/30 hover:text-ivory/70'}`}>
+                                        MA POSTURE
+                                        {location.pathname.startsWith('/client/posture') && <div className="absolute -bottom-1 left-0 right-0 h-[1px] bg-gold animate-glow"></div>}
+                                    </Link>
+                                    <Link to="/client/costumes" className={`text-[10px] tracking-luxury uppercase font-medium transition-all duration-700 relative py-2 ${location.pathname.startsWith('/client/costumes') ? 'text-gold' : 'text-ivory/30 hover:text-ivory/70'}`}>
+                                        MES COSTUMES
+                                        {location.pathname.startsWith('/client/costumes') && <div className="absolute -bottom-1 left-0 right-0 h-[1px] bg-gold animate-glow"></div>}
+                                    </Link>
+                                </>
                             )}
 
                             {user?.role === 'couture_house' && (
@@ -153,10 +159,10 @@ const Navbar = () => {
                             <Link to="/" className={`py-3 text-[11px] tracking-luxury uppercase font-medium ${isActive('/')}`} onClick={() => setIsOpen(false)}>Portal</Link>
 
                             {user?.role === 'client' && (
-                                <Link to="/client/3d-measurements" className={`text-[10px] tracking-luxury uppercase font-medium transition-all duration-700 relative py-2 ${isActive('/client/3d-measurements') || location.pathname.startsWith('/client') ? 'text-gold' : 'text-ivory/30 hover:text-ivory/70'}`}>
-                                    CLIENT
-                                    {(isActive('/client/3d-measurements') || location.pathname.startsWith('/client')) && <div className="absolute -bottom-1 left-0 right-0 h-[1px] bg-gold animate-glow"></div>}
-                                </Link>
+                                <>
+                                    <Link to="/client/posture" className={`py-3 text-[11px] tracking-luxury uppercase font-medium ${location.pathname.startsWith('/client/posture') ? 'text-gold' : 'text-ivory/60'}`} onClick={() => setIsOpen(false)}>MA POSTURE</Link>
+                                    <Link to="/client/costumes" className={`py-3 text-[11px] tracking-luxury uppercase font-medium ${location.pathname.startsWith('/client/costumes') ? 'text-gold' : 'text-ivory/60'}`} onClick={() => setIsOpen(false)}>MES COSTUMES</Link>
+                                </>
                             )}
 
                             {user?.role === 'delivery' && (
