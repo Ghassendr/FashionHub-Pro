@@ -30,6 +30,10 @@ urlpatterns = [
     path('projects/<path:project_id>/pay/', views.pay_project_order, name='pay_project_order'),
     path('projects/<path:project_id>/', views.get_project_details, name='get_project_details'),
 
+    # Discovery
+    path('ateliers/', views.list_ateliers, name='list_ateliers'),
+    path('ateliers/<int:atelier_id>/', views.get_atelier_details, name='get_atelier_details'),
+
     # Health Check
     path('health', views.health_check, name='health_check'),
 ]

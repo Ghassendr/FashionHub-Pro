@@ -845,3 +845,43 @@ def pay_project_order(request, project_id):
         logger.error(f"Payment failure: {e}")
         return Response({"error": str(e)}, status=drf_status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def list_ateliers(request):
+    """
+    Returns a list of all approved couture houses with optional search.
+    """
+    from actors.couturehouse.models.models import CoutureHouseProfile
+    from actors.couturehouse.api.serializers import CoutureHousePublicSerializer
+    from django.db.models import Q
+    from django.shortcuts import get_object_or_404
+    
+    search_query = request.query_params.get('search', '')
+    
+    # Only show approved houses
+    queryset = CoutureHouseProfile.objects.filter(verification_status='approved')
+    
+    if search_query:
+        queryset = queryset.filter(
+            Q(house_name__icontains=search_query) | 
+            Q(specialization__icontains=search_query)
+        )
+        
+    serializer = CoutureHousePublicSerializer(queryset, many=True)
+    return Response({"ateliers": serializer.data})
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def get_atelier_details(request, atelier_id):
+    """
+    Returns the full public profile of a specific couture house.
+    """
+    from actors.couturehouse.models.models import CoutureHouseProfile
+    from actors.couturehouse.api.serializers import CoutureHousePublicSerializer
+    from django.shortcuts import get_object_or_404
+    
+    atelier = get_object_or_404(CoutureHouseProfile, id=atelier_id, verification_status='approved')
+    serializer = CoutureHousePublicSerializer(atelier)
+    
+    return Response(serializer.data)
+

@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import {
     User, Frame, Layers, History, CreditCard,
     Home, Package, Settings, Palette, Mail, ShieldCheck, ListChecks, Truck,
-    LayoutGrid, Thermometer, Plus, TrendingUp, Users, Clock
+    LayoutGrid, Thermometer, Plus, TrendingUp, Users, Clock, Search
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -37,6 +37,9 @@ const GlobalSidebar = () => {
                         </NavLink>
                         <NavLink to="/client/history" className={getNavClass}>
                             <History size={16} /> Order History
+                        </NavLink>
+                        <NavLink to="/client/discovery" className={getNavClass}>
+                            <Search size={16} /> Découvrir Ateliers
                         </NavLink>
                         <NavLink to="/client/bank-card" className={getNavClass}>
                             <CreditCard size={16} /> Bank Card

@@ -10,6 +10,8 @@ import ProjectDetail from './actors/client/pages/ProjectDetail';
 import CostumeDetails from './actors/client/pages/CostumeDetails';
 import PostureSpace from './actors/client/pages/PostureSpace';
 import CreateDesignWizard from './actors/client/pages/CreateDesignWizard';
+import AtelierDiscovery from './actors/client/pages/AtelierDiscovery';
+import AtelierProfileDetail from './actors/client/pages/AtelierProfileDetail';
 import DeliveryDashboard from './actors/delivery/pages/DeliveryDashboard';
 import CoutureHouse from './actors/delivery/pages/CoutureHouse';
 
@@ -76,6 +78,8 @@ function App() {
         <Route path="/client/posture" element={<ProtectedRoute allowedRoles={['client']}><PostureSpace /></ProtectedRoute>} />
         <Route path="/client/costumes" element={<ProtectedRoute allowedRoles={['client']}><MyCostumes /></ProtectedRoute>} />
         <Route path="/client/costumes/:id" element={<ProtectedRoute allowedRoles={['client']}><ProjectDetail /></ProtectedRoute>} />
+        <Route path="/client/discovery" element={<ProtectedRoute allowedRoles={['client']}><AtelierDiscovery /></ProtectedRoute>} />
+        <Route path="/client/ateliers/:id" element={<ProtectedRoute allowedRoles={['client']}><AtelierProfileDetail /></ProtectedRoute>} />
         <Route path="/client/bank-card" element={<ProtectedRoute allowedRoles={['client']}><ClientBankCardPage /></ProtectedRoute>} />
 
         {/* Fournisseur Sidebar Routes */}

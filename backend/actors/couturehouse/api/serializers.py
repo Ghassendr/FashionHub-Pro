@@ -68,3 +68,13 @@ class LocalFabricStockSerializer(drf_serializers.ModelSerializer):
     class Meta:
         model = LocalFabricStock
         fields = '__all__'
+
+class CoutureHousePublicSerializer(drf_serializers.ModelSerializer):
+    username = drf_serializers.CharField(source='user.username', read_only=True)
+    
+    class Meta:
+        model = CoutureHouseProfile
+        fields = [
+            'id', 'username', 'house_name', 'specialization', 
+            'starting_price', 'avg_production_time'
+        ]
