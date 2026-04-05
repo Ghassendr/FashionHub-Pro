@@ -30,22 +30,22 @@ class UserSerializer(serializers.ModelSerializer):
 class ClientProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClientProfile
-        fields = ('phone', 'address')
+        fields = ('id', 'phone', 'address')
 
 class CoutureHouseProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = CoutureHouseProfile
-        fields = ('house_name', 'specialization', 'starting_price', 'avg_production_time')
+        fields = ('id', 'house_name', 'specialization', 'starting_price', 'avg_production_time')
 
 class SupplierProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = SupplierProfile
-        fields = ('nomOrganization', 'typeProduct', 'specialites', 'numeroLicence', 'siteWeb', 'origin_country', 'min_price_per_meter')
+        fields = ('id', 'nomOrganization', 'typeProduct', 'specialites', 'numeroLicence', 'siteWeb', 'origin_country', 'min_price_per_meter')
 
 class CarrierProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Carrier
-        fields = ('company_name', 'contact_phone', 'service_type', 'delivery_time_guarantee', 'insurance_coverage')
+        fields = ('id', 'company_name', 'contact_phone', 'service_type', 'delivery_time_guarantee', 'insurance_coverage')
 
 class RegistrationSerializer(serializers.Serializer):
     # Form 1: Basic
@@ -112,7 +112,24 @@ class RegistrationSerializer(serializers.Serializer):
         return user
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    profile = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ('id', 'email', 'username', 'first_name', 'last_name', 'role', 'photo', 'info')
+        fields = ('id', 'email', 'username', 'first_name', 'last_name', 'role', 'photo', 'info', 'profile')
         read_only_fields = ('id', 'email', 'role')
+
+    def get_profile(self, obj):
+        if obj.role == 'client':
+            profile = getattr(obj, 'client_profile', None)
+            return ClientProfileSerializer(profile).data if profile else None
+        elif obj.role == 'couture_house':
+            profile = getattr(obj, 'couture_house_profile', None)
+            return CoutureHouseProfileSerializer(profile).data if profile else None
+        elif obj.role == 'fournisseur':
+            profile = getattr(obj, 'supplier_profile', None)
+            return SupplierProfileSerializer(profile).data if profile else None
+        elif obj.role == 'delivery':
+            profile = getattr(obj, 'carrier_profile', None)
+            return CarrierProfileSerializer(profile).data if profile else None
+        return None

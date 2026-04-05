@@ -81,8 +81,12 @@ class FabricOrder(models.Model):
     STATUS_CHOICES = (
         ('pending', 'En attente'),
         ('confirmed', 'Confirmé'),
+        ('preparing', 'En préparation'),
+        ('ready_for_pickup', 'Prêt pour enlèvement'),
         ('shipped', 'Expédié'),
+        ('in_transit', 'En cours de livraison'),
         ('delivered', 'Livré'),
+        ('received', 'Réceptionné'),
         ('cancelled', 'Annulé'),
     )
     DELIVERY_TYPE_CHOICES = (

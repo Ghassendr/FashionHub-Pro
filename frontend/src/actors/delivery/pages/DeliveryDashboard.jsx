@@ -83,9 +83,9 @@ const DeliveryDashboard = () => {
   }, []);
 
   // Fetch MongoDB Dashboard Data
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (silent = false) => {
     const token = localStorage.getItem('token');
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       // Parallel fetches for efficiency
       const [vRes, kRes, tRes, oRes] = await Promise.all([
@@ -102,12 +102,12 @@ const DeliveryDashboard = () => {
     } catch (err) {
       console.error("Error fetching MongoDB dashboard data:", err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   // Fetch SQL Shipments
-  const fetchShipments = async () => {
+  const fetchShipments = async (silent = false) => {
     const token = localStorage.getItem('token');
     try {
       const res = await fetch('http://localhost:8000/api/delivery/shipments/', {
@@ -121,10 +121,40 @@ const DeliveryDashboard = () => {
     }
   };
 
+  const updateShipmentStatus = async (shipmentId, newStatus) => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`http://localhost:8000/api/delivery/shipments/${shipmentId}/status/`, {
+        method: 'PATCH',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (res.ok) {
+        fetchShipments();
+        setSuccessAlert(`✅ Mission updated to ${newStatus.toUpperCase()}`);
+        setTimeout(() => setSuccessAlert(''), 3000);
+      }
+    } catch (err) {
+      console.error("Error updating shipment status:", err);
+    }
+  };
+
   useEffect(() => {
     fetchDashboardData();
     fetchShipments();
     fetchRoutes();
+
+    // Real-time synchronization (polling every 5 seconds)
+    const syncInterval = setInterval(() => {
+      fetchDashboardData(true);
+      fetchShipments(true);
+      fetchRoutes(true);
+    }, 5000);
+
+    return () => clearInterval(syncInterval);
   }, []);
 
   // Handle vehicle registration submit
@@ -151,7 +181,7 @@ const DeliveryDashboard = () => {
 
   const [routes, setRoutes] = useState([]);
   
-  const fetchRoutes = async () => {
+  const fetchRoutes = async (silent = false) => {
     const token = localStorage.getItem('token');
     try {
       const res = await fetch('http://localhost:8000/api/delivery/routes/', {
@@ -790,11 +820,41 @@ const DeliveryDashboard = () => {
                           <div className="order-route" style={{color:'var(--ivory)', fontSize:'14px', margin:'4px 0'}}>{s.source_name} → {s.dest_name}</div>
                           <div className="order-meta">Status: <span style={{textTransform:'uppercase', fontWeight:'bold'}}>{s.status.replace('_', ' ')}</span></div>
                         </div>
-                        <div style={{marginLeft:'auto', textAlign:'right'}}>
-                           <div style={{fontSize:'10px', color:'var(--ivory-30)', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'4px'}}>Itinéraire</div>
-                           <div style={{color:'var(--gold)', fontSize:'12px'}}>{s.route_details?.start_location || 'Nice'} → {s.route_details?.end_location || 'Sousse'}</div>
+                        <div style={{marginLeft:'auto', textAlign:'right', display:'flex', alignItems:'center', gap:'20px'}}>
+                           <div style={{textAlign:'right'}}>
+                              <div style={{fontSize:'8px', color:'var(--ivory-30)', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'4px'}}>Itinéraire</div>
+                              <div style={{color:'var(--gold)', fontSize:'11px', fontWeight:'bold'}}>{s.route_details?.start_location || 'Nice'} → {s.route_details?.end_location || 'Sousse'}</div>
+                           </div>
+
+                           <div style={{display:'flex', gap:'8px'}}>
+                              {s.status === 'pending' && (
+                                <>
+                                  <button onClick={() => updateShipmentStatus(s.id, 'accepted')} style={{background:'var(--gold)', color:'black', padding:'8px 16px', borderRadius:'2px', fontSize:'9px', fontWeight:'900', border:'none', cursor:'pointer'}}>ACCEPTER MISSION</button>
+                                  <button onClick={() => updateShipmentStatus(s.id, 'cancelled')} style={{background:'rgba(255,0,0,0.1)', color:'#FF4D4D', padding:'8px 16px', borderRadius:'2px', fontSize:'9px', fontWeight:'900', border:'1px solid rgba(255,0,0,0.2)', cursor:'pointer'}}>DÉCLINER</button>
+                                </>
+                              )}
+
+                              {s.status === 'accepted' && (
+                                <button onClick={() => updateShipmentStatus(s.id, 'picked_up')} style={{background:'var(--ivory)', color:'black', padding:'8px 16px', borderRadius:'2px', fontSize:'9px', fontWeight:'900', border:'none', cursor:'pointer'}}>CONFIRMER ENLÈVEMENT</button>
+                              )}
+
+                              {s.status === 'picked_up' && (
+                                <button onClick={() => updateShipmentStatus(s.id, 'in_transit')} style={{background:'transparent', color:'var(--gold)', padding:'8px 16px', borderRadius:'2px', fontSize:'9px', fontWeight:'900', border:'1px solid var(--gold)', cursor:'pointer'}}>DÉMARRER TRANSIT</button>
+                              )}
+
+                              {s.status === 'in_transit' && (
+                                <button onClick={() => updateShipmentStatus(s.id, 'delivered')} style={{background:'rgba(111,207,151,0.15)', color:'#6FCF97', padding:'8px 16px', borderRadius:'2px', fontSize:'9px', fontWeight:'900', border:'1px solid #6FCF97', cursor:'pointer', animation:'pulse 2s infinite'}}>S'ANNONCER À L'ATELIER</button>
+                              )}
+
+                              {s.status === 'delivered' && (
+                                <div style={{background:'rgba(255,255,255,0.05)', color:'var(--ivory-30)', padding:'8px 16px', borderRadius:'2px', fontSize:'9px', fontWeight:'900', textTransform:'uppercase'}}>En attente confirmation client</div>
+                              )}
+
+                              {s.status === 'cancelled' && (
+                                <div style={{color:'rgba(255,0,0,0.4)', fontSize:'9px', fontWeight:'900', textTransform:'uppercase'}}>Mission Annulée</div>
+                              )}
+                           </div>
                         </div>
-                        <button className="panel-action" style={{marginLeft:'20px', background:'var(--gold)', color:'black', padding:'6px 12px', borderRadius:'4px', fontSize:'10px', fontWeight:'900'}}>PRÉPARER PRISE EN CHARGE</button>
                       </div>
                     ))}
                   </div>

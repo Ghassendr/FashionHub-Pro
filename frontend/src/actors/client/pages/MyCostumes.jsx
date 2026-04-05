@@ -8,7 +8,8 @@ import {
     ArrowRight,
     User,
     CheckCircle2,
-    Loader2
+    Loader2,
+    Plus
 } from 'lucide-react';
 import { useAuth } from '../../../shared/context/AuthContext';
 
@@ -52,7 +53,14 @@ const MyCostumes = () => {
                             <p className="text-[10px] tracking-luxury text-ivory/30 uppercase mb-1">Total Commandes</p>
                             <p className="text-xl font-serif text-gold">{projects.length < 10 ? `0${projects.length}` : projects.length}</p>
                         </div>
-                   </div>
+                        <button 
+                            onClick={() => navigate('/client/create-design')}
+                            className="w-12 h-12 bg-gold text-noir rounded-full flex items-center justify-center hover:scale-110 transition-transform shadow-glow-gold/20 border border-noir ml-4 group"
+                            title="Nouveau Projet"
+                        >
+                            <Plus size={24} className="group-hover:rotate-90 transition-transform duration-500" />
+                        </button>
+                    </div>
                 </div>
 
                 {loading ? (
@@ -120,8 +128,14 @@ const ProjectCard = ({ project, index, onClick }) => {
                     {project.summary.designs_count > 1 ? 'Collection Personnalisée' : 'Costume Sur Mesure'}
                 </h3>
                 <div className="flex items-center gap-2">
-                    <CheckCircle2 size={12} className="text-emerald-400 opacity-60" />
-                    <span className="text-[10px] uppercase tracking-widest text-ivory/40 font-medium">Envoyé à l'Atelier</span>
+                    <div className={`w-2 h-2 rounded-full ${project.status === 'completed' ? 'bg-emerald-500' : 'bg-gold animate-pulse'}`} />
+                    <span className="text-[10px] uppercase tracking-widest text-ivory/60 font-black">
+                        {project.status === 'sent' ? 'En attente Atelier' : 
+                         project.status === 'pending' ? 'En attente Atelier' : 
+                         project.status === 'completed' ? 'Prêt pour Expédition' : 
+                         project.status === 'in_production' ? 'En Confection' :
+                         project.status.replace('_', ' ')}
+                    </span>
                 </div>
             </div>
 
@@ -139,7 +153,28 @@ const ProjectCard = ({ project, index, onClick }) => {
 
             {/* Footer */}
             <div className="flex items-center justify-between group-hover:translate-x-2 transition-transform duration-700 mt-2">
-                <span className="text-[10px] tracking-[0.2em] uppercase font-bold text-gold/60">Détails de la commande</span>
+                {project.status === 'saved' ? (
+                    <button 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            const submitProject = async () => {
+                                try {
+                                    const res = await fetch(`http://localhost:8000/api/client/projects/${project.id}/submit/`, {
+                                        method: 'POST',
+                                        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                                    });
+                                    if (res.ok) window.location.reload();
+                                } catch (err) { console.error(err); }
+                            };
+                            submitProject();
+                        }}
+                        className="text-[9px] tracking-luxury uppercase font-black text-noir bg-gold px-4 py-2 hover:scale-105 transition-transform"
+                    >
+                        Envoyer à l'Atelier
+                    </button>
+                ) : (
+                    <span className="text-[10px] tracking-[0.2em] uppercase font-bold text-gold/60">Détails de la commande</span>
+                )}
                 <ArrowRight size={14} className="text-gold/40" />
             </div>
 

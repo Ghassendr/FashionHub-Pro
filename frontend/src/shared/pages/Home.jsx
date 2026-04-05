@@ -135,6 +135,7 @@ const Home = () => {
                         subtitle="New Collections"
                         icon={<Sparkles size={16} />}
                         fabrics={newsFabrics}
+                        showLikes={true}
                     />
                 </div>
             )}

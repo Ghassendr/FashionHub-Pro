@@ -439,9 +439,69 @@ def get_order_details(request, id):
             project = ClientProject.objects.get(id=order.inquiry_id)
             data['scan_result'] = project.scan_result
             data['skin_result'] = project.skin_result
+            
+            # If fabric_id is missing in SQL, try to recover it from the fabric material matches
+            if not data.get('fabric_id') and data.get('fabric_requested'):
+                from actors.fournisseur.models import Fabric
+                matched_fabric = Fabric.objects.filter(materiel__iexact=data['fabric_requested']).first()
+                if matched_fabric:
+                    # Update SQL record silently for next time
+                    order = Order.objects.get(id=id)
+                    order.fabric_id = matched_fabric.id
+                    order.save()
+                    data['fabric_id'] = matched_fabric.id
+                    print(f"DEBUG: Recovered fabric_id {matched_fabric.id} for order {id} via material match")
+            
+            # If fabric_id is missing in SQL, try to recover it from the fabric material matches
+            if not data.get('fabric_id') and data.get('fabric_requested'):
+                from actors.fournisseur.models import Fabric
+                matched_fabric = Fabric.objects.filter(materiel__iexact=data['fabric_requested']).first()
+                if matched_fabric:
+                    # Update SQL record silently for next time
+                    from actors.client.models import Order as ClientOrder
+                    order_obj = ClientOrder.objects.get(id=id)
+                    order_obj.fabric_id = matched_fabric.id
+                    order_obj.save()
+                    data['fabric_id'] = matched_fabric.id
+                    print(f"DEBUG: Recovered fabric_id {matched_fabric.id} for order {id} via material match")
+            
+            # Fetch the Suit Design Photo
+            if project.selected_designs:
+                from actors.couturehouse.models.models import Design
+                design_id = project.selected_designs[0]
+                try:
+                    design = Design.objects.get(id=design_id)
+                    # Find cover image or first media
+                    cover = next((m for m in design.media if m.is_cover), None)
+                    if not cover and design.media:
+                        cover = design.media[0]
+                    
+                    if cover:
+                        # Convert partial media path to full URL
+                        media_path = cover.file
+                        if not media_path.startswith('/media/'):
+                            media_path = f"/media/{media_path}"
+                        data['design_preview_url'] = media_path
+                except:
+                    pass
         except: pass
 
     return Response(data)
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def get_fabric_orders(request):
+    """
+    Returns all raw material orders (purchases from suppliers) for this house.
+    """
+    from actors.fournisseur.models import FabricOrder
+    from actors.fournisseur.serializers import FabricOrderSerializer
+    
+    house_profile = get_object_or_404(CoutureHouseProfile, user=request.user)
+    orders = FabricOrder.objects.filter(couture_house_id=house_profile.id).order_by('-created_at')
+    
+    serializer = FabricOrderSerializer(orders, many=True)
+    return Response({"orders": serializer.data})
     
 @api_view(["PATCH"])
 @permission_classes([permissions.IsAuthenticated])
@@ -486,3 +546,124 @@ def handle_local_stock(request):
     stock.quantity = qty
     stock.save()
     return Response(LocalFabricStockSerializer(stock).data)
+
+@api_view(["PATCH", "DELETE"])
+@permission_classes([permissions.IsAuthenticated])
+def handle_local_stock_item(request, item_id):
+    """
+    PATCH /atelier/stock/{id}/ — Update the quantity of a local stock item.
+    DELETE /atelier/stock/{id}/ — Remove a local stock item.
+    """
+    house = get_object_or_404(CoutureHouseProfile, user=request.user)
+    stock = get_object_or_404(LocalFabricStock, id=item_id, couture_house=house)
+    
+    if request.method == "DELETE":
+        stock.delete()
+        return Response({"success": True, "message": "Matière supprimée du stock."})
+    
+    # PATCH — update quantity and/or fabric_name
+    if 'quantity' in request.data:
+        try:
+            stock.quantity = float(request.data['quantity'])
+        except (ValueError, TypeError):
+            return Response({"error": "Invalid quantity"}, status=status.HTTP_400_BAD_REQUEST)
+    if 'fabric_name' in request.data:
+        stock.fabric_name = request.data['fabric_name']
+    stock.save()
+    return Response(LocalFabricStockSerializer(stock).data)
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def start_production(request, id):
+    """
+    Marks a production order as 'in_production'.
+    """
+    order = get_object_or_404(Order, id=id)
+    house = get_object_or_404(CoutureHouseProfile, user=request.user)
+    
+    if order.couture_house != house:
+        return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+        
+    order.status = 'in_production'
+    order.save()
+    
+    return Response({
+        "status": "in_production",
+        "message": "Production lancée."
+    })
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def complete_order(request, id):
+    """
+    Marks a production order as completed and notifies the client by updating project status.
+    """
+    order = get_object_or_404(Order, id=id)
+    house = get_object_or_404(CoutureHouseProfile, user=request.user)
+    
+    if order.couture_house != house:
+        return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+        
+    order.status = 'completed'
+    order.save()
+    
+    # Sync with ClientProject if linked
+    if order.inquiry_id:
+        from actors.client.models.models import ClientProject
+        try:
+            from bson import ObjectId
+            project = ClientProject.objects.get(id=ObjectId(order.inquiry_id))
+            project.status = 'completed' # Set to completed to "notify" client
+            project.save()
+        except Exception as e:
+            print(f"Error updating client project: {e}")
+            
+    return Response({
+        "status": "completed",
+        "message": "Production terminée. Le client a été notifié."
+    })
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def confirm_fabric_receipt(request, order_id):
+    """
+    Finalizes a Fabric Order from the Couture House side.
+    Sets both FabricOrder and ShipmentRequest to 'delivered' and updates local stock.
+    """
+    from actors.fournisseur.models import FabricOrder
+    from actors.delivery.models import ShipmentRequest
+    
+    order = get_object_or_404(FabricOrder, id=order_id)
+    house_profile = get_object_or_404(CoutureHouseProfile, user=request.user)
+    
+    # Verify ownership
+    if order.couture_house_id != house_profile.id:
+        return Response({"error": "Non autorisé à confirmer cette livraison."}, status=status.HTTP_403_FORBIDDEN)
+        
+    # 1. Update statuses
+    order.status = 'received'
+    order.save()
+    
+    # Sync with shipment request
+    ShipmentRequest.objects.filter(fabric_order_id=order.id).update(status='delivered')
+    
+    # 2. Update local stock
+    stock, created = LocalFabricStock.objects.get_or_create(
+        couture_house=house_profile, 
+        fabric_name=order.fabric.materiel
+    )
+    stock.quantity = float(stock.quantity) + float(order.quantity)
+    stock.save()
+
+    # 3. Update related client orders waiting for this fabric
+    Order.objects.filter(
+        couture_house=house_profile,
+        fabric_id=order.fabric.id,
+        fabric_status='ordered'
+    ).update(fabric_status='received')
+    
+    return Response({
+        "status": "delivered",
+        "new_stock": float(stock.quantity),
+        "message": f"Livraison confirmée. {order.quantity}m de {order.fabric.materiel} ajoutés à votre stock."
+    })

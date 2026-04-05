@@ -19,10 +19,16 @@ urlpatterns = [
     path('inquiries/<str:id>/convert/', views.create_order_from_inquiry, name='inquiry-convert'),
 
     # Production Orders
+    path('orders/fabric-purchases/', views.get_fabric_orders, name='fabric-purchases'),
+    path('fabric-orders/', views.get_fabric_orders, name='fabric-orders-alias'),  # Backward compatibility
     path('orders/', views.handle_orders, name='order-list'),
     path('orders/<int:id>/', views.get_order_details, name='order-detail'),
     path('orders/<int:id>/update-quantity/', views.update_order_quantity, name='update_order_quantity'),
+    path('orders/<int:id>/start/', views.start_production, name='start-production'),
+    path('orders/<int:id>/complete/', views.complete_order, name='complete-order'),
+    path('orders/<int:order_id>/confirm-receipt/', views.confirm_fabric_receipt, name='confirm-fabric-receipt'),
 
     # Local Stock
     path('atelier/stock/', views.handle_local_stock, name='atelier-stock'),
+    path('atelier/stock/<int:item_id>/', views.handle_local_stock_item, name='atelier-stock-item'),
 ]

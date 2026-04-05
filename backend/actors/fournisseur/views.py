@@ -305,6 +305,11 @@ class TrendingFabricsView(views.APIView):
 
     def get(self, request):
         fabrics = Fabric.objects.all().order_by('-likes')[:10]
+        user = request.user
+        liked_ids = []
+        if user.is_authenticated:
+            liked_ids = FabricLike.objects.filter(user=user).values_list('fabric_id', flat=True)
+
         fabrics_data = []
         for f in fabrics:
             fabrics_data.append({
@@ -314,7 +319,8 @@ class TrendingFabricsView(views.APIView):
                 'materiel': f.materiel,
                 'prix': float(f.prix),
                 'description': f.description,
-                'likes': f.likes
+                'likes': f.likes,
+                'is_liked': f.id in liked_ids
             })
         return Response({'fabrics': fabrics_data})
 
@@ -428,9 +434,24 @@ class CreateFabricOrderView(views.APIView):
     def post(self, request):
         data = request.data
         fabric_id = data.get('fabric_id')
+        fabric_name = data.get('fabric_name') # Fallback if ID is missing
         qty = float(data.get('quantity', 0))
         
-        fabric = get_object_or_404(Fabric, id=fabric_id)
+        # Robust ID lookup if missing
+        if not fabric_id and fabric_name:
+            print(f"DEBUG: No ID provided, looking up fabric by name: {fabric_name}")
+            matched = Fabric.objects.filter(materiel__iexact=fabric_name).first()
+            if matched:
+                fabric_id = matched.id
+                print(f"DEBUG: Found ID {fabric_id} for name {fabric_name}")
+
+        if not fabric_id:
+            return Response({'error': 'Fabric ID is missing and could not be recovered by name.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            fabric = Fabric.objects.get(id=fabric_id)
+        except Fabric.DoesNotExist:
+            return Response({'error': f'Fabric with ID {fabric_id} not found.'}, status=status.HTTP_400_BAD_REQUEST)
         
         # 1. Constraint: Cannot order more than supplier has
         if qty > float(fabric.quantite):
@@ -471,3 +492,44 @@ class CreateFabricOrderView(views.APIView):
                 print(f"Failed to create shipment request: {str(e)}")
 
         return Response(FabricOrderSerializer(order).data, status=status.HTTP_201_CREATED)
+
+class UpdateFabricOrderStatusView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, order_id):
+        new_status = request.data.get('status')
+        if not new_status:
+            return Response({'error': 'Status required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            order = FabricOrder.objects.get(id=order_id)
+        except FabricOrder.DoesNotExist:
+            return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Verify ownership
+        profile = getattr(request.user, 'supplier_profile', None)
+        if order.supplier != profile:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+            
+        order.status = new_status
+        order.save()
+        
+        # Resilience Logic: If Supplier cancels, auto-cancel the shipment mission
+        if new_status == 'cancelled':
+            try:
+                from actors.delivery.models import ShipmentRequest
+                ShipmentRequest.objects.filter(fabric_order_id=order.id).update(status='cancelled')
+            except Exception as e:
+                print(f"Warning: Failed to cancel shipment for order {order.id}: {e}")
+        
+        # Return a safe response without relying on the full serializer
+        return Response({
+            'id': order.id,
+            'status': order.status,
+            'couture_house_name': order.couture_house_name,
+            'quantity': str(order.quantity),
+            'delivery_type': order.delivery_type,
+            'fabric_name': order.fabric.materiel if order.fabric else '',
+            'updated_at': order.updated_at.isoformat(),
+        })
+

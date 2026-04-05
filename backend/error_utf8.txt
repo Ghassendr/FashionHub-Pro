@@ -1,0 +1,3 @@
+﻿DJANGO ERROR TITLE: ProgrammingError
+          at /api/delivery/match/
+DJANGO ERROR TRACE SUMMARY: ProgrammingError        at /api/delivery/match/   column delivery_carrier.rating does not exist LINE 1: ...rantee", "delivery_carrier"."insurance_coverage", "delivery_...                                                              ^                 Request Method:       GET                 Request URL:       http://localhost:8000/api/delivery/match/?start=Nice&end=Sousse                  Django Version:       4.2.29                  Exception Type:       ProgrammingError                   Ex

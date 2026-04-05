@@ -2,22 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { 
     Users, Search, Loader2, 
     Palette, LayoutGrid, Plus, 
-    LogOut, Menu, Layers, Clock, Package, CheckCircle2, ChevronRight
+    LogOut, Menu, Layers, Clock, Package, CheckCircle2, ChevronRight, Truck
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import CoutureTrackingBar from '../../../shared/components/Logistics/CoutureTrackingBar';
+import CoutureLayout from '../components/CoutureLayout';
 import './CoutureDashboard.css';
 
 const CommandesEnCours = () => {
     const navigate = useNavigate();
-    const [sidebarOpen, setSidebarOpen] = useState(true);
     const [loading, setLoading] = useState(true);
     const [orders, setOrders] = useState([]);
+    const [activeTab, setActiveTab] = useState('clients'); // 'clients' or 'fabrics'
+    const [fabricOrders, setFabricOrders] = useState([]);
 
     const token = localStorage.getItem('token');
 
-    const fetchOrders = async () => {
+    const fetchOrders = async (silent = false) => {
         try {
-            setLoading(true);
+            if (!silent) setLoading(true);
             const response = await fetch('http://localhost:8000/api/couturehouse/orders/', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -28,7 +31,35 @@ const CommandesEnCours = () => {
         } catch (err) {
             console.error("Failed to fetch orders", err);
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
+        }
+    };
+
+    const fetchFabricOrders = async (silent = false) => {
+        try {
+            const response = await fetch('http://localhost:8000/api/couturehouse/orders/fabric-purchases/', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setFabricOrders(data.orders || []);
+            }
+        } catch (err) {
+            console.error("Failed to fetch fabric orders", err);
+        }
+    };
+
+    const confirmReceipt = async (orderId) => {
+        try {
+            const response = await fetch(`http://localhost:8000/api/couturehouse/orders/${orderId}/confirm-receipt/`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                fetchFabricOrders();
+            }
+        } catch (err) {
+            console.error("Confirmation failed", err);
         }
     };
 
@@ -38,141 +69,162 @@ const CommandesEnCours = () => {
             return;
         }
         fetchOrders();
+        fetchFabricOrders();
+
+        // Real-time synchronization (polling every 5 seconds)
+        const syncInterval = setInterval(() => {
+            fetchOrders(true);
+            fetchFabricOrders(true);
+        }, 5000);
+
+        return () => clearInterval(syncInterval);
     }, [token]);
 
-    const getStatusColor = (status) => {
+    const getStatusClass = (status) => {
         switch (status) {
-            case 'pending': return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
-            case 'in_production': return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
-            case 'completed': return 'text-blue-400 bg-blue-500/10 border-blue-500/20';
-            default: return 'text-zinc-500 bg-white/5 border-white/10';
+            case 'pending': return 'status-pending';
+            case 'in_production': return 'status-production';
+            case 'completed': return 'status-completed';
+            default: return '';
         }
     };
 
     const getFabricStatusBadge = (status) => {
         switch (status) {
-            case 'available': return <span className="flex items-center gap-1 text-[10px] text-emerald-500 font-bold uppercase tracking-wider"><CheckCircle2 size={10} /> Stock Prêt</span>;
-            case 'to_order': return <span className="flex items-center gap-1 text-[10px] text-rose-500 font-bold uppercase tracking-wider"><Package size={10} /> À Commander</span>;
-            case 'ordered': return <span className="flex items-center gap-1 text-[10px] text-amber-500 font-bold uppercase tracking-wider"><Clock size={10} /> Livraison...</span>;
-            default: return <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Inconnu</span>;
+            case 'available': return (
+                <div className="fabric-badge" style={{ color: '#10b981' }}>
+                    <CheckCircle2 size={12} /> <span>Stock Prêt</span>
+                </div>
+            );
+            case 'to_order': return (
+                <div className="fabric-badge" style={{ color: '#ef4444' }}>
+                    <Package size={12} /> <span>À Commander</span>
+                </div>
+            );
+            case 'ordered': return (
+                <div className="fabric-badge" style={{ color: '#f59e0b' }}>
+                    <Clock size={12} /> <span>Livraison...</span>
+                </div>
+            );
+            default: return <div className="fabric-badge text-zinc-500">Inconnu</div>;
         }
     };
 
     return (
-        <div className="atelier-layout">
-            <aside className={`atelier-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
-                <div className="sidebar-header">
-                    <div className="sidebar-logo">
-                        <Palette size={24} />
-                        {sidebarOpen && <span>ATELIER</span>}
-                    </div>
+        <CoutureLayout>
+            <div className="flex justify-between items-end mb-12">
+                <div>
+                    <span className="text-gold" style={{ display: 'block', marginBottom: '1rem', textTransform: 'uppercase', fontSize: '10px', letterSpacing: '0.3em' }}>Production Workflow</span>
+                    <h1 className="text-ivory" style={{ fontSize: '3rem', fontFamily: 'Outfit, sans-serif' }}>Logistique & Suivi</h1>
+                    <p className="text-zinc-500" style={{ marginTop: '1rem', maxWidth: '40rem' }}>Visualisez le flux de vos créations et l'acheminement de vos matières précieuses.</p>
                 </div>
-                <nav className="flex-1 mt-6">
-                    <div className="nav-item" onClick={() => navigate('/couturehouse/dashboard')}>
-                        <LayoutGrid size={20} />
-                        {sidebarOpen && <span>Mes Designs</span>}
-                    </div>
-                    <div className="nav-item" onClick={() => navigate('/couturehouse/inquiries')}>
-                        <Users size={20} />
-                        {sidebarOpen && <span>Demandes Clients</span>}
-                    </div>
-                    <div className="nav-item active" onClick={() => navigate('/couturehouse/orders')}>
-                        <Clock size={20} />
-                        {sidebarOpen && <span>Commandes en cours</span>}
-                    </div>
-                    <div className="nav-item" onClick={() => navigate('/couturehouse/fabrics')}>
-                        <Layers size={20} />
-                        {sidebarOpen && <span>Matiéthèque</span>}
-                    </div>
-                    <div className="nav-item" onClick={() => navigate('/couturehouse/create')}>
-                        <Plus size={20} />
-                        {sidebarOpen && <span>Nouvelle Création</span>}
-                    </div>
-                </nav>
-                <div className="sidebar-footer">
-                    <div className="nav-item" onClick={() => navigate('/')}>
-                        <LogOut size={20} />
-                        {sidebarOpen && <span>Déconnexion</span>}
-                    </div>
+                
+                <div className="bg-black-soft" style={{ padding: '4px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex' }}>
+                    <button 
+                        onClick={() => setActiveTab('clients')}
+                        className={`tab-button ${activeTab === 'clients' ? 'active' : ''}`}
+                    >
+                        Créations Clients
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('fabrics')}
+                        className={`tab-button ${activeTab === 'fabrics' ? 'active' : ''}`}
+                    >
+                        Matières Premium
+                    </button>
                 </div>
-            </aside>
+            </div>
 
-            <main className={`atelier-main ${!sidebarOpen ? 'expanded' : ''}`}>
-                <header className="atelier-top-bar">
-                    <div className="flex items-center gap-6">
-                        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-zinc-500 hover:text-ivory transition-colors">
-                            <Menu size={20} />
-                        </button>
-                        <div className="atelier-search">
-                            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
-                            <input type="text" placeholder="Rechercher une commande..." />
+            {loading ? (
+                <div style={{ padding: '80px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <Loader2 className="animate-spin text-gold" size={40} style={{ marginBottom: '1rem' }} />
+                    <p className="text-zinc-500" style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.2em' }}>Initialisation de l'atelier...</p>
+                </div>
+            ) : activeTab === 'clients' ? (
+                <div style={{ display: 'grid', gap: '1rem' }}>
+                    {orders.length === 0 ? (
+                        <div style={{ padding: '80px 0', textAlign: 'center', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '24px', background: 'rgba(255,255,255,0.02)' }}>
+                            <Package size={48} style={{ margin: '0 auto 1.5rem', color: '#18181b' }} />
+                            <h3 className="text-ivory" style={{ fontSize: '1.25rem', marginBottom: '0.5rem', opacity: 0.4 }}>Aucun projet actif</h3>
+                            <p className="text-zinc-500" style={{ fontSize: '14px', maxWidth: '20rem', margin: '0 auto' }}>Acceptez des demandes clients pour commencer la production.</p>
                         </div>
-                    </div>
-                </header>
-
-                <div className="atelier-content animate-in">
-                    <div className="mb-12">
-                        <span className="text-label text-gold block mb-4 uppercase text-[10px] tracking-[0.3em]">Production Workflow</span>
-                        <h1 className="text-5xl font-display text-ivory">Commandes en cours</h1>
-                        <p className="text-zinc-500 mt-4 max-w-2xl">Suivez l'avancement de vos projets, gérez vos stocks de tissus et coordonnez les livraisons en un clic.</p>
-                    </div>
-
-                    {loading ? (
-                        <div className="py-20 flex flex-col items-center justify-center">
-                            <Loader2 className="animate-spin text-gold mb-4" size={40} />
-                            <p className="text-zinc-500 text-sm uppercase tracking-widest">Initialisation de l'atelier...</p>
-                        </div>
-                    ) : orders.length === 0 ? (
-                        <div className="py-32 text-center border border-dashed border-white/10 rounded-3xl bg-white/[0.02]">
-                            <Package size={48} className="mx-auto text-zinc-800 mb-6" />
-                            <h3 className="text-ivory/40 font-display text-xl mb-2">Aucun projet actif</h3>
-                            <p className="text-zinc-600 text-sm max-w-xs mx-auto">Acceptez des demandes clients dans l'onglet "Demandes Clients" pour commencer la production.</p>
-                        </div>
-                    ) : (
-                        <div className="grid gap-4">
-                            {orders.map(order => (
-                                <div 
-                                    key={order.id} 
-                                    className="inquiry-row group cursor-pointer"
-                                    onClick={() => navigate(`/couturehouse/orders/${order.id}`)}
-                                >
-                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-6 bg-noir/40 border border-white/5 rounded-2xl group-hover:border-gold/30 transition-all duration-500">
-                                        <div className="flex items-center gap-5">
-                                            <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center text-gold border border-gold/20">
-                                                <div className="text-[10px] font-black italic">#{order.id}</div>
-                                            </div>
-                                            <div>
-                                                <h3 className="text-ivory font-display text-xl group-hover:text-gold transition-colors">{order.client_name}</h3>
-                                                <div className="flex items-center gap-3 text-[10px] uppercase tracking-widest text-zinc-500 mt-1 font-black">
-                                                    <Palette size={12} className="text-gold/50" />
-                                                    {order.fabric_requested} — {order.quantity_needed}m
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex flex-wrap items-center gap-8">
-                                            <div className="flex flex-col text-right">
-                                                <span className="text-[9px] uppercase tracking-widest text-zinc-600 font-bold mb-1">Matière</span>
-                                                {getFabricStatusBadge(order.fabric_status)}
-                                            </div>
-                                            
-                                            <div className="flex flex-col text-right min-w-[120px]">
-                                                <span className="text-[9px] uppercase tracking-widest text-zinc-600 font-bold mb-1">Status</span>
-                                                <div className={`px-4 py-1.5 rounded-full text-[9px] uppercase tracking-widest font-black border text-center ${getStatusColor(order.status)}`}>
-                                                    {order.status.replace('_', ' ')}
-                                                </div>
-                                            </div>
-                                            
-                                            <ChevronRight className="text-zinc-700 group-hover:text-gold transition-colors group-hover:translate-x-1 duration-300" />
+                    ) : orders.map(order => (
+                        <div key={order.id} className="inquiry-row" style={{ cursor: 'pointer' }} onClick={() => navigate(`/couturehouse/orders/${order.id}`)}>
+                            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'between', gap: '1.5rem', padding: '1.5rem', background: 'rgba(9,9,11,0.4)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '1rem' }}>
+                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                                    <div style={{ width: '3rem', height: '3rem', borderRadius: '50%', background: 'rgba(212,175,55,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d4af37', border: '1px solid rgba(212,175,55,0.2)' }}>
+                                        <div style={{ fontSize: '10px', fontWeight: 900, fontStyle: 'italic' }}>#{order.id}</div>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-ivory" style={{ fontSize: '1.25rem', fontFamily: 'Outfit, sans-serif' }}>{order.client_name}</h3>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#71717a', marginTop: '4px', fontWeight: 900 }}>
+                                            <Palette size={12} style={{ color: 'rgba(212,175,55,0.5)' }} />
+                                            {order.fabric_requested} — {order.quantity_needed}m
                                         </div>
                                     </div>
                                 </div>
-                            ))}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#52525b', fontWeight: 800, marginBottom: '4px' }}>Matière</div>
+                                        {getFabricStatusBadge(order.fabric_status)}
+                                    </div>
+                                    <div style={{ textAlign: 'right', minWidth: '120px' }}>
+                                        <div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#52525b', fontWeight: 800, marginBottom: '4px' }}>Status</div>
+                                        <div className={`status-pill ${getStatusClass(order.status)}`}>
+                                            {order.status ? order.status.replace('_', ' ') : 'PENDING'}
+                                        </div>
+                                    </div>
+                                    <ChevronRight style={{ color: '#3f3f46' }} />
+                                </div>
+                            </div>
                         </div>
-                    )}
+                    ))}
                 </div>
-            </main>
-        </div>
+            ) : (
+                <div style={{ display: 'grid', gap: '1.5rem' }}>
+                    {fabricOrders.length === 0 ? (
+                        <div style={{ padding: '80px 0', textAlign: 'center', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '24px', background: 'rgba(255,255,255,0.02)' }}>
+                            <Truck size={48} style={{ margin: '0 auto 1.5rem', color: '#18181b' }} />
+                            <h3 className="text-ivory" style={{ fontSize: '1.25rem', marginBottom: '0.5rem', opacity: 0.4 }}>Aucun arrivage prévu</h3>
+                            <p className="text-zinc-500" style={{ fontSize: '14px', maxWidth: '20rem', margin: '0 auto' }}>Vos commandes de tissus auprès des fournisseurs apparaîtront ici.</p>
+                        </div>
+                    ) : fabricOrders.map(fOrder => (
+                        <div key={fOrder.id} style={{ padding: '2rem', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '2rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '2rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <div style={{ width: '2.5rem', height: '2.5rem', background: 'rgba(212,175,55,0.1)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d4af37', border: '1px solid rgba(212,175,55,0.2)' }}>
+                                        <Layers size={18} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-ivory" style={{ fontSize: '1.5rem', fontFamily: 'Outfit, sans-serif' }}>{fOrder.fabric_name}</h3>
+                                        <p style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#52525b', fontWeight: 800, marginTop: '4px' }}>Fournisseur Premium</p>
+                                    </div>
+                                </div>
+                                
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#3f3f46', fontWeight: 800, marginBottom: '4px' }}>Métrage</div>
+                                        <span className="text-ivory" style={{ fontSize: '1.125rem', fontFamily: 'Outfit, sans-serif' }}>{fOrder.quantity}m</span>
+                                    </div>
+                                    <div style={{ height: '2rem', width: '1px', background: 'rgba(255,255,255,0.05)' }} />
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#3f3f46', fontWeight: 800, marginBottom: '4px' }}>Transport</div>
+                                        <span style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', color: 'rgba(212,175,55,0.6)' }}>{fOrder.delivery_type}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '1rem', padding: '2rem', marginBottom: '1.5rem' }}>
+                                <CoutureTrackingBar 
+                                    status={fOrder.status} 
+                                    onConfirm={() => confirmReceipt(fOrder.id)}
+                                />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </CoutureLayout>
     );
 };
 

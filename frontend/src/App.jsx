@@ -1,12 +1,12 @@
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import Layout from './shared/components/Layout/Layout';
 import Home from './shared/pages/Home';
-import ProtectedRoute from './shared/components/Auth/ProtectedRoute'; // Added
+import ProtectedRoute from './shared/components/Auth/ProtectedRoute';
 import Onboarding from './actors/client/pages/Onboarding';
 import BodyMeasurements from './actors/client/pages/BodyMeasurements';
 import MyCostumes from './actors/client/pages/MyCostumes';
+import ProjectDetail from './actors/client/pages/ProjectDetail';
 import PostureSpace from './actors/client/pages/PostureSpace';
-// import Profile from './actors/client/pages/Profile'; // Removed to unify
 import CreateDesignWizard from './actors/client/pages/CreateDesignWizard';
 import DeliveryDashboard from './actors/delivery/pages/DeliveryDashboard';
 import CoutureHouseDashboard from './actors/couturehouse/pages/Dashboard';
@@ -65,6 +65,7 @@ function App() {
           <Route path="onboarding" element={<Onboarding />} />
           <Route path="3d-measurements" element={<BodyMeasurements />} />
           <Route path="costumes" element={<MyCostumes />} />
+          <Route path="costumes/:id" element={<ProjectDetail />} />
           <Route path="posture" element={<PostureSpace />} />
         </Route>
 
@@ -78,8 +79,6 @@ function App() {
           <Route path="create" element={<CreateDesign />} />
           <Route path="fabrics" element={<CoutureHouseFabricsInventory />} />
         </Route>
-
-
 
         {/* User Profile - Unified Noir & Gold Design */}
         <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

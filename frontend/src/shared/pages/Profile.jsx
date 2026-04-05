@@ -10,11 +10,16 @@ import {
     Camera,
     Loader2,
     Palette,
-    Layers
+    Layers,
+    Plus
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import FabricCard from '../components/FabricCard';
+import DesignCard from '../../actors/couturehouse/components/DesignCard';
 
 const Profile = () => {
+    const navigate = useNavigate();
     const { token, user: authUser } = useAuth();
     const [profileData, setProfileData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -138,6 +143,16 @@ const Profile = () => {
 
                         {/* Actions */}
                         <div className="flex items-center gap-4">
+                            {user?.role === 'client' && (
+                                <button 
+                                    onClick={() => navigate('/client/create-design')}
+                                    className="w-12 h-12 bg-gold text-noir rounded-full flex items-center justify-center hover:scale-110 transition-transform shadow-glow-gold/20 border border-noir group"
+                                    title="Nouvelle Création"
+                                >
+                                    <Plus size={24} className="group-hover:rotate-90 transition-transform duration-500" />
+                                </button>
+                            )}
+                            
                             {editing ? (
                                 <>
                                     <button 
@@ -229,18 +244,9 @@ const Profile = () => {
                                     <p className="text-[10px] tracking-luxury uppercase text-ivory/20 italic">Aucun tissu sauvegardé</p>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                                     {liked_fabrics.map(fabric => (
-                                        <div key={fabric.id} className="bg-[#0a0a09] border border-gold/5 p-6 group hover:border-gold/20 transition-all duration-700">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <span className="text-[9px] uppercase tracking-luxury text-gold font-bold">Fabric Noir</span>
-                                                <Heart size={14} className="text-red-500 fill-red-500" />
-                                            </div>
-                                            <h4 className="font-display text-lg text-ivory mb-2 capitalize">{fabric.materiel}</h4>
-                                            <p className="text-[10px] text-ivory/30 uppercase tracking-[0.2em] line-clamp-2 leading-relaxed">
-                                                {fabric.description}
-                                            </p>
-                                        </div>
+                                        <FabricCard key={fabric.id} fabric={fabric} showLikes={false} />
                                     ))}
                                 </div>
                             )}
@@ -261,19 +267,9 @@ const Profile = () => {
                                     <p className="text-[10px] tracking-luxury uppercase text-ivory/20 italic">Aucun design sauvegardé</p>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                                     {liked_designs.map(design => (
-                                        <div key={design.id} className="bg-[#0a0a09] border border-gold/5 p-6 group hover:border-gold/20 transition-all duration-700">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <span className="text-[9px] uppercase tracking-luxury text-gold font-bold">Concept {design.type || 'Haut'}</span>
-                                                <Heart size={14} className="text-red-500 fill-red-500" />
-                                            </div>
-                                            <h4 className="font-display text-lg text-ivory mb-2 capitalize">{design.title || design.name || "Modèle Design"}</h4>
-                                            <div className="flex items-center justify-between mt-6">
-                                                <span className="text-serif text-gold font-medium italic">{design.prix || '---'}€</span>
-                                                <button className="text-[8px] tracking-luxury uppercase font-bold text-ivory/40 group-hover:text-gold transition-colors">Commander</button>
-                                            </div>
-                                        </div>
+                                        <DesignCard key={design.id} design={design} isPublic={true} />
                                     ))}
                                 </div>
                             )}

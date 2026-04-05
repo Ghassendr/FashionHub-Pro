@@ -180,7 +180,12 @@ const CreateDesignWizard = () => {
             });
             const result = resp.data;
             if (result?.status === 'error') { alert('Erreur: ' + (result.error || 'Inconnue')); return; }
-            if (result?.mesh_url && !result.mesh_url.startsWith('http')) result.mesh_url = `${API}${result.mesh_url}?t=${Date.now()}`;
+            if (result?.mesh_url) {
+                const cleanedPath = result.mesh_url.trim().replace(/^https?:\/\/[^\/]+/, '');
+                const baseUrl = API.replace(/\/$/, '');
+                const meshPath = cleanedPath.startsWith('/') ? cleanedPath : `/${cleanedPath}`;
+                result.mesh_url = `${baseUrl}${meshPath}?t=${Date.now()}`;
+            }
             setScanResult(result); setActiveTab('viewer');
         } catch (err) { 
             if (err.response?.status === 401) {
@@ -286,6 +291,23 @@ const CreateDesignWizard = () => {
             });
 
             if (response.ok) {
+                const projectData = await response.json();
+                const projectId = projectData.id;
+
+                // Step 2: Auto-submit to Atelier
+                try {
+                    const submitRes = await fetch(`http://localhost:8000/api/client/projects/${projectId}/submit/`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (submitRes.ok) {
+                        console.log("Project submitted to Atelier successfully");
+                    }
+                } catch (submitErr) {
+                    console.error("Auto-submission failed:", submitErr);
+                    // We don't block the user since the project is already saved
+                }
+
                 navigate('/profile');
             } else {
                 console.error("Failed to save project");

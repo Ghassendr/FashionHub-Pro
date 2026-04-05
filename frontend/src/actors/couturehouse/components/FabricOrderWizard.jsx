@@ -47,17 +47,24 @@ const FabricOrderWizard = ({ order, onClose, onComplete }) => {
     const handleConfirmOrder = async () => {
         setLoading(true);
         try {
-            const response = await fetch(`${API_BASE}/api/fournisseur/orders/create`, {
+            // Extract fabric_id safely
+            const fabricId = order.fabric_id || (order.stock_analysis?.fabric_id);
+            const fabricName = order.fabric_requested;
+            
+            console.log("DEBUG: Confirming order", { fabricId, fabricName });
+
+            const response = await fetch(`${API_BASE}/api/fournisseur/orders/create/`, {
                 method: 'POST',
                 headers: { 
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    fabric_id: order.fabric_id,
+                    fabric_id: fabricId,
+                    fabric_name: fabricName, // Fallback for backend lookup
                     quantity: wizardQty,
-                    couture_house_id: order.couture_house,
-                    couture_house_name: "L'Atelier Haute Couture", // Mocked house name
+                    couture_house_id: order.couture_house?.id || order.couture_house,
+                    couture_house_name: order.house_name || "L'Atelier Haute Couture",
                     delivery_type: deliveryType,
                     carrier_id: selectedCarrier?.carrier,
                     route_id: selectedCarrier?.id
@@ -66,9 +73,14 @@ const FabricOrderWizard = ({ order, onClose, onComplete }) => {
 
             if (response.ok) {
                 onComplete();
+            } else {
+                const errorData = await response.json().catch(() => ({}));
+                console.error("Order failed:", errorData);
+                alert(`Erreur: ${errorData.error || "Impossible de créer la commande de tissu."}`);
             }
         } catch (err) {
-            console.error(err);
+            console.error("Connection error:", err);
+            alert("Erreur de connexion au serveur.");
         } finally {
             setLoading(false);
         }
@@ -142,7 +154,7 @@ const FabricOrderWizard = ({ order, onClose, onComplete }) => {
                 </div>
             </div>
 
-            <button onClick={() => setStep(2)} className="wizard-btn-next group mt-8 py-5">
+            <button onClick={() => setStep(2)} className="wizard-btn-next group mt-4 py-4">
                 Valider le métrage <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </button>
         </div>
@@ -365,22 +377,22 @@ const FabricOrderWizard = ({ order, onClose, onComplete }) => {
                     </div>
 
                     {/* Total */}
-                    <div className="pt-8 border-t border-gold/20 flex justify-between items-center">
-                        <span className="text-[10px] uppercase tracking-[0.3em] font-black text-gold">Montant Total HT</span>
-                        <span className="text-4xl font-display text-ivory">
+                    <div className="pt-6 border-t border-gold/20 flex justify-between items-center">
+                        <span className="text-[10px] uppercase tracking-[0.2em] font-black text-gold">Total HT</span>
+                        <span className="text-3xl font-display text-ivory">
                             {( (wizardQty * (order.stock_analysis?.fabric_price || 45)) + (selectedCarrier?.matchedService?.cost || 0) ).toFixed(2)}€
                         </span>
                     </div>
                 </div>
             </div>
             
-            <div className="flex gap-4 mt-12">
+            <div className="flex gap-4 mt-6">
                 <button onClick={() => setStep(3)} className="wizard-btn-prev">Précédent</button>
                 <button 
                     onClick={handleConfirmOrder} 
-                    className="wizard-btn-next flex-1 bg-gold text-noir hover:bg-ivory font-black uppercase tracking-widest text-xs py-5"
+                    className="wizard-btn-next mt-0 flex-1 bg-gold text-noir hover:bg-ivory font-black uppercase tracking-widest text-[10px] py-4"
                 >
-                    {loading ? <Loader2 className="animate-spin" /> : <><CheckCircle2 size={18} /> Confirmer la commande</>}
+                    {loading ? <Loader2 className="animate-spin" /> : <><CheckCircle2 size={16} /> Confirmer la commande</>}
                 </button>
             </div>
         </div>
@@ -389,7 +401,7 @@ const FabricOrderWizard = ({ order, onClose, onComplete }) => {
     return (
         <div className="wizard-box bg-noir relative">
             <button onClick={onClose} className="absolute top-6 right-6 text-zinc-600 hover:text-ivory">✕</button>
-            <div className="p-12">
+            <div className="p-10">
                 {step === 1 && renderStep1()}
                 {step === 2 && renderStep2()}
                 {step === 3 && renderStep3()}

@@ -70,6 +70,13 @@ function Dashboard() {
     };
 
     initDashboard();
+
+    // Adaptive Polling: 5 seconds
+    const interval = setInterval(() => {
+      fetchFabrics(true);
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, [token, navigate]);
 
   // Calculate statistics
@@ -98,9 +105,9 @@ function Dashboard() {
     }
   }, [fabrics]);
 
-  const fetchFabrics = async () => {
+  const fetchFabrics = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError("");
       // Standardize the API prefix to follow common actor patterns
       const response = await fetch("http://localhost:8000/api/fournisseur/fabrics", {
@@ -117,7 +124,7 @@ function Dashboard() {
     } catch (err) {
       setError("Cannot reach backend server.");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 

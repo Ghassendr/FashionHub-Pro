@@ -3,11 +3,17 @@ from .views import (
     SignupView, LoginView, VerifyTokenView, ProfileView, LogoutView,
     FabricListView, FabricDetailView, FabricImageView,
     PublicFabricListView, NewsFabricsView, TrendingFabricsView, LikeFabricView,
-    FabricOrderListView, CreateFabricOrderView
+    FabricOrderListView, CreateFabricOrderView, UpdateFabricOrderStatusView
 )
 
+print("DEBUG: Loading Fournisseur URLs")
 urlpatterns = [
+    # Diagnostic - MUST BE TOP
+    path('orders/create/', CreateFabricOrderView.as_view(), name='fournisseur-orders-create'),
+    path('orders/create', CreateFabricOrderView.as_view(), name='fournisseur-orders-create-alias'),
+
     # Auth endpoints
+    path('test-ping', lambda r: __import__('django.http').http.JsonResponse({"status": "ok", "actor": "fournisseur"}), name='fournisseur-ping'),
     path('auth/signup', SignupView.as_view(), name='fournisseur-signup'),
     path('auth/login', LoginView.as_view(), name='fournisseur-login'),
     path('auth/verify-token', VerifyTokenView.as_view(), name='fournisseur-verify-token'),
@@ -25,6 +31,10 @@ urlpatterns = [
     path('images/<int:pk>', FabricImageView.as_view(), name='fournisseur-fabric-image'),
     
     # Order management
-    path('orders', FabricOrderListView.as_view(), name='fournisseur-orders-received'),
-    path('orders/create', CreateFabricOrderView.as_view(), name='fournisseur-orders-create'),
+    path('orders/create/', CreateFabricOrderView.as_view(), name='fournisseur-orders-create'),
+    path('orders/create', CreateFabricOrderView.as_view(), name='fournisseur-orders-create-alias'),
+    path('orders/', FabricOrderListView.as_view(), name='fournisseur-orders-received'),
+    path('orders', FabricOrderListView.as_view(), name='fournisseur-orders-received-alias'),
+    path('orders/<int:order_id>/status/', UpdateFabricOrderStatusView.as_view(), name='fournisseur-orders-status'),
+    path('orders/<int:order_id>/status', UpdateFabricOrderStatusView.as_view(), name='fournisseur-orders-status-alias'),
 ]

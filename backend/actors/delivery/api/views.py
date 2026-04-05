@@ -1,7 +1,8 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from django.contrib.auth.models import User
+from django.apps import apps
 from actors.delivery.models import Carrier, Vehicle, Route, Schedule, ShipmentRequest
 from .serializers import (
     CarrierSerializer, VehicleSerializer, RouteSerializer, 
@@ -57,6 +58,86 @@ class ShipmentRequestViewSet(viewsets.ModelViewSet):
         if not carrier:
             return ShipmentRequest.objects.none()
         return ShipmentRequest.objects.filter(carrier=carrier).order_by('-created_at')
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        
+        # Sync with FabricOrder if this is a fabric shipment
+        if instance.fabric_order_id:
+            try:
+                FabricOrder = apps.get_model('fournisseur', 'FabricOrder')
+                order = FabricOrder.objects.get(id=instance.fabric_order_id)
+                
+                # Logic: Shipment status -> Order status
+                if instance.status in ['picked_up', 'in_transit']:
+                    order.status = 'shipped'
+                elif instance.status == 'delivered':
+                    order.status = 'delivered'
+                elif instance.status == 'cancelled':
+                    order.status = 'cancelled'
+                
+                order.save()
+                print(f"Synced Shipment #{instance.id} [{instance.status}] to FabricOrder #{order.id} [{order.status}]")
+            except Exception as e:
+                print(f"Sync failed for Shipment #{instance.id}: {e}")
+
+    @action(detail=True, methods=['patch'], url_path='status')
+    def update_status(self, request, pk=None):
+        """
+        PATCH api/delivery/shipments/{id}/status/
+        Called by the DeliveryDashboard to advance the shipment lifecycle.
+        """
+        try:
+            new_status = request.data.get('status')
+            if not new_status:
+                return Response({'error': 'Status is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                shipment = ShipmentRequest.objects.get(pk=pk)
+            except ShipmentRequest.DoesNotExist:
+                return Response({'error': 'Shipment not found'}, status=status.HTTP_404_NOT_FOUND)
+
+            # Soft ownership check — only enforce if user actually has a carrier profile
+            carrier = getattr(request.user, 'carrier_profile', None)
+            if carrier is not None and shipment.carrier_id != carrier.id:
+                return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+            shipment.status = new_status
+            shipment.save()
+
+            # Sync FabricOrder status
+            if shipment.fabric_order_id:
+                try:
+                    FabricOrder = apps.get_model('fournisseur', 'FabricOrder')
+                    order = FabricOrder.objects.filter(id=shipment.fabric_order_id).first()
+                    if order:
+                        if new_status == 'picked_up':
+                            order.status = 'shipped'
+                            order.save()
+                        elif new_status == 'in_transit':
+                            order.status = 'in_transit'
+                            order.save()
+                        elif new_status == 'delivered':
+                            order.status = 'delivered'
+                            order.save()
+                        print(f"Synced Shipment #{shipment.id} [{new_status}] -> FabricOrder #{order.id} [{order.status}]")
+                except Exception as sync_err:
+                    print(f"Warning: FabricOrder sync failed for Shipment #{shipment.id}: {sync_err}")
+
+            # Return simple safe response — avoid nested serializer crashes
+            return Response({
+                'id': shipment.id,
+                'status': shipment.status,
+                'source_name': shipment.source_name,
+                'dest_name': shipment.dest_name,
+                'fabric_order_id': shipment.fabric_order_id,
+                'updated_at': shipment.updated_at.isoformat() if shipment.updated_at else None,
+            })
+
+        except Exception as e:
+            import traceback
+            print(f"ERROR in update_status: {traceback.format_exc()}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny]) # Couture House might call this before being authenticated as Carrier

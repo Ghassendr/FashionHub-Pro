@@ -592,12 +592,22 @@ def handle_projects(request: HttpRequest):
             return JsonResponse({"error": str(e)}, status=400)
 
     elif request.method == "GET":
+        from actors.couturehouse.models.models import Order
+        
         projects = ClientProject.objects.filter(client_id=request.user.id).order_by("-created_at")
         results = []
         for p in projects:
+            # Determine real tracking status by checking associated SQL orders
+            main_order = Order.objects.filter(inquiry_id=str(p.id)).first()
+            derived_status = p.status
+            if main_order:
+                # If production says completed, it's ready for shipment/payment
+                derived_status = main_order.status
+                
             results.append({
                 "id": str(p.id),
-                "status": p.status,
+                "status": derived_status,
+                "original_status": p.status,
                 "created_at": p.created_at.isoformat() if p.created_at else None,
                 "summary": {
                     "designs_count": len(p.selected_designs),
@@ -610,8 +620,52 @@ def handle_projects(request: HttpRequest):
 @permission_classes([permissions.IsAuthenticated])
 def get_project_details(request: HttpRequest, project_id: str):
     from actors.client.models.models import ClientProject
+    from actors.couturehouse.models.models import Order
+    from actors.fournisseur.models import FabricOrder
+    from actors.delivery.models.models import ShipmentRequest
+    
+    from bson import ObjectId
+    
     try:
-        project = ClientProject.objects.get(id=project_id, client_id=request.user.id)
+        try:
+            project = ClientProject.objects.get(id=ObjectId(project_id), client_id=request.user.id)
+        except:
+            project = ClientProject.objects.get(id=project_id, client_id=request.user.id)
+        
+        # Fetch related SQL orders
+        orders = Order.objects.filter(inquiry_id=str(project.id))
+        order_list = []
+        
+        for o in orders:
+            tracking_info = {
+                "order_id": o.id,
+                "status": o.status,
+                "fabric_status": o.fabric_status,
+                "fabric_requested": o.fabric_requested,
+                "delivery": None
+            }
+            
+            # If there's a fabric order related to this inquiry
+            # Note: FabricOrder doesn't have an inquiry_id, so we match by couture_house and fabric_id
+            f_order = None
+            if o.fabric_id:
+                try:
+                    f_order = FabricOrder.objects.filter(
+                        couture_house_id=o.couture_house.id,
+                        fabric_id=o.fabric_id
+                    ).order_by('-created_at').first()
+                except Exception as e:
+                    pass
+            
+            if f_order:
+                shipment = ShipmentRequest.objects.filter(fabric_order_id=f_order.id).first()
+                tracking_info["delivery"] = {
+                    "fabric_order_status": f_order.status,
+                    "shipment_status": shipment.status if shipment else None
+                }
+            
+            order_list.append(tracking_info)
+
         return JsonResponse({
             "id": str(project.id),
             "status": project.status,
@@ -620,8 +674,119 @@ def get_project_details(request: HttpRequest, project_id: str):
             "selected_designs": project.selected_designs,
             "selected_fabrics": project.selected_fabrics,
             "created_at": project.created_at.isoformat() if project.created_at else None,
+            "tracking": order_list
         })
     except ClientProject.DoesNotExist:
         return JsonResponse({"error": "Project not found"}, status=404)
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def submit_project(request: HttpRequest, project_id: str):
+    """
+    Submits a saved project to the respective Couture House(s).
+    Converts a MongoDB ClientProject into SQL Order(s).
+    """
+    from actors.client.models.models import ClientProject
+    from actors.couturehouse.models.models import Design, Order, CoutureHouseProfile
+    from actors.fournisseur.models import Fabric
+    from django.utils import timezone
+    from bson import ObjectId
+
+    try:
+        logger.info(f"Submitting project {project_id} for user {request.user.id}")
+        
+        try:
+            project = ClientProject.objects.get(id=ObjectId(project_id), client_id=request.user.id)
+        except:
+             project = ClientProject.objects.get(id=project_id, client_id=request.user.id)
+        
+        if not project.selected_designs:
+            return JsonResponse({"error": "Aucun design sélectionné pour ce projet."}, status=400)
+
+        # 1. Identify Couture Houses from selected designs
+        design_ids = []
+        for did in project.selected_designs:
+            try:
+                design_ids.append(ObjectId(did))
+            except: pass
+            
+        designs = Design.objects.filter(id__in=design_ids)
+
+        if not designs:
+            logger.warning(f"No designs found in MongoDB for IDs: {project.selected_designs}")
+            return JsonResponse({"error": "Designs introuvables dans la base de données."}, status=404)
+
+        # 2. Get fabrics info
+        fabric_names = []
+        if project.selected_fabrics:
+            try:
+                # Convert MongoEngine BaseList to standard Python list for SQL filter
+                fabric_ids = list(project.selected_fabrics)
+                fabrics = Fabric.objects.filter(id__in=fabric_ids)
+                fabric_names = [f.materiel for f in fabrics]
+            except Exception as fe:
+                logger.warning(f"Error fetching fabrics: {fe}")
+
+        # 3. Create Orders
+        created_orders = []
+        # Unique houses to avoid duplicate orders for the same project
+        house_user_ids = set()
+        for d in designs:
+            if hasattr(d, 'fashion_house_id') and d.fashion_house_id:
+                house_user_ids.add(d.fashion_house_id)
+
+        if not house_user_ids:
+            return JsonResponse({"error": "Aucune maison de couture n'est associée à ces designs."}, status=400)
+
+        current_client_name = f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username
+
+        for house_user_id in house_user_ids:
+            try:
+                # Find the profile by the user ID stored in the Design
+                house_profile = CoutureHouseProfile.objects.filter(user_id=house_user_id).first()
+                if not house_profile:
+                    logger.warning(f"CoutureHouseProfile not found for user_id {house_user_id}")
+                    continue
+                
+                order = Order.objects.create(
+                    inquiry_id=str(project.id),
+                    couture_house=house_profile,
+                    client_name=current_client_name,
+                    client_email=request.user.email,
+                    fabric_requested=", ".join(fabric_names) if fabric_names else "Sourcing Requis",
+                    quantity_needed=5.0, # Default estimate
+                    status='pending',
+                    fabric_status='to_order' if fabric_names else 'available'
+                )
+                created_orders.append(order.id)
+                logger.info(f"Created SQL Order {order.id} for project {project.id}")
+            except Exception as oe:
+                logger.exception(f"Failed to create order for house {house_user_id}: {oe}")
+                continue
+
+        if not created_orders:
+             return JsonResponse({
+                 "error": f"L'Atelier sélectionné (ID {list(house_user_ids)}) n'a pas de profil actif ou valide.",
+                 "details": "Vérifiez que la maison de couture a complété son profil."
+             }, status=400)
+
+        # 4. Update Project Status
+        project.status = "sent"
+        project.updated_at = timezone.now()
+        project.save()
+
+        return JsonResponse({
+            "message": "Projet envoyé avec succès à l'Atelier.",
+            "orders": created_orders,
+            "status": "sent"
+        })
+
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        logger.exception("Global submission failure: %s", e)
+        return JsonResponse({
+            "error": f"Erreur lors de l'envoi: {str(e)}", 
+            "traceback": error_trace
+        }, status=500)

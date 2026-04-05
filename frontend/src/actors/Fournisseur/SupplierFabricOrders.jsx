@@ -21,9 +21,9 @@ const SupplierFabricOrders = () => {
     const userInfo = authService.getUserInfo();
     const token = authService.getToken();
 
-    const fetchOrders = async () => {
+    const fetchOrders = async (silent = false) => {
         try {
-            setLoading(true);
+            if (!silent) setLoading(true);
             // Updated endpoint to match config/urls.py standardized prefix
             const response = await fetch(`${API_BASE}/api/fournisseur/orders`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -35,7 +35,25 @@ const SupplierFabricOrders = () => {
         } catch (err) {
             console.error("Failed to fetch received orders", err);
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
+        }
+    };
+
+    const updateOrderStatus = async (orderId, newStatus) => {
+        try {
+            const response = await fetch(`${API_BASE}/api/fournisseur/orders/${orderId}/status`, {
+                method: 'PATCH',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status: newStatus })
+            });
+            if (response.ok) {
+                fetchOrders();
+            }
+        } catch (err) {
+            console.error("Failed to update status", err);
         }
     };
 
@@ -45,15 +63,25 @@ const SupplierFabricOrders = () => {
             return;
         }
         fetchOrders();
+
+        // 5-second Silent Polling
+        const interval = setInterval(() => {
+            fetchOrders(true);
+        }, 5000);
+
+        return () => clearInterval(interval);
     }, [token]);
 
     const getStatusColor = (status) => {
         switch (status) {
-            case 'pending': return { text: '#C6A75E', bg: 'rgba(198,167,94,0.1)', border: 'rgba(198,167,94,0.3)' };
-            case 'confirmed': return { text: '#6FCF97', bg: 'rgba(111,207,151,0.1)', border: 'rgba(111,207,151,0.3)' };
-            case 'shipped': return { text: '#54A6FF', bg: 'rgba(84,166,255,0.1)', border: 'rgba(84,166,255,0.3)' };
-            case 'delivered': return { text: '#FFFFFF', bg: 'rgba(255,255,255,0.1)', border: 'rgba(255,255,255,0.3)' };
-            default: return { text: '#888', bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.1)' };
+            case 'pending': return { label: 'En attente', text: '#C6A75E', bg: 'rgba(198,167,94,0.1)', border: 'rgba(198,167,94,0.3)' };
+            case 'confirmed': return { label: 'Confirmé', text: '#6FCF97', bg: 'rgba(111,207,151,0.1)', border: 'rgba(111,207,151,0.3)' };
+            case 'preparing': return { label: 'Préparation', text: '#54A6FF', bg: 'rgba(84,166,255,0.1)', border: 'rgba(84,166,255,0.3)' };
+            case 'ready_for_pickup': return { label: 'Prêt pour enlèvement', text: '#FFFFFF', bg: 'rgba(255,255,255,0.1)', border: 'rgba(255,255,255,0.3)' };
+            case 'shipped': return { label: 'Expédié', text: '#9B51E0', bg: 'rgba(155,81,224,0.1)', border: 'rgba(155,81,224,0.3)' };
+            case 'delivered': return { label: 'Livré', text: '#6FCF97', bg: 'rgba(111,207,151,0.2)', border: 'rgba(111,207,151,0.4)' };
+            case 'cancelled': return { label: 'Annulé', text: '#EB5757', bg: 'rgba(235,87,87,0.1)', border: 'rgba(235,87,87,0.3)' };
+            default: return { label: status, text: '#888', bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.1)' };
         }
     };
 
@@ -226,11 +254,68 @@ const SupplierFabricOrders = () => {
                                                             boxShadow: `0 0 20px ${styles.bg}`
                                                         }}
                                                     >
-                                                        {order.status.toUpperCase()}
+                                                        {(styles.label || order.status).toUpperCase()}
                                                     </div>
                                                 </div>
 
-                                                {/* Action */}
+                                                {/* Action Milestone Buttons */}
+                                                <div className="flex items-center gap-3">
+                                                    {order.status === 'pending' && (
+                                                        <>
+                                                            <button 
+                                                                onClick={() => updateOrderStatus(order.id, 'confirmed')}
+                                                                className="px-6 py-3 rounded-full bg-white text-black text-[10px] font-black tracking-widest uppercase hover:bg-[#C6A75E] transition-all whitespace-nowrap active:scale-95"
+                                                            >
+                                                                Accepter
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => updateOrderStatus(order.id, 'cancelled')}
+                                                                className="px-6 py-3 rounded-full border border-rose-500/30 text-rose-500 text-[10px] font-black tracking-widest uppercase hover:bg-rose-500/10 transition-all whitespace-nowrap active:scale-95"
+                                                            >
+                                                                Décliner
+                                                            </button>
+                                                        </>
+                                                    )}
+
+                                                    {order.status === 'confirmed' && (
+                                                        <button 
+                                                            onClick={() => updateOrderStatus(order.id, 'preparing')}
+                                                            className="px-6 py-3 rounded-full bg-[#C6A75E] text-black text-[10px] font-black tracking-widest uppercase hover:bg-white transition-all whitespace-nowrap shadow-[0_0_20px_rgba(198,167,94,0.3)] active:scale-95"
+                                                        >
+                                                            Lancer Préparation
+                                                        </button>
+                                                    )}
+
+                                                    {order.status === 'preparing' && (
+                                                        <button 
+                                                            onClick={() => updateOrderStatus(order.id, 'ready_for_pickup')}
+                                                            className="px-6 py-3 rounded-full border border-[#C6A75E] text-[#C6A75E] text-[10px] font-black tracking-widest uppercase hover:bg-[#C6A75E] hover:text-black transition-all whitespace-nowrap animate-pulse active:scale-95"
+                                                        >
+                                                            Marquer comme Prêt
+                                                        </button>
+                                                    )}
+
+                                                    {order.status === 'ready_for_pickup' && (
+                                                        <div className="px-6 py-3 rounded-full border border-white/10 text-white/30 text-[10px] font-black tracking-widest uppercase italic bg-white/5">
+                                                            En attente Enlèvement
+                                                        </div>
+                                                    )}
+
+                                                    {order.status === 'shipped' && (
+                                                        <div className="flex items-center gap-2 text-gold/50 text-[10px] font-black tracking-widest uppercase">
+                                                            <Truck size={14} className="animate-bounce" />
+                                                            En cours de transit
+                                                        </div>
+                                                    )}
+
+                                                    {order.status === 'delivered' && (
+                                                        <div className="flex items-center gap-2 text-green-400 text-[10px] font-black tracking-widest uppercase">
+                                                            <CheckCircle2 size={14} />
+                                                            Livré avec succès
+                                                        </div>
+                                                    )}
+                                                </div>
+
                                                 <button className="w-10 h-10 rounded-full border border-white/5 bg-white/[0.02] flex items-center justify-center text-white/20 hover:text-[#C6A75E] hover:border-[#C6A75E]/30 hover:bg-[#C6A75E]/5 transition-all duration-500 group">
                                                     <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
                                                 </button>

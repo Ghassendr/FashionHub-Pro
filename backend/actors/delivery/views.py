@@ -1,8 +1,9 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, permissions
 import uuid
 import datetime
+from django.shortcuts import get_object_or_404
 from .db import vehicles_collection, trips_collection, orders_collection
 from .models import Carrier, Route, ShipmentRequest
 from .api.serializers import RouteSerializer, ShipmentRequestSerializer
@@ -222,3 +223,49 @@ class SQLRouteListView(APIView):
         )
         serializer = RouteSerializer(route)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+class UpdateShipmentStatusView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def patch(self, request, shipment_id):
+        new_status = request.data.get('status')
+        if not new_status:
+            return Response({'error': 'Status required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        shipment = get_object_or_404(ShipmentRequest, id=shipment_id)
+        
+        # Verify ownership
+        carrier = getattr(request.user, 'carrier_profile', None)
+        if shipment.carrier != carrier:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+            
+        shipment.status = new_status
+        shipment.save()
+        
+        # Sync with FabricOrder
+        if shipment.fabric_order_id:
+            from actors.fournisseur.models import FabricOrder
+            order = FabricOrder.objects.filter(id=shipment.fabric_order_id).first()
+            if order:
+                if new_status == 'accepted':
+                    # Carrier accepted - keep order as-is (still 'ready_for_pickup' from supplier)
+                    pass
+                elif new_status == 'picked_up':
+                    # Carrier picked up fabric - update order to 'shipped'
+                    order.status = 'shipped'
+                    order.save()
+                elif new_status == 'in_transit':
+                    # En route - keep as 'shipped'
+                    order.status = 'shipped'
+                    order.save()
+                elif new_status == 'delivered':
+                    # Carrier marked delivered - FabricOrder stays 'shipped'
+                    # Couture House must confirm receipt via /confirm-receipt/ to finalize
+                    order.status = 'shipped'
+                    order.save()
+                elif new_status == 'cancelled':
+                    # Carrier cancelled - don't cancel the FabricOrder,
+                    # supplier has already prepared it
+                    pass
+            
+        return Response(ShipmentRequestSerializer(shipment).data)

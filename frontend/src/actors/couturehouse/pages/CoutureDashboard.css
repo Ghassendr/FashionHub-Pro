@@ -182,3 +182,80 @@
 .animate-in {
   animation: fadeIn 0.6s ease-out forwards;
 }
+
+/* Status & Logistics Utilities */
+.status-pill {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 9px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border: 1px solid transparent;
+    text-align: center;
+}
+
+.status-pending { color: #fbbf24; background: rgba(251, 191, 36, 0.1); border-color: rgba(251, 191, 36, 0.2); }
+.status-production { color: #10b981; background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.2); }
+.status-completed { color: #3b82f6; background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.2); }
+
+.tab-button {
+    padding: 8px 24px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    transition: all 0.3s;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: #52525b;
+}
+
+.tab-button:hover { color: #f4f4f5; }
+
+.tab-button.active {
+    background: #d4af37;
+    color: #09090b;
+    box-shadow: 0 10px 20px rgba(212, 175, 55, 0.2);
+}
+
+.fabric-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.text-gold { color: #d4af37; }
+.text-ivory { color: #f4f4f5; }
+.text-zinc-500 { color: #71717a; }
+.bg-black-soft { background: rgba(0, 0, 0, 0.4); }
+
+/* Custom Scrollbar for Modals */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(212, 175, 55, 0.2);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 175, 55, 0.4);
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(212, 175, 55, 0.2) rgba(0, 0, 0, 0.2);
+}
