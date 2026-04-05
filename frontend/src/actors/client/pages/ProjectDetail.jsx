@@ -76,6 +76,9 @@ const ProjectDetail = () => {
                     'Content-Type': 'application/json'
                 }
             });
+
+            const data = await res.json();
+
             if (res.ok) {
                 setPaymentSuccess(true);
                 // Refresh project details to update tracking bar
@@ -86,9 +89,17 @@ const ProjectDetail = () => {
                     const newData = await refreshRes.json();
                     setProject(newData);
                 }
+            } else if (res.status === 402 && data.code === "CARD_REQUIRED") {
+                // Redirect or show card setup
+                if (window.confirm(data.message + "\n\nVoulez-vous aller à la page de configuration de votre carte ?")) {
+                    navigate('/client/bank-card');
+                }
+            } else {
+                alert(data.error || "Une erreur est survenue lors du paiement.");
             }
         } catch (err) {
             console.error("Payment error:", err);
+            alert("Erreur de communication avec le serveur.");
         } finally {
             setIsPaying(false);
         }
@@ -169,6 +180,7 @@ const ProjectDetail = () => {
                         status={currentStatus} 
                         onPay={(currentStatus === 'completed' && !project.tracking?.[0]?.is_paid) ? handlePayment : undefined}
                         isPaid={project.tracking?.[0]?.is_paid}
+                        hasCard={project.tracking?.[0]?.client_has_card}
                     />
                 </div>
 

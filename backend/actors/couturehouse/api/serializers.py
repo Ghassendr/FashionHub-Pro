@@ -47,9 +47,22 @@ class DesignWriteSerializer(serializers.DocumentSerializer):
         read_only_fields = ["id"]
 
 class OrderSerializer(drf_serializers.ModelSerializer):
+    client_has_card = drf_serializers.SerializerMethodField()
+
     class Meta:
         model = Order
         fields = '__all__'
+
+    def get_client_has_card(self, obj):
+        from core.models import User
+        try:
+            # Look up the user by email to check their card status
+            user = User.objects.filter(email=obj.client_email).first()
+            if user:
+                return hasattr(user, 'bank_card') and user.bank_card is not None
+        except Exception:
+            pass
+        return False
 
 class LocalFabricStockSerializer(drf_serializers.ModelSerializer):
     class Meta:

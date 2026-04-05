@@ -4,7 +4,7 @@ import {
     Palette, LayoutGrid, Plus, TrendingUp, Settings,
     LogOut, Menu, Layers, Eye, Calendar, User,
     ChevronRight, Ruler, Sparkles, CheckCircle2, Clock, Package,
-    Truck, MapPin, Mail, Phone, AlertTriangle, X
+    Truck, MapPin, Mail, Phone, AlertTriangle, X, CreditCard
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Viewer3D from '../../client/components/Viewer3D';
@@ -228,9 +228,15 @@ const OrderDetail = () => {
                             </div>
                             <div className="flex flex-col items-end gap-2">
                                 <div className="flex items-center gap-2">
-                                    {order.is_paid && (
+                                    {order.is_paid ? (
                                         <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[8px] uppercase tracking-widest font-black rounded-lg flex items-center gap-1.5">
                                             <CreditCard size={10} /> Paiement Reçu
+                                        </div>
+                                    ) : (
+                                        <div className={`px-3 py-1 border text-[8px] uppercase tracking-widest font-black rounded-lg flex items-center gap-1.5 ${order.client_has_card 
+                                            ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' 
+                                            : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>
+                                            <CreditCard size={10} /> {order.client_has_card ? "Carte Client Liée" : "Aucune Carte Client"}
                                         </div>
                                     )}
                                     <div className={`px-6 py-2 rounded-full text-[10px] uppercase tracking-widest font-black border ${order.status === 'in_production' ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/5' :

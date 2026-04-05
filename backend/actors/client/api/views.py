@@ -564,17 +564,18 @@ def health_check(_request: HttpRequest):
 # --- Client Projects ---
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework import permissions
+from rest_framework.response import Response
+from rest_framework import status as drf_status
 
 @api_view(["GET", "POST"])
 @permission_classes([permissions.IsAuthenticated])
-def handle_projects(request: HttpRequest):
+def handle_projects(request):
     from actors.client.models.models import ClientProject
     from django.utils import timezone
-    import json
 
     if request.method == "POST":
         try:
-            data = json.loads(request.body)
+            data = request.data
             project = ClientProject(
                 client_id=request.user.id,
                 scan_result=data.get("scan_result", {}),
@@ -586,10 +587,13 @@ def handle_projects(request: HttpRequest):
                 updated_at=timezone.now()
             )
             project.save()
-            return JsonResponse({"message": "Project saved successfully", "id": str(project.id)}, status=201)
+            return Response({
+                "message": "Project saved successfully", 
+                "id": str(project.id)
+            }, status=drf_status.HTTP_201_CREATED)
         except Exception as e:
             logger.exception("Failed to save project: %s", e)
-            return JsonResponse({"error": str(e)}, status=400)
+            return Response({"error": str(e)}, status=drf_status.HTTP_400_BAD_REQUEST)
 
     elif request.method == "GET":
         try:
@@ -609,18 +613,18 @@ def handle_projects(request: HttpRequest):
                     "id": str(p.id),
                     "status": derived_status,
                     "original_status": p.status,
-                    "created_at": p.created_at.isoformat() if p.created_at else None,
+                    "created_at": p.created_at,
                     "summary": {
                         "designs_count": len(p.selected_designs),
                         "fabrics_count": len(p.selected_fabrics)
                     }
                 })
-            return JsonResponse({"projects": results})
+            return Response({"projects": results})
         except Exception as e:
             import traceback
             error_trace = traceback.format_exc()
             logger.error(f"Error in handle_projects GET: {e}\n{error_trace}")
-            return JsonResponse({"error": str(e), "traceback": error_trace}, status=500)
+            return Response({"error": str(e), "traceback": error_trace}, status=drf_status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(["GET"])
 @permission_classes([permissions.IsAuthenticated])
@@ -802,27 +806,42 @@ def submit_project(request: HttpRequest, project_id: str):
 def pay_project_order(request, project_id):
     """
     Simulates a payment and updates the SQL Order status.
+    Requires the user to have a linked Bank Card.
     """
     from actors.couturehouse.models.models import Order
     from django.utils import timezone
     
     try:
+        # Security Requirement: Must have a linked card
+        # Wrap hasattr in try/except or catch DoesNotExist just in case
+        try:
+            has_card = hasattr(request.user, 'bank_card') and request.user.bank_card is not None
+        except Exception:
+            has_card = False
+
+        if not has_card:
+            return Response({
+                "error": "Aucune carte bancaire liée.",
+                "code": "CARD_REQUIRED",
+                "message": "Vous devez lier une carte bancaire dans vos paramètres avant de pouvoir effectuer un paiement."
+            }, status=drf_status.HTTP_402_PAYMENT_REQUIRED)
+
         # Find the order associated with this project/inquiry
         order = Order.objects.filter(inquiry_id=project_id).first()
         if not order:
-            return JsonResponse({"error": "Aucune commande associée à ce projet."}, status=404)
+            return Response({"error": "Aucune commande associée à ce projet."}, status=drf_status.HTTP_404_NOT_FOUND)
         
-        # In a real app, integrate Stripe/PayPal here
+        # Payment Logic
         order.is_paid = True
         order.payment_date = timezone.now()
         order.save()
         
-        return JsonResponse({
+        return Response({
             "message": "Paiement réussi.",
             "is_paid": True,
-            "payment_date": order.payment_date.isoformat()
+            "payment_date": order.payment_date
         })
     except Exception as e:
         logger.error(f"Payment failure: {e}")
-        return JsonResponse({"error": str(e)}, status=500)
+        return Response({"error": str(e)}, status=drf_status.HTTP_500_INTERNAL_SERVER_ERROR)
 
