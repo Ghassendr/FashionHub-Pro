@@ -22,6 +22,7 @@ const OrderDetail = () => {
     const [showWizard, setShowWizard] = useState(false);
     const [isEditingQty, setIsEditingQty] = useState(false);
     const [newQty, setNewQty] = useState('');
+    const [ratingsState, setRatingsState] = useState({});
 
     const token = localStorage.getItem('token');
     const API_BASE = 'http://localhost:8000';
@@ -133,6 +134,30 @@ const OrderDetail = () => {
         }
     };
 
+    const handleRateCarrier = async (carrierId, score) => {
+        setRatingsState(prev => ({ ...prev, [carrierId]: { isSubmitting: true, isCompleted: false }}));
+        try {
+            const response = await fetch(`${API_BASE}/api/delivery/carriers/${carrierId}/rate/`, {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ rating: score })
+            });
+            if (response.ok) {
+                setRatingsState(prev => ({ ...prev, [carrierId]: { isSubmitting: false, isCompleted: true }}));
+            } else {
+                console.error(await response.json());
+                alert("Erreur lors de l'envoi de l'évaluation.");
+                setRatingsState(prev => ({ ...prev, [carrierId]: { isSubmitting: false, isCompleted: false }}));
+            }
+        } catch (err) {
+            console.error("Failed to rate carrier", err);
+            setRatingsState(prev => ({ ...prev, [carrierId]: { isSubmitting: false, isCompleted: false }}));
+        }
+    };
+
     useEffect(() => {
         if (!token) {
             navigate('/');
@@ -239,10 +264,10 @@ const OrderDetail = () => {
                                             <CreditCard size={10} /> {order.client_has_card ? "Carte Client Liée" : "Aucune Carte Client"}
                                         </div>
                                     )}
-                                    <div className={`px-6 py-2 rounded-full text-[10px] uppercase tracking-widest font-black border ${order.status === 'in_production' ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/5' :
-                                            order.status === 'completed' ? 'text-blue-400 border-blue-500/20 bg-blue-500/5' :
-                                                order.status === 'shipped' ? 'text-purple-400 border-purple-500/20 bg-purple-500/5' :
-                                                    'text-amber-400 border-amber-500/20 bg-amber-500/5'
+                                    <div className={`px-6 py-2 rounded-full text-[10px] uppercase tracking-widest font-black border ${order.status === 'in_production' ? 'text-ivory border-ivory/20 bg-ivory/5' :
+                                            order.status === 'completed' ? 'text-gold border-gold/30 bg-gold/5' :
+                                                order.status === 'shipped' ? 'text-zinc-300 border-white/10 bg-white/5' :
+                                                    'text-zinc-400 border-zinc-500/20 bg-zinc-500/5'
                                         }`}>
                                         {order.status.replace('_', ' ')}
                                     </div>
@@ -274,21 +299,21 @@ const OrderDetail = () => {
                                 <Mail className="text-gold/40" size={18} />
                                 <div>
                                     <p className="text-[9px] uppercase tracking-widest text-zinc-600 font-bold">Email</p>
-                                    <p className="text-ivory text-sm">{order.client_email || 'nc@client.com'}</p>
+                                    <p className="text-ivory text-sm">{order.client_email || 'Non renseigné'}</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-4">
                                 <MapPin className="text-gold/40" size={18} />
                                 <div>
                                     <p className="text-[9px] uppercase tracking-widest text-zinc-600 font-bold">Localisation</p>
-                                    <p className="text-ivory text-sm">Paris, France</p>
+                                    <p className="text-ivory text-sm">{order.client_address || 'Non définie'}</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-4">
                                 <Calendar className="text-gold/40" size={18} />
                                 <div>
                                     <p className="text-[9px] uppercase tracking-widest text-zinc-600 font-bold">Deadline</p>
-                                    <p className="text-rose-400 text-sm font-black">{order.deadline || '15 Juin 2024'}</p>
+                                    <p className="text-ivory text-sm font-black">{order.deadline ? new Date(order.deadline).toLocaleDateString('fr-FR') : 'Non définie'}</p>
                                 </div>
                             </div>
                         </div>
@@ -365,10 +390,14 @@ const OrderDetail = () => {
                             <div className="w-full md:w-auto">
                                 {stock_analysis.is_available_locally ? (
                                     <div className="flex flex-col items-center gap-4">
-                                        <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+                                        <div className="w-20 h-20 rounded-full bg-gold/10 flex items-center justify-center text-gold border border-gold/20 relative shadow-glow-gold/10">
+                                            <div className="absolute inset-0 rounded-full border border-gold/40 animate-ping opacity-20" />
                                             <CheckCircle2 size={40} />
                                         </div>
-                                        <span className="text-[10px] uppercase tracking-[0.2em] font-black text-emerald-500">Fabric Available</span>
+                                        <span className="text-[10px] uppercase tracking-[0.2em] font-black text-gold flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full bg-gold animate-pulse" />
+                                            Matière Disponible
+                                        </span>
                                         {order.status === 'pending' && (
                                             <button
                                                 onClick={handleStartProduction}
@@ -378,27 +407,28 @@ const OrderDetail = () => {
                                             </button>
                                         )}
                                         {order.status === 'in_production' && (
-                                            <div className="flex flex-col items-center gap-4">
-                                                <div className="flex items-center gap-2 text-emerald-500 text-[9px] font-black uppercase tracking-widest">
-                                                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                                            <div className="flex flex-col items-center gap-4 mt-4">
+                                                <div className="flex items-center gap-2 text-gold/60 text-[9px] font-black uppercase tracking-widest">
+                                                    <div className="w-2 h-2 rounded-full bg-gold animate-ping" />
                                                     En cours de confection
                                                 </div>
                                                 <button
                                                     onClick={handleCompleteProduction}
-                                                    className="px-8 py-4 bg-emerald-600/20 border border-emerald-500/30 text-emerald-500 font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-emerald-500 hover:text-noir hover:scale-105 active:scale-95 transition-all"
+                                                    className="px-8 py-4 bg-gold/10 border border-gold/30 text-gold font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-gold hover:text-noir hover:scale-105 active:scale-95 transition-all shadow-glow-gold/10"
                                                 >
                                                     Terminer la production
                                                 </button>
                                             </div>
                                         )}
                                         {order.status === 'completed' && (
-                                            <div className="flex flex-col items-center gap-4">
-                                                <div className="w-20 h-20 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500 border border-emerald-500/40">
+                                            <div className="flex flex-col items-center gap-4 mt-4">
+                                                <div className="w-20 h-20 rounded-full bg-ivory/5 flex items-center justify-center text-gold border border-ivory/10 shadow-lg relative">
+                                                    <div className="absolute inset-0 rounded-full border border-gold/20 animate-pulse" />
                                                     <CheckCircle2 size={40} />
                                                 </div>
                                                 <div className="text-center">
-                                                    <span className="text-[10px] uppercase tracking-[0.2em] font-black text-emerald-500">Confection Terminée</span>
-                                                    <p className="text-[8px] text-zinc-500 mt-1 uppercase tracking-widest">Le client a été notifié</p>
+                                                    <span className="text-[10px] uppercase tracking-[0.2em] font-black text-ivory">Confection Terminée</span>
+                                                    <p className="text-[8px] text-gold/60 mt-1 uppercase tracking-widest">Le client a été notifié</p>
                                                 </div>
                                             </div>
                                         )}
@@ -460,6 +490,9 @@ const OrderDetail = () => {
                                         <CoutureTrackingBar 
                                             status={latestFOrder.status} 
                                             onConfirm={() => handleConfirmReceipt(latestFOrder.id)}
+                                            onRateCarrier={latestFOrder.carrier_id ? (score) => handleRateCarrier(latestFOrder.carrier_id, score) : undefined}
+                                            isRating={latestFOrder.carrier_id ? ratingsState[latestFOrder.carrier_id]?.isSubmitting : false}
+                                            isRatingDone={latestFOrder.carrier_id ? ratingsState[latestFOrder.carrier_id]?.isCompleted : false}
                                         />
                                     </div>
                                 </div>

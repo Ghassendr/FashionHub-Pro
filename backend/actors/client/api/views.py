@@ -653,6 +653,8 @@ def get_project_details(request: HttpRequest, project_id: str):
                 "status": o.status,
                 "fabric_status": o.fabric_status,
                 "fabric_requested": o.fabric_requested,
+                "couture_house": o.couture_house.id if o.couture_house else None,
+                "couture_house_name": o.couture_house.house_name if o.couture_house else None,
                 "delivery": None
             }
             

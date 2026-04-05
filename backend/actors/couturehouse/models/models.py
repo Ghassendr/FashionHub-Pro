@@ -24,6 +24,10 @@ class CoutureHouseProfile(django_models.Model):
     workshop_photo_url = django_models.TextField(blank=True)
     professional_license_url = django_models.TextField(blank=True)
     
+    # Quality metrics
+    rating = django_models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
+    review_count = django_models.IntegerField(default=0)
+    
     # Public Profile Customization
     about_text = django_models.TextField(blank=True, null=True)
     introduction_video = django_models.FileField(upload_to='atelier_videos/', blank=True, null=True)
@@ -41,6 +45,18 @@ class DesignLike(django_models.Model):
 
     def __str__(self):
         return f"{self.user.email} likes design {self.design_id}"
+
+class AtelierReview(django_models.Model):
+    couture_house = django_models.ForeignKey(CoutureHouseProfile, on_delete=django_models.CASCADE, related_name='reviews')
+    client_user = django_models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=django_models.CASCADE, related_name='given_atelier_reviews')
+    rating = django_models.IntegerField()
+    created_at = django_models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('couture_house', 'client_user')
+
+    def __str__(self):
+        return f"{self.rating} stars for {self.couture_house.house_name}"
 
 class DesignMedia(EmbeddedDocument):
     """

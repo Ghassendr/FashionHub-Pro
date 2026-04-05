@@ -78,7 +78,7 @@ class CoutureHousePublicSerializer(drf_serializers.ModelSerializer):
         fields = [
             'id', 'username', 'house_name', 'specialization', 
             'starting_price', 'avg_production_time', 'about_text', 
-            'introduction_video_url'
+            'introduction_video_url', 'rating', 'review_count'
         ]
 
     def get_introduction_video_url(self, obj):

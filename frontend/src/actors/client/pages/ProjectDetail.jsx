@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../shared/context/AuthContext';
 import ClientTrackingBar from '../../../shared/components/Logistics/ClientTrackingBar';
+import StarRater from '../../../shared/components/StarRater';
 
 const ProjectDetail = () => {
     const { id } = useParams();
@@ -24,6 +25,8 @@ const ProjectDetail = () => {
     const [loading, setLoading] = useState(true);
     const [isPaying, setIsPaying] = useState(false);
     const [paymentSuccess, setPaymentSuccess] = useState(false);
+    const [ratingCompleted, setRatingCompleted] = useState(false);
+    const [isSubmittingRating, setIsSubmittingRating] = useState(false);
 
     useEffect(() => {
         const fetchDetails = async () => {
@@ -105,6 +108,32 @@ const ProjectDetail = () => {
         }
     };
 
+    const coutureHouseId = project.tracking?.[0]?.couture_house;
+
+    const handleRateAtelier = async (score) => {
+        setIsSubmittingRating(true);
+        try {
+            const res = await fetch(`http://localhost:8000/api/couturehouse/profile/${coutureHouseId}/rate/`, {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ rating: score })
+            });
+            if (res.ok) {
+                setRatingCompleted(true);
+            } else {
+                console.error(await res.json());
+                alert("Erreur lors de l'envoi de l'évaluation.");
+            }
+        } catch(e) {
+            console.error(e);
+        } finally {
+            setIsSubmittingRating(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-noir text-ivory pb-20">
             <div className="wrapper max-w-[1000px]">
@@ -182,6 +211,17 @@ const ProjectDetail = () => {
                         isPaid={project.tracking?.[0]?.is_paid}
                         hasCard={project.tracking?.[0]?.client_has_card}
                     />
+                    
+                    {currentStatus === 'completed' && coutureHouseId && (
+                        <div className="mt-12 max-w-md mx-auto">
+                            <StarRater 
+                                onRate={handleRateAtelier} 
+                                isSubmitting={isSubmittingRating} 
+                                isCompleted={ratingCompleted} 
+                                title="Notez le Savoir-Faire de cet Atelier"
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {/* Grid Details */}

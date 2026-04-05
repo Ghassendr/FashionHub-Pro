@@ -179,3 +179,44 @@ def register_carrier(request):
         return Response({'message': 'Carrier created successfully'}, status=status.HTTP_201_CREATED)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def rate_carrier(request, id):
+    """
+    Couture House rates a Delivery Carrier.
+    """
+    try:
+        from actors.couturehouse.models.models import CoutureHouseProfile
+        from actors.delivery.models.models import CarrierReview
+        
+        carrier = get_object_or_404(Carrier, id=id)
+        house_profile = get_object_or_404(CoutureHouseProfile, user=request.user)
+        
+        rating_val = int(request.data.get('rating', 0))
+        
+        if not (1 <= rating_val <= 5):
+            return Response({"error": "Rating must be between 1 and 5"}, status=400)
+            
+        review, created = CarrierReview.objects.update_or_create(
+            carrier=carrier,
+            couture_house=house_profile,
+            defaults={'rating': rating_val}
+        )
+        
+        # Recalculate average
+        from django.db.models import Avg
+        agg = CarrierReview.objects.filter(carrier=carrier).aggregate(Avg('rating'))
+        avg_rating = agg['rating__avg'] or 0.0
+        
+        carrier.rating = avg_rating
+        carrier.review_count = CarrierReview.objects.filter(carrier=carrier).count()
+        carrier.save()
+        
+        return Response({
+            "message": "Rating submitted successfully.",
+            "new_rating": carrier.rating,
+            "review_count": carrier.review_count
+        })
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)

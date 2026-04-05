@@ -1,8 +1,9 @@
 import React from 'react';
 import { Package, Truck, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import StarRater from '../StarRater';
 import './LogisticsTracking.css';
 
-const CoutureTrackingBar = ({ status, onConfirm }) => {
+const CoutureTrackingBar = ({ status, onConfirm, onRateCarrier, isRating, isRatingDone }) => {
     // Premium milestone mappings
     const milestones = [
         {
@@ -105,9 +106,22 @@ const CoutureTrackingBar = ({ status, onConfirm }) => {
                     )}
 
                     {status === 'received' && (
-                        <div className="footer-success">
-                            <CheckCircle size={12} />
-                            Arrivage Archivé & Stock mis à jour
+                        <div className="flex flex-col items-end gap-4 mt-6">
+                            <div className="footer-success">
+                                <CheckCircle size={12} />
+                                Arrivage Archivé & Stock mis à jour
+                            </div>
+                            
+                            {onRateCarrier && (
+                                <div className="mt-4 transform translate-y-2 opacity-100 transition-all duration-700">
+                                    <StarRater 
+                                        onRate={onRateCarrier} 
+                                        isSubmitting={isRating} 
+                                        isCompleted={isRatingDone} 
+                                        title="Évaluez le Transporteur"
+                                    />
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

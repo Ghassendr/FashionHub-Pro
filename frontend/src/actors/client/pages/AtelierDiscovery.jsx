@@ -110,9 +110,14 @@ const AtelierDiscovery = () => {
                                             <Sparkles size={20} className="text-gold" />
                                         </div>
                                         <div className="flex flex-col items-end gap-2">
-                                            <div className="flex items-center gap-1 text-gold/40 group-hover:text-gold transition-colors">
-                                                <Star size={12} fill="currentColor" />
-                                                <span className="text-[10px] font-bold">4.9</span>
+                                            <div className="flex flex-col items-end gap-1">
+                                                <div className="flex items-center gap-1 text-gold/40 group-hover:text-gold transition-colors">
+                                                    <Star size={12} fill="currentColor" />
+                                                    <span className="text-[10px] font-bold">{Number(atelier.rating || 0).toFixed(1)}</span>
+                                                </div>
+                                                <span className="text-[8px] text-zinc-600 uppercase tracking-widest font-black">
+                                                    {atelier.review_count || 0} Avis
+                                                </span>
                                             </div>
                                             {atelier.introduction_video_url && (
                                                 <div className="px-2 py-0.5 bg-gold/10 border border-gold/20 rounded-full flex items-center gap-1.5 animate-pulse">

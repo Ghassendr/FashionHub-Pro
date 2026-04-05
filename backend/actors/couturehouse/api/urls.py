@@ -31,6 +31,7 @@ urlpatterns = [
 
     # Profile Management
     path('profile/', views.manage_profile, name='atelier-profile-manage'),
+    path('profile/<int:id>/rate/', views.rate_atelier, name='rate-atelier'),
     
     # Local Stock
     path('atelier/stock/', views.handle_local_stock, name='atelier-stock'),

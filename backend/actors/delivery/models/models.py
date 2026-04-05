@@ -106,3 +106,16 @@ class ShipmentRequest(models.Model):
 
     def __str__(self):
         return f"Shipment #{self.id} - {self.source_name} to {self.dest_name}"
+
+class CarrierReview(models.Model):
+    carrier = models.ForeignKey(Carrier, on_delete=models.CASCADE, related_name='reviews')
+    couture_house = models.ForeignKey('couturehouse.CoutureHouseProfile', on_delete=models.CASCADE, related_name='given_carrier_reviews')
+    rating = models.IntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        # A Couture House can leave only one persistent rating per carrier
+        unique_together = ('carrier', 'couture_house')
+
+    def __str__(self):
+        return f"{self.rating} stars for {self.carrier.company_name}"

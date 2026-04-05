@@ -180,6 +180,16 @@ const AtelierProfileDetail = () => {
                                     <span className="text-ivory/20 uppercase tracking-widest font-bold">Localisation</span>
                                     <span className="text-ivory/60 text-[10px] uppercase font-black">Paris · 1er Arr.</span>
                                 </div>
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="text-ivory/20 uppercase tracking-widest font-bold">Note Clients</span>
+                                    <span className="text-gold font-display text-xl italic flex items-center gap-1.5">
+                                        <Star size={14} className="fill-gold" />
+                                        {Number(atelier.rating || 0).toFixed(1)} 
+                                        <span className="text-[10px] text-ivory/40 uppercase tracking-widest not-italic ml-2">
+                                            ({atelier.review_count || 0} avis)
+                                        </span>
+                                    </span>
+                                </div>
                             </div>
 
                             <button

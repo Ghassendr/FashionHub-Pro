@@ -363,9 +363,18 @@ def create_order_from_inquiry(request, id):
             client_user = User.objects.get(id=project.client_id)
             client_name = f"{client_user.first_name} {client_user.last_name}" or client_user.username
             client_email = client_user.email
+            
+            # Fetch real address from ClientProfile if available
+            try:
+                from actors.client.models.models import ClientProfile
+                client_profile = ClientProfile.objects.get(user=client_user)
+                client_address = client_profile.address
+            except Exception:
+                client_address = ""
         except User.DoesNotExist:
             client_name = "Unknown Client"
             client_email = ""
+            client_address = ""
 
         # Use the first fabric selected as primary for now
         fabric_id = project.selected_fabrics[0] if project.selected_fabrics else None
@@ -383,6 +392,7 @@ def create_order_from_inquiry(request, id):
             couture_house=house_profile,
             client_name=client_name,
             client_email=client_email,
+            client_address=client_address,
             fabric_requested=fabric_name,
             fabric_id=fabric_id,
             quantity_needed=2.5, # Default estimation
@@ -745,3 +755,40 @@ def manage_profile(request):
         
     serializer = CoutureHousePublicSerializer(house_profile, context={'request': request})
     return Response(serializer.data)
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def rate_atelier(request, id):
+    """
+    Client rates a Couture House.
+    """
+    try:
+        from actors.couturehouse.models.models import AtelierReview
+        house_profile = get_object_or_404(CoutureHouseProfile, id=id)
+        rating_val = int(request.data.get('rating', 0))
+        
+        if not (1 <= rating_val <= 5):
+            return Response({"error": "Rating must be between 1 and 5"}, status=400)
+            
+        review, created = AtelierReview.objects.update_or_create(
+            couture_house=house_profile,
+            client_user=request.user,
+            defaults={'rating': rating_val}
+        )
+        
+        # Recalculate average
+        from django.db.models import Avg
+        agg = AtelierReview.objects.filter(couture_house=house_profile).aggregate(Avg('rating'))
+        avg_rating = agg['rating__avg'] or 0.0
+        
+        house_profile.rating = avg_rating
+        house_profile.review_count = AtelierReview.objects.filter(couture_house=house_profile).count()
+        house_profile.save()
+        
+        return Response({
+            "message": "Rating submitted successfully.",
+            "new_rating": house_profile.rating,
+            "review_count": house_profile.review_count
+        })
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
