@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import {
     ChevronRight, ChevronLeft, Check, Ruler, Sparkles,
@@ -39,6 +39,8 @@ const MORPHOLOGY_REFERENCE_ORDER = ['H', 'A', 'V', 'X', '8', 'O'];
 const CreateDesignWizard = () => {
     const { token } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
+    const atelierId = location.state?.atelierId;
     const [step, setStep] = useState(1);
 
     /* Lock body scroll while wizard is open */
@@ -65,7 +67,7 @@ const CreateDesignWizard = () => {
     const skinInputRef = useRef(null);
 
     /* Step 3 — designs + selection */
-    const [designsSectioned, setDesignsSectioned] = useState({ liked: [], morph: [], other: [] });
+    const [designsSectioned, setDesignsSectioned] = useState({ atelier: [], liked: [], morph: [], other: [] });
     const [designsLoading, setDesignsLoading] = useState(false);
     const [selectedDesigns, setSelectedDesigns] = useState([]);
 
@@ -105,13 +107,17 @@ const CreateDesignWizard = () => {
                 const morph = scanResult?.morphology_type || null;
 
                 const liked = all.filter(d => d.is_liked_by_user === true);
-                const notLiked = all.filter(d => !d.is_liked_by_user);
                 
-                const morphMatches = morph ? notLiked.filter(d => d.morphologies?.includes(morph)) : [];
-                const others = notLiked.filter(d => !morphMatches.includes(d));
+                // If we started from a specific atelier, prioritize their designs
+                const atelierDesigns = atelierId ? all.filter(d => d.fashion_house_id === atelierId) : [];
+                
+                const notLikedOrAtelier = all.filter(d => !d.is_liked_by_user && d.fashion_house_id !== atelierId);
+                const morphMatches = morph ? notLikedOrAtelier.filter(d => d.morphologies?.includes(morph)) : [];
+                const others = notLikedOrAtelier.filter(d => !morphMatches.includes(d));
 
                 setDesignsSectioned({
-                    liked: liked.slice(0, 8),
+                    atelier: atelierDesigns,
+                    liked: liked.filter(d => d.fashion_house_id !== atelierId),
                     morph: morphMatches.slice(0, 8),
                     other: others.slice(0, 8)
                 });
@@ -278,6 +284,7 @@ const CreateDesignWizard = () => {
                 skin_result: skinResult || {},
                 selected_designs: selectedDesigns,
                 selected_fabrics: selectedFabrics,
+                couture_house_id: atelierId,
                 status: 'saved'
             };
 
@@ -637,6 +644,7 @@ const CreateDesignWizard = () => {
                             ) : (
                                 <div className="flex flex-col gap-10">
                                     {[
+                                        { key: 'atelier', title: 'Designs de l\'Atelier Sélectionné', list: designsSectioned.atelier },
                                         { key: 'liked', title: 'Vos Favoris', list: designsSectioned.liked },
                                         { key: 'morph', title: `Idéal pour votre morphologie (${morph || '...'})`, list: designsSectioned.morph },
                                         { key: 'other', title: 'Explorer', list: designsSectioned.other }

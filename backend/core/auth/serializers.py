@@ -33,9 +33,22 @@ class ClientProfileSerializer(serializers.ModelSerializer):
         fields = ('id', 'phone', 'address')
 
 class CoutureHouseProfileSerializer(serializers.ModelSerializer):
+    introduction_video_url = serializers.SerializerMethodField()
+
     class Meta:
         model = CoutureHouseProfile
-        fields = ('id', 'house_name', 'specialization', 'starting_price', 'avg_production_time')
+        fields = (
+            'id', 'house_name', 'specialization', 'starting_price', 
+            'avg_production_time', 'about_text', 'introduction_video_url'
+        )
+
+    def get_introduction_video_url(self, obj):
+        try:
+            if obj.introduction_video:
+                return obj.introduction_video.url
+        except Exception:
+            pass
+        return None
 
 class SupplierProfileSerializer(serializers.ModelSerializer):
     class Meta:
@@ -133,3 +146,29 @@ class UserProfileSerializer(serializers.ModelSerializer):
             profile = getattr(obj, 'carrier_profile', None)
             return CarrierProfileSerializer(profile).data if profile else None
         return None
+
+    def update(self, instance, validated_data):
+        # Extract profile data if sent
+        profile_data = self.context.get('request').data.get('profile')
+        
+        # Standard user fields update
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # Handle nested profile update based on role
+        if profile_data and isinstance(profile_data, dict):
+            if instance.role == 'client' and hasattr(instance, 'client_profile'):
+                p_serializer = ClientProfileSerializer(instance.client_profile, data=profile_data, partial=True)
+                if p_serializer.is_valid(): p_serializer.save()
+            elif instance.role == 'couture_house' and hasattr(instance, 'couture_house_profile'):
+                p_serializer = CoutureHouseProfileSerializer(instance.couture_house_profile, data=profile_data, partial=True)
+                if p_serializer.is_valid(): p_serializer.save()
+            elif instance.role == 'fournisseur' and hasattr(instance, 'supplier_profile'):
+                p_serializer = SupplierProfileSerializer(instance.supplier_profile, data=profile_data, partial=True)
+                if p_serializer.is_valid(): p_serializer.save()
+            elif instance.role == 'delivery' and hasattr(instance, 'carrier_profile'):
+                p_serializer = CarrierProfileSerializer(instance.carrier_profile, data=profile_data, partial=True)
+                if p_serializer.is_valid(): p_serializer.save()
+
+        return instance

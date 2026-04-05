@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Loader2, Star, MapPin, ArrowRight, Filter, Sparkles } from 'lucide-react';
+import { Search, Loader2, Star, MapPin, ArrowRight, Filter, Sparkles, Video } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../shared/context/AuthContext';
 
@@ -109,9 +109,17 @@ const AtelierDiscovery = () => {
                                         <div className="p-3 bg-gold/5 rounded-sm border border-gold/10 group-hover:border-gold/30 transition-colors">
                                             <Sparkles size={20} className="text-gold" />
                                         </div>
-                                        <div className="flex items-center gap-1 text-gold/40 group-hover:text-gold transition-colors">
-                                            <Star size={12} fill="currentColor" />
-                                            <span className="text-[10px] font-bold">4.9</span>
+                                        <div className="flex flex-col items-end gap-2">
+                                            <div className="flex items-center gap-1 text-gold/40 group-hover:text-gold transition-colors">
+                                                <Star size={12} fill="currentColor" />
+                                                <span className="text-[10px] font-bold">4.9</span>
+                                            </div>
+                                            {atelier.introduction_video_url && (
+                                                <div className="px-2 py-0.5 bg-gold/10 border border-gold/20 rounded-full flex items-center gap-1.5 animate-pulse">
+                                                    <Video size={8} className="text-gold" fill="currentColor" />
+                                                    <span className="text-[8px] uppercase font-black text-gold tracking-tighter">Video</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 

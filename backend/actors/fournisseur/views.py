@@ -206,9 +206,9 @@ class FabricListView(views.APIView):
                 '_id': f.id,
                 'id': f.id,
                 'color': f.color,
-                'quantite': float(f.quantite),
+                'quantite': float(f.quantite) if f.quantite is not None else 0.0,
                 'materiel': f.materiel,
-                'prix': float(f.prix),
+                'prix': float(f.prix) if f.prix is not None else 0.0,
                 'description': f.description,
                 'likes': f.likes
             })
@@ -266,9 +266,9 @@ class PublicFabricListView(views.APIView):
             fabrics_data.append({
                 'id': f.id,
                 'color': f.color,
-                'quantite': float(f.quantite),
+                'quantite': float(f.quantite) if f.quantite is not None else 0.0,
                 'materiel': f.materiel,
-                'prix': float(f.prix),
+                'prix': float(f.prix) if f.prix is not None else 0.0,
                 'description': f.description,
                 'likes': f.likes,
                 'is_liked': f.id in liked_ids,
@@ -291,9 +291,9 @@ class NewsFabricsView(views.APIView):
             fabrics_data.append({
                 'id': f.id,
                 'color': f.color,
-                'quantite': float(f.quantite),
+                'quantite': float(f.quantite) if f.quantite is not None else 0.0,
                 'materiel': f.materiel,
-                'prix': float(f.prix),
+                'prix': float(f.prix) if f.prix is not None else 0.0,
                 'description': f.description,
                 'likes': f.likes,
                 'is_liked': f.id in liked_ids
@@ -315,9 +315,9 @@ class TrendingFabricsView(views.APIView):
             fabrics_data.append({
                 'id': f.id,
                 'color': f.color,
-                'quantite': float(f.quantite),
+                'quantite': float(f.quantite) if f.quantite is not None else 0.0,
                 'materiel': f.materiel,
-                'prix': float(f.prix),
+                'prix': float(f.prix) if f.prix is not None else 0.0,
                 'description': f.description,
                 'likes': f.likes,
                 'is_liked': f.id in liked_ids

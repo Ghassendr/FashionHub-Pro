@@ -2,8 +2,8 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status
 from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.decorators import api_view, permission_classes, parser_classes
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework_mongoengine import generics
 from django.http import FileResponse
 import os
@@ -350,6 +350,14 @@ def create_order_from_inquiry(request, id):
         project = ClientProject.objects.get(id=id)
         house_profile = get_object_or_404(CoutureHouseProfile, user=request.user)
 
+        # Prevent duplicate orders
+        existing_order = Order.objects.filter(inquiry_id=id, couture_house=house_profile).first()
+        if existing_order:
+            if project.status not in ['ordered', 'in_production', 'completed', 'shipped']:
+                project.status = 'ordered'
+                project.save()
+            return Response(OrderSerializer(existing_order).data, status=status.HTTP_200_OK)
+
         # Get client info
         try:
             client_user = User.objects.get(id=project.client_id)
@@ -382,7 +390,7 @@ def create_order_from_inquiry(request, id):
         )
         
         # Update project status
-        project.status = 'sent' # Or archived
+        project.status = 'ordered'
         project.save()
 
         return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
@@ -416,7 +424,7 @@ def get_order_details(request, id):
         try:
             f = Fabric.objects.get(id=order.fabric_id)
             supplier_stock = f.quantite
-            fabric_price = float(f.prix)
+            fabric_price = float(f.prix) if f.prix is not None else 0.0
             fabric_nature = f.materiel
             if f.image:
                 fabric_image_url = f.image.url
@@ -702,3 +710,38 @@ def confirm_fabric_receipt(request, order_id):
         "new_stock": float(stock.quantity),
         "message": f"Livraison confirmée. {order.quantity}m de {order.fabric.materiel} ajoutés à votre stock."
     })
+
+@api_view(["GET", "POST"])
+@permission_classes([permissions.IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser, JSONParser])
+def manage_profile(request):
+    """
+    GET: Fetch the current atelier's profile.
+    POST: Update the atelier's profile fields, including video file upload.
+    """
+    from .serializers import CoutureHousePublicSerializer
+    house_profile = get_object_or_404(CoutureHouseProfile, user=request.user)
+    
+    if request.method == "POST":
+        # Handle text fields manually so we can also handle the file
+        text_fields = ['house_name', 'specialization', 'starting_price', 'avg_production_time', 'about_text']
+        for field in text_fields:
+            if field in request.data:
+                setattr(house_profile, field, request.data[field])
+        
+        # Handle video file upload
+        if 'introduction_video' in request.FILES:
+            # Delete old video if exists
+            if house_profile.introduction_video:
+                try:
+                    house_profile.introduction_video.delete(save=False)
+                except Exception:
+                    pass
+            house_profile.introduction_video = request.FILES['introduction_video']
+        
+        house_profile.save()
+        serializer = CoutureHousePublicSerializer(house_profile, context={'request': request})
+        return Response(serializer.data)
+        
+    serializer = CoutureHousePublicSerializer(house_profile, context={'request': request})
+    return Response(serializer.data)

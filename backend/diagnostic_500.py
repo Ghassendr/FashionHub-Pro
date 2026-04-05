@@ -1,45 +1,46 @@
 import os
 import django
 from django.conf import settings
-from django.test import RequestFactory
-import json
+from rest_framework.test import APIRequestFactory, force_authenticate
+import traceback
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
-from actors.client.api.views import handle_projects
-from core.models import User
+from core.api.views import get_profile # Guessing the path
+from core.models.user import User
 
-# Mock request
-factory = RequestFactory()
-request = factory.get('/api/client/projects/')
+def test_get_profile():
+    factory = APIRequestFactory()
+    user = User.objects.filter(role='couture_house').first()
+    if not user:
+        user = User.objects.first()
+        
+    if not user:
+        print("No user found")
+        return
 
-# Mock user
-user = User.objects.first()
-if not user:
-    print("Error: No user found in database.")
-    exit(1)
-
-request.user = user
-
-# Bypass DRF Auth for direct call
-try:
-    # Use ._callback if it's an API view or just call the function directly
-    # since I imported handle_projects directly.
-    # Note: handle_projects is decorated, so we might need to hit the underlying func
-    # or just provide a mocked DRF request.
+    print(f"Testing profile for user: {user.email} (Role: {user.role})")
     
-    from rest_framework.request import Request
-    drf_request = Request(request)
-    
-    response = handle_projects(drf_request)
-    print(f"Status Code: {response.status_code}")
-    if hasattr(response, 'data'):
-        print(f"Data: {response.data}")
-    else:
-        print(f"Content: {response.content.decode('utf-8')}")
+    # We need to find where the view is actually defined. 
+    # Usually it's in core/api/views.py if the URL is /api/auth/profile/
+    from django.urls import resolve
+    try:
+        match = resolve('/api/auth/profile/')
+        view_func = match.func
+        
+        request = factory.get('/api/auth/profile/')
+        force_authenticate(request, user=user)
+        
+        response = view_func(request)
+        print(f"Status: {response.status_code}")
+        if response.status_code == 500:
+            print("Error 500 detected!")
+            # DRF usually doesn't return traceback in response.ata unless DEBUG=True
+            print(f"Data: {response.data}")
+    except Exception as e:
+        print(f"Manual execution failed: {e}")
+        traceback.print_exc()
 
-except Exception as e:
-    import traceback
-    print("Caught Exception during diagnostic:")
-    traceback.print_exc()
+if __name__ == "__main__":
+    test_get_profile()

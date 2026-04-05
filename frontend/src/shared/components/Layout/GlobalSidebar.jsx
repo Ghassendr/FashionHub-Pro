@@ -91,29 +91,31 @@ const GlobalSidebar = () => {
             case 'couture_house':
                 return (
                     <>
-                        <NavLink to="/profile" end className={getNavClass}>
-                            <User size={16} /> My Profile
-                        </NavLink>
+                        <div className="px-6 mb-4 text-[9px] uppercase tracking-[0.2em] text-ivory/20 font-bold">Workspace</div>
                         <NavLink to="/couturehouse" end className={getNavClass}>
-                            <Home size={16} /> Atelier
+                            <LayoutGrid size={16} /> Tableau de Bord
                         </NavLink>
                         <NavLink to="/couturehouse/creations" className={getNavClass}>
-                            <Layers size={16} /> My Creations
+                            <Layers size={16} /> Mes Créations
                         </NavLink>
                         <NavLink to="/couturehouse/fabrics" className={getNavClass}>
-                            <Package size={16} /> Fabrics Inventory
+                            <Package size={16} /> Stock de Matières
                         </NavLink>
+
+                        <div className="px-6 my-4 text-[9px] uppercase tracking-[0.2em] text-ivory/20 font-bold">Clients & Projets</div>
                         <NavLink to="/couturehouse/inquiries" className={getNavClass}>
-                            <Mail size={16} /> Inquiries
+                            <Mail size={16} /> Demandes (Inquiries)
                         </NavLink>
                         <NavLink to="/couturehouse/orders" className={getNavClass}>
-                            <Clock size={16} /> Production & Tracking
+                            <Clock size={16} /> Suivi Production
                         </NavLink>
-                        <NavLink to="/couturehouse/create" className={getNavClass}>
-                            <Plus size={16} /> New Creation
+
+                        <div className="px-6 my-4 text-[9px] uppercase tracking-[0.2em] text-ivory/20 font-bold">Configuration</div>
+                        <NavLink to="/profile" className={getNavClass}>
+                            <User size={16} /> Profil Atelier & Compte
                         </NavLink>
                         <NavLink to="/couturehouse/bank-card" className={getNavClass}>
-                            <CreditCard size={16} /> Bank Card
+                            <CreditCard size={16} /> Carte Bancaire
                         </NavLink>
                     </>
                 );

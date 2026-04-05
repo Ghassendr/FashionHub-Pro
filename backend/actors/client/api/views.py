@@ -582,6 +582,7 @@ def handle_projects(request):
                 skin_result=data.get("skin_result", {}),
                 selected_designs=data.get("selected_designs", []),
                 selected_fabrics=data.get("selected_fabrics", []),
+                couture_house_id=str(data.get("couture_house_id")) if data.get("couture_house_id") else None,
                 status=data.get("status", "saved"),
                 created_at=timezone.now(),
                 updated_at=timezone.now()
@@ -742,12 +743,25 @@ def submit_project(request: HttpRequest, project_id: str):
         created_orders = []
         # Unique houses to avoid duplicate orders for the same project
         house_user_ids = set()
-        for d in designs:
-            if hasattr(d, 'fashion_house_id') and d.fashion_house_id:
-                house_user_ids.add(d.fashion_house_id)
+        
+        # Priority 1: Use explicitly assigned atelier
+        if project.couture_house_id:
+            try:
+                # If it's a numeric ID (SQL CoutureHouseProfile ID), use it
+                house_profile = CoutureHouseProfile.objects.filter(id=project.couture_house_id).first()
+                if house_profile:
+                    house_user_ids.add(house_profile.user_id)
+            except Exception:
+                pass
+
+        # Priority 2: Use ateliers from selected designs if none assigned or no profile found
+        if not house_user_ids:
+            for d in designs:
+                if hasattr(d, 'fashion_house_id') and d.fashion_house_id:
+                    house_user_ids.add(d.fashion_house_id)
 
         if not house_user_ids:
-            return JsonResponse({"error": "Aucune maison de couture n'est associée à ces designs."}, status=400)
+            return JsonResponse({"error": "Aucune maison de couture n'est associée à ces designs ou à ce projet."}, status=400)
 
         current_client_name = f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username
 
@@ -867,7 +881,7 @@ def list_ateliers(request):
             Q(specialization__icontains=search_query)
         )
         
-    serializer = CoutureHousePublicSerializer(queryset, many=True)
+    serializer = CoutureHousePublicSerializer(queryset, many=True, context={'request': request})
     return Response({"ateliers": serializer.data})
 
 @api_view(["GET"])
@@ -881,7 +895,7 @@ def get_atelier_details(request, atelier_id):
     from django.shortcuts import get_object_or_404
     
     atelier = get_object_or_404(CoutureHouseProfile, id=atelier_id, verification_status='approved')
-    serializer = CoutureHousePublicSerializer(atelier)
+    serializer = CoutureHousePublicSerializer(atelier, context={'request': request})
     
     return Response(serializer.data)
 

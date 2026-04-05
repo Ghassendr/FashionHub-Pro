@@ -74,7 +74,39 @@ const AtelierProfileDetail = () => {
                 </div>
             </div>
 
-            <div className="max-w-[1200px] mx-auto px-6 pt-16">
+            {/* Introduction Video */}
+            {atelier.introduction_video_url && (
+                <div className="max-w-[1200px] mx-auto px-6 -mt-32 relative z-20">
+                    <div className="aspect-video w-full bg-noir border border-white/5 rounded-2xl overflow-hidden shadow-2xl group transition-all hover:border-gold/20">
+                        {atelier.introduction_video_url.includes('youtube.com') || atelier.introduction_video_url.includes('youtu.be') ? (
+                            <iframe 
+                                className="w-full h-full"
+                                src={atelier.introduction_video_url.replace('watch?v=', 'embed/').split('&')[0]} 
+                                title="Atelier Introduction"
+                                frameBorder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                allowFullScreen
+                            />
+                        ) : (
+                            <video 
+                                className="w-full h-full"
+                                src={atelier.introduction_video_url} 
+                                controls
+                                preload="metadata"
+                                crossOrigin="anonymous"
+                                style={{ background: '#000' }}
+                                onError={(e) => console.error('Video load error:', e.target.error)}
+                            >
+                                <source src={atelier.introduction_video_url} />
+                                Votre navigateur ne supporte pas la lecture vidéo.
+                            </video>
+                        )}
+                    </div>
+                </div>
+            )}
+
+
+            <div className={`max-w-[1200px] mx-auto px-6 ${atelier.introduction_video_url ? 'pt-16' : 'pt-16'}`}>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
                     
                     {/* Left Column: Details & Philosophy */}
@@ -83,11 +115,21 @@ const AtelierProfileDetail = () => {
                             <h2 className="text-[10px] uppercase tracking-luxury text-gold/40 mb-8 border-b border-gold/5 pb-4">
                                 À propos de la Maison
                             </h2>
-                            <p className="text-lg text-ivory/60 leading-relaxed font-light font-display">
-                                Spécialiste renommé en <span className="text-gold italic">{atelier.specialization}</span>. 
-                                La Maison {atelier.house_name} incarne l'élégance et la précision artisanale. 
-                                Chaque pièce est conçue pour sublimer la silhouette de nos clients à travers un processus de création unique et personnalisé.
-                            </p>
+                            <div className="space-y-6">
+                                <p className="text-xl text-ivory/80 leading-relaxed font-light font-display italic">
+                                    Spécialiste renommé en <span className="text-gold">{atelier.specialization}</span>.
+                                </p>
+                                {atelier.about_text ? (
+                                    <p className="text-lg text-ivory/60 leading-relaxed font-light whitespace-pre-line">
+                                        {atelier.about_text}
+                                    </p>
+                                ) : (
+                                    <p className="text-lg text-ivory/60 leading-relaxed font-light">
+                                        La Maison {atelier.house_name} incarne l'élégance et la précision artisanale. 
+                                        Chaque pièce est conçue pour sublimer la silhouette de nos clients à travers un processus de création unique et personnalisé.
+                                    </p>
+                                )}
+                            </div>
                         </section>
 
                         <section className="grid grid-cols-1 md:grid-cols-2 gap-12">

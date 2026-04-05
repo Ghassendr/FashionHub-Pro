@@ -1,0 +1,56 @@
+.profile-settings-page {
+    background: #080807;
+    min-height: 100vh;
+    padding-bottom: 5rem;
+}
+
+.profile-settings-page h1 {
+    color: #f7f3e9;
+    letter-spacing: -0.02em;
+}
+
+.profile-settings-page .btn-luxury-cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 1.25rem 2rem;
+    background: #c9a96e;
+    color: #080807;
+    border: none;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.profile-settings-page .btn-luxury-cta:hover {
+    background: #e6ce9e;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(201, 169, 110, 0.2);
+}
+
+.profile-settings-page .btn-luxury-cta:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.tracking-luxury {
+    letter-spacing: 0.4em;
+}
+
+/* Custom transitions and states for inputs */
+.profile-settings-page input:focus, 
+.profile-settings-page textarea:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.03) !important;
+}
+
+.profile-settings-page input::placeholder,
+.profile-settings-page textarea::placeholder {
+    color: rgba(247, 243, 233, 0.15);
+}

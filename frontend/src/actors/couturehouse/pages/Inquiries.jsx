@@ -136,6 +136,10 @@ const Inquiries = () => {
         switch (status) {
             case 'saved': return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
             case 'sent': return 'text-gold bg-gold/10 border-gold/20';
+            case 'ordered': return 'text-blue-400 bg-blue-500/10 border-blue-500/20';
+            case 'in_production': return 'text-purple-400 bg-purple-500/10 border-purple-500/20';
+            case 'completed': return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+            case 'shipped': return 'text-emerald-500 bg-emerald-500/20 border-emerald-500/30';
             default: return 'text-zinc-500 bg-white/5 border-white/10';
         }
     };
@@ -434,18 +438,33 @@ const Inquiries = () => {
                                 </section>
 
                                 <div className="pt-10 border-t border-white/5">
-                                    <button
-                                        onClick={() => handleAcceptInquiry(selectedInquiry.id)}
-                                        disabled={detailLoading}
-                                        className="btn btn-primary w-full py-5 flex items-center justify-center gap-4 group"
-                                    >
-                                        {detailLoading ? <Loader2 className="animate-spin" /> : (
-                                            <>
-                                                <CheckCircle2 size={20} />
-                                                Prendre en charge la commande
-                                            </>
-                                        )}
-                                    </button>
+                                    {['ordered', 'in_production', 'completed', 'shipped'].includes(selectedInquiry.status) ? (
+                                        <button
+                                            onClick={() => handleAcceptInquiry(selectedInquiry.id)}
+                                            disabled={detailLoading}
+                                            className="btn btn-secondary w-full py-5 flex items-center justify-center gap-4 group"
+                                        >
+                                            {detailLoading ? <Loader2 className="animate-spin" /> : (
+                                                <>
+                                                    <Eye size={20} />
+                                                    Voir la commande en cours
+                                                </>
+                                            )}
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => handleAcceptInquiry(selectedInquiry.id)}
+                                            disabled={detailLoading}
+                                            className="btn btn-primary w-full py-5 flex items-center justify-center gap-4 group"
+                                        >
+                                            {detailLoading ? <Loader2 className="animate-spin" /> : (
+                                                <>
+                                                    <CheckCircle2 size={20} />
+                                                    Prendre en charge la commande
+                                                </>
+                                            )}
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>

@@ -28,7 +28,10 @@ class ClientProject(Document):
     selected_designs = fields.ListField(fields.StringField(), default=list) # Design ObjectIDs
     selected_fabrics = fields.ListField(fields.IntField(), default=list) # Fabric SQL IDs
     
-    status = fields.StringField(choices=["draft", "saved", "sent", "archived"], default="draft")
+    # Optional Assigned Atelier
+    couture_house_id = fields.StringField(null=True) # References the SQL CoutureHouseProfile ID
+    
+    status = fields.StringField(choices=["draft", "saved", "sent", "ordered", "in_production", "completed", "shipped", "archived"], default="draft")
     
     created_at = fields.DateTimeField()
     updated_at = fields.DateTimeField()

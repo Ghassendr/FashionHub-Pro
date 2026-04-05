@@ -29,6 +29,9 @@ urlpatterns = [
     path('orders/<int:id>/ship/', views.ship_order, name='ship-order'),
     path('orders/<int:order_id>/confirm-receipt/', views.confirm_fabric_receipt, name='confirm-fabric-receipt'),
 
+    # Profile Management
+    path('profile/', views.manage_profile, name='atelier-profile-manage'),
+    
     # Local Stock
     path('atelier/stock/', views.handle_local_stock, name='atelier-stock'),
     path('atelier/stock/<int:item_id>/', views.handle_local_stock_item, name='atelier-stock-item'),

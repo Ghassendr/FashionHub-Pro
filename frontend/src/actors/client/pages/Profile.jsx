@@ -23,6 +23,7 @@ const Profile = () => {
     const [editing, setEditing] = useState(false);
     const [formData, setFormData] = useState({ name: '', info: '' });
     const [saving, setSaving] = useState(false);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -34,11 +35,12 @@ const Profile = () => {
                 const data = await res.json();
                 setProfileData(data);
                 setFormData({
-                    name: data.user.first_name || data.user.username,
-                    info: data.user.info || ''
+                    name: data.user?.first_name || data.user?.username || '',
+                    info: data.user?.info || ''
                 });
             } catch (err) {
                 console.error(err);
+                setError(err.message);
             } finally {
                 setLoading(false);
             }
@@ -80,7 +82,25 @@ const Profile = () => {
         );
     }
 
-    const { user, liked_fabrics, liked_designs } = profileData;
+    if (error) {
+        return (
+            <div className="min-h-screen bg-noir flex flex-col items-center justify-center text-ivory p-6">
+                <X className="w-12 h-12 text-red-500 mb-4" />
+                <h2 className="text-2xl font-display italic mb-2">Oups ! Une erreur est survenue</h2>
+                <p className="text-ivory/40 text-sm mb-8">{error}</p>
+                <button 
+                    onClick={() => window.location.reload()}
+                    className="btn btn-secondary px-8 py-3 text-[10px] tracking-luxury"
+                >
+                    Réessayer
+                </button>
+            </div>
+        );
+    }
+
+    const { user, liked_fabrics = [], liked_designs = [] } = profileData || {};
+
+    if (!user) return null;
 
     return (
         <div className="min-h-screen bg-noir text-ivory pt-32 pb-20">

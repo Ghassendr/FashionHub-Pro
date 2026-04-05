@@ -71,10 +71,21 @@ class LocalFabricStockSerializer(drf_serializers.ModelSerializer):
 
 class CoutureHousePublicSerializer(drf_serializers.ModelSerializer):
     username = drf_serializers.CharField(source='user.username', read_only=True)
+    introduction_video_url = drf_serializers.SerializerMethodField()
     
     class Meta:
         model = CoutureHouseProfile
         fields = [
             'id', 'username', 'house_name', 'specialization', 
-            'starting_price', 'avg_production_time'
+            'starting_price', 'avg_production_time', 'about_text', 
+            'introduction_video_url'
         ]
+
+    def get_introduction_video_url(self, obj):
+        request = self.context.get('request')
+        if obj.introduction_video and obj.introduction_video.name:
+            url = obj.introduction_video.url
+            if request:
+                return request.build_absolute_uri(url)
+            return url
+        return None

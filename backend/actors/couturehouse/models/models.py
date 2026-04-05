@@ -24,6 +24,10 @@ class CoutureHouseProfile(django_models.Model):
     workshop_photo_url = django_models.TextField(blank=True)
     professional_license_url = django_models.TextField(blank=True)
     
+    # Public Profile Customization
+    about_text = django_models.TextField(blank=True, null=True)
+    introduction_video = django_models.FileField(upload_to='atelier_videos/', blank=True, null=True)
+    
     def __str__(self):
         return self.house_name
 
