@@ -7,7 +7,7 @@ opencv-python
 numpy
 trimesh[all]
 scikit-image
-mediapipe
+mediapipe==0.10.14
 requests
 scipy
 networkx

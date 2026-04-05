@@ -154,13 +154,37 @@ class HMRMambaEstimator:
         """
         import cv2
         import mediapipe as mp_mod
+        import os
 
-        mp_pose = mp_mod.solutions.pose
-        pose_detector = mp_pose.Pose(
-            static_image_mode=True,
-            model_complexity=2,
-            min_detection_confidence=0.5,
-        )
+        has_legacy = hasattr(mp_mod, 'solutions')
+
+        if has_legacy:
+            mp_pose = mp_mod.solutions.pose
+            pose_detector = mp_pose.Pose(
+                static_image_mode=True,
+                model_complexity=2,
+                min_detection_confidence=0.5,
+            )
+        else:
+            from mediapipe.tasks import python as mp_python
+            from mediapipe.tasks.python import vision
+            import urllib.request
+            
+            model_path = os.path.join(os.path.dirname(__file__), 'models', 'pose_landmarker_full.task')
+            if not os.path.exists(model_path):
+                os.makedirs(os.path.dirname(model_path), exist_ok=True)
+                urllib.request.urlretrieve(
+                    "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task", 
+                    model_path
+                )
+            
+            base_options = mp_python.BaseOptions(model_asset_path=model_path)
+            options = vision.PoseLandmarkerOptions(
+                base_options=base_options,
+                num_poses=1,
+                min_pose_detection_confidence=0.5
+            )
+            pose_detector = vision.PoseLandmarker.create_from_options(options)
 
         all_betas = []
         all_poses = []
@@ -173,16 +197,28 @@ class HMRMambaEstimator:
             h, w = img.shape[:2]
 
             img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            result = pose_detector.process(img_rgb)
+            
+            if has_legacy:
+                result = pose_detector.process(img_rgb)
+                pose_landmarks = result.pose_landmarks
+            else:
+                mp_image = mp_mod.Image(image_format=mp_mod.ImageFormat.SRGB, data=img_rgb)
+                result = pose_detector.detect(mp_image)
+                pose_landmarks = result.pose_landmarks[0] if result.pose_landmarks else None
+                if pose_landmarks:
+                    class MockLandmarks:
+                        def __init__(self, t_lms):
+                            self.landmark = t_lms
+                    pose_landmarks = MockLandmarks(pose_landmarks)
 
-            if result.pose_landmarks is None:
+            if pose_landmarks is None:
                 # No detection — insert zeros
                 all_betas.append(np.zeros(10))
                 all_poses.append(np.zeros(72))
                 all_joints_2d.append(np.zeros((33, 2)))
                 continue
 
-            lm = result.pose_landmarks.landmark
+            lm = pose_landmarks.landmark
 
             # Extract 2D joints
             joints_2d = np.array([[l.x * w, l.y * h] for l in lm])  # (33, 2)

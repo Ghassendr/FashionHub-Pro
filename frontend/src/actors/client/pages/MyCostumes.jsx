@@ -70,7 +70,7 @@ const MyCostumes = () => {
                     </div>
                 ) : projects.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-32 border border-gold/5 bg-noir relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-gold/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
+                        <div className="absolute inset-0 bg-gold/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none"></div>
                         <ShoppingBag size={48} strokeWidth={1} className="text-gold/20 mb-8" />
                         <h3 className="font-display text-2xl text-ivory/70 mb-4 font-light italic">Aucun design pour l'instant</h3>
                         <p className="text-sm text-ivory/30 mb-10 tracking-widest uppercase text-center max-w-sm">
@@ -78,18 +78,35 @@ const MyCostumes = () => {
                         </p>
                         <button 
                             onClick={() => navigate('/client/create-design')}
-                            className="btn btn-primary px-10 py-4 text-[10px] tracking-luxury uppercase font-bold"
+                            className="btn btn-primary px-10 py-4 text-[10px] tracking-luxury uppercase font-bold relative z-10"
                         >
                             Démarrer une Création
                         </button>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {/* Persistent Create Card */}
+                        <div 
+                            onClick={() => navigate('/client/create-design')}
+                            className="group relative bg-transparent border border-dashed border-gold/20 p-8 flex flex-col items-center justify-center transition-all duration-700 hover:border-gold/60 hover:bg-gold/[0.02] cursor-pointer min-h-[300px] animate-fade-up"
+                        >
+                            <div className="w-12 h-12 rounded-full border border-gold/20 flex items-center justify-center mb-6 text-gold/40 group-hover:text-gold group-hover:scale-110 transition-all duration-700">
+                                <Plus size={24} strokeWidth={1} />
+                            </div>
+                            <h3 className="font-display text-xl text-ivory/70 font-light italic mb-2 tracking-wide group-hover:text-gold transition-colors duration-700">
+                                Nouveau Design
+                            </h3>
+                            <p className="text-[10px] uppercase tracking-widest text-ivory/30 text-center max-w-[200px]">
+                                Configurer une nouvelle pièce sur mesure avec l'IA
+                            </p>
+                        </div>
+                        
+                        {/* Existing Projects */}
                         {projects.map((project, idx) => (
                             <ProjectCard 
                                 key={project.id} 
                                 project={project} 
-                                index={idx} 
+                                index={idx + 1} 
                                 onClick={() => navigate(`/client/costumes/${project.id}`)} 
                             />
                         ))}

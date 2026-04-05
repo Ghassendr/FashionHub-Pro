@@ -31,8 +31,12 @@ const PostureSpace = () => {
                     const detailRes = await fetch(`http://localhost:8000/api/client/projects/${data.projects[0].id}/`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
-                    const detailData = await detailRes.json();
-                    setProject(detailData);
+                    if (detailRes.ok) {
+                        const detailData = await detailRes.json();
+                        setProject(detailData);
+                    } else {
+                        console.error('Failed to fetch project details');
+                    }
                 }
             } catch (err) {
                 console.error(err);
@@ -62,8 +66,10 @@ const PostureSpace = () => {
     }
 
     const { scan_result } = project;
-    const mesh_url = scan_result.mesh_url ? `http://localhost:8000${scan_result.mesh_url}` : null;
-    const morphology = scan_result.morphology_type || 'NC';
+    const mesh_url = scan_result?.mesh_url 
+        ? (scan_result.mesh_url.startsWith('http') ? scan_result.mesh_url : `http://localhost:8000${scan_result.mesh_url}`) 
+        : null;
+    const morphology = scan_result?.morphology_type || scan_result?.morphology?.silhouette?.shape_letter || 'NC';
 
     return (
         <div className="min-h-screen bg-noir text-ivory pt-24 pb-12">

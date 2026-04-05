@@ -12,9 +12,7 @@
   --gold: #C6A75E;
   --gold-light: #D4BA7A;
   --gold-dark: #A88B3D;
-  --gold-muted: rgba(198,167,94,0.1);
   --gold-border: rgba(198,167,94,0.2);
-  --sidebar-w: 220px;
   --topbar-h: 60px;
   
   background: var(--noir);
@@ -23,13 +21,9 @@
   font-weight: 300;
   font-size: 13px;
   display: flex;
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden;
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 9999; /* To cover the default layout if needed, though we will fix routing */
+  flex-direction: column;
+  min-height: calc(100vh - 60px);
+  width: 100%;
 }
 
 /* Animations scoped */
@@ -145,11 +139,11 @@
 }
 
 /* ── Main layout ── */
+/* Main layout */
 .delivery-board .main-area {
-  margin-left: var(--sidebar-w);
-  flex: 1; height: 100vh;
-  display: flex; flex-direction: column;
-  overflow: hidden;
+  flex: 1;
+  display: flex; 
+  flex-direction: column;
 }
 
 /* ── Topbar ── */
