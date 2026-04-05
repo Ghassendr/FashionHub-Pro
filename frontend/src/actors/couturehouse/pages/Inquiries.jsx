@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    Users, Search, Loader2, ArrowLeft, 
-    Palette, LayoutGrid, Plus, TrendingUp, Settings, 
-    LogOut, Menu, Layers, Eye, Calendar, User, 
-    ChevronRight, Ruler, Sparkles, CheckCircle2, Clock
+import {
+    Users, Search, Loader2, ArrowLeft,
+    Palette, LayoutGrid, Plus, TrendingUp, Settings,
+    LogOut, Menu, Layers, Eye, Calendar, User,
+    ChevronRight, Ruler, Sparkles, CheckCircle2, Clock, Package
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import Viewer3D from '../../client/components/Viewer3D';
 import './Inquiries.css';
 import './CoutureDashboard.css';
 
@@ -13,14 +14,16 @@ const Inquiries = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [inquiries, setInquiries] = useState([]);
+    const [orders, setOrders] = useState([]);
+    const [activeTab, setActiveTab] = useState('projets');
     const [selectedInquiry, setSelectedInquiry] = useState(null);
     const [detailLoading, setDetailLoading] = useState(false);
 
     const token = localStorage.getItem('token');
 
-    const fetchInquiries = async () => {
+    const fetchInquiries = async (silent = false) => {
         try {
-            setLoading(true);
+            if (!silent) setLoading(true);
             const response = await fetch('http://localhost:8000/api/couturehouse/inquiries/', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -29,7 +32,24 @@ const Inquiries = () => {
         } catch (err) {
             console.error("Failed to fetch inquiries", err);
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
+        }
+    };
+
+    const fetchOrders = async (silent = false) => {
+        try {
+            if (!silent) setLoading(true);
+            const response = await fetch('http://localhost:8000/api/couturehouse/orders/', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setOrders(data.orders || []);
+            }
+        } catch (err) {
+            console.error("Failed to fetch orders", err);
+        } finally {
+            if (!silent) setLoading(false);
         }
     };
 
@@ -72,7 +92,45 @@ const Inquiries = () => {
             return;
         }
         fetchInquiries();
+        fetchOrders();
+
+        // Optional: Real-time sync
+        const interval = setInterval(() => {
+            fetchInquiries(true);
+            fetchOrders(true);
+        }, 10000);
+        return () => clearInterval(interval);
     }, [token]);
+
+    const getStatusClass = (status) => {
+        switch (status) {
+            case 'pending': return 'status-pending';
+            case 'in_production': return 'status-production';
+            case 'completed': return 'status-completed';
+            default: return 'status-pending';
+        }
+    };
+
+    const getFabricStatusBadge = (status) => {
+        switch (status) {
+            case 'available': return (
+                <div className="fabric-badge" style={{ color: '#10b981' }}>
+                    <CheckCircle2 size={12} /> <span>Stock Prêt</span>
+                </div>
+            );
+            case 'to_order': return (
+                <div className="fabric-badge" style={{ color: '#ef4444' }}>
+                    <Package size={12} /> <span>À Commander</span>
+                </div>
+            );
+            case 'ordered': return (
+                <div className="fabric-badge" style={{ color: '#f59e0b' }}>
+                    <Clock size={12} /> <span>Livraison...</span>
+                </div>
+            );
+            default: return <div className="fabric-badge text-zinc-500">Inconnu</div>;
+        }
+    };
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -103,12 +161,29 @@ const Inquiries = () => {
                     <>
                         <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
                             <div>
-                                <span className="text-label text-gold block mb-4 uppercase text-[10px] tracking-[0.3em]">Client Requests</span>
+                                <span className="text-gold block mb-4 uppercase text-[10px] tracking-[0.3em]" style={{ letterSpacing: '0.3em' }}>Atelier Workflow</span>
                                 <h1 className="text-5xl font-display text-ivory">Commandes & Projets</h1>
                             </div>
-                            <div className="atelier-search max-w-md w-full">
-                                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
-                                <input type="text" placeholder="Search inquiries..." className="bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 w-full text-ivory outline-none focus:border-gold/50 transition-colors" />
+                            
+                            <div className="flex flex-col md:flex-row items-center gap-6">
+                                <div className="bg-black-soft" style={{ padding: '4px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex' }}>
+                                    <button 
+                                        onClick={() => setActiveTab('projets')}
+                                        className={`tab-button ${activeTab === 'projets' ? 'active' : ''}`}
+                                    >
+                                        Projets
+                                    </button>
+                                    <button 
+                                        onClick={() => setActiveTab('commandes')}
+                                        className={`tab-button ${activeTab === 'commandes' ? 'active' : ''}`}
+                                    >
+                                        Commandes
+                                    </button>
+                                </div>
+                                <div className="atelier-search max-w-md w-full relative">
+                                    <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
+                                    <input type="text" placeholder="Rechercher..." className="bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 w-full text-ivory outline-none focus:border-gold/50 transition-colors" />
+                                </div>
                             </div>
                         </div>
 
@@ -117,41 +192,89 @@ const Inquiries = () => {
                                 <Loader2 className="animate-spin text-gold mb-4" size={40} />
                                 <p className="text-zinc-500 text-sm uppercase tracking-widest">Récupération des dossiers...</p>
                             </div>
-                        ) : inquiries.length === 0 ? (
-                            <div className="py-32 text-center border border-dashed border-white/10 rounded-3xl bg-white/[0.02]">
-                                <Users size={48} className="mx-auto text-zinc-800 mb-6" />
-                                <h3 className="text-ivory/40 font-display text-xl mb-2">Pas encore de demandes</h3>
-                                <p className="text-zinc-600 text-sm max-w-xs mx-auto">Vos designs n'ont pas encore été sélectionnés par des clients. Continuez à enrichir votre portfolio !</p>
-                            </div>
+                        ) : activeTab === 'projets' ? (
+                            inquiries.length === 0 ? (
+                                <div className="py-32 text-center border border-dashed border-white/10 rounded-3xl bg-white/[0.02]">
+                                    <Users size={48} className="mx-auto text-zinc-800 mb-6" />
+                                    <h3 className="text-ivory/40 font-display text-xl mb-2">Pas encore de demandes</h3>
+                                    <p className="text-zinc-600 text-sm max-w-xs mx-auto">Vos designs n'ont pas encore été sélectionnés par des clients.</p>
+                                </div>
+                            ) : (
+                                <div className="grid gap-4">
+                                    {inquiries.map(item => (
+                                        <div
+                                            key={item.id}
+                                            className="inquiry-row group cursor-pointer"
+                                            onClick={() => fetchInquiryDetails(item.id)}
+                                        >
+                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-6 bg-noir/40 border border-white/5 rounded-2xl group-hover:border-gold/30 transition-all duration-500">
+                                                <div className="flex items-center gap-5">
+                                                    <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center text-gold border border-gold/20">
+                                                        <User size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-ivory font-display text-xl group-hover:text-gold transition-colors">{item.client_name}</h3>
+                                                        <div className="flex items-center gap-3 text-[10px] uppercase tracking-widest text-zinc-500 mt-1">
+                                                            <Calendar size={12} />
+                                                            {new Date(item.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex flex-wrap items-center gap-4">
+                                                    <div className="flex flex-col text-right">
+                                                        <span className="text-[9px] uppercase tracking-widest text-zinc-600 font-bold mb-1">Impact</span>
+                                                        <span className="text-ivory text-xs font-black">{item.summary.designs_count} Design{item.summary.designs_count > 1 ? 's' : ''}</span>
+                                                    </div>
+                                                    <div className={`px-4 py-1.5 rounded-full text-[9px] uppercase tracking-widest font-black border ${getStatusColor(item.status)}`}>
+                                                        {item.status}
+                                                    </div>
+                                                    <ChevronRight className="text-zinc-700 group-hover:text-gold transition-colors group-hover:translate-x-1 duration-300" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )
                         ) : (
+                            /* ACTIVE ORDERS TAB */
                             <div className="grid gap-4">
-                                {inquiries.map(item => (
+                                {orders.length === 0 ? (
+                                    <div className="py-32 text-center border border-dashed border-white/10 rounded-3xl bg-white/[0.02]">
+                                        <Layers size={48} className="mx-auto text-zinc-800 mb-6" />
+                                        <h3 className="text-ivory/40 font-display text-xl mb-2">Aucune commande active</h3>
+                                        <p className="text-zinc-600 text-sm max-w-xs mx-auto">Acceptez des projets pour lancer la production.</p>
+                                    </div>
+                                ) : orders.map(order => (
                                     <div 
-                                        key={item.id} 
-                                        className="inquiry-row group cursor-pointer"
-                                        onClick={() => fetchInquiryDetails(item.id)}
+                                        key={order.id} 
+                                        className="inquiry-row group cursor-pointer" 
+                                        onClick={() => navigate(`/couturehouse/orders/${order.id}`)}
                                     >
                                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-6 bg-noir/40 border border-white/5 rounded-2xl group-hover:border-gold/30 transition-all duration-500">
                                             <div className="flex items-center gap-5">
-                                                <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center text-gold border border-gold/20">
-                                                    <User size={20} />
+                                                <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center text-gold border border-gold/20 font-bold italic text-xs">
+                                                    #{order.id}
                                                 </div>
                                                 <div>
-                                                    <h3 className="text-ivory font-display text-xl group-hover:text-gold transition-colors">{item.client_name}</h3>
+                                                    <h3 className="text-ivory font-display text-xl group-hover:text-gold transition-colors">{order.client_name}</h3>
                                                     <div className="flex items-center gap-3 text-[10px] uppercase tracking-widest text-zinc-500 mt-1">
-                                                        <Calendar size={12} />
-                                                        {new Date(item.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                                        <Palette size={12} className="text-gold/50" />
+                                                        {order.fabric_requested} — {order.quantity_needed}m
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <div className="flex flex-wrap items-center gap-4">
-                                                <div className="flex flex-col text-right">
-                                                    <span className="text-[9px] uppercase tracking-widest text-zinc-600 font-bold mb-1">Votre impact</span>
-                                                    <span className="text-ivory text-xs font-black">{item.summary.designs_count} Design{item.summary.designs_count > 1 ? 's' : ''} choisis</span>
+                                            <div className="flex items-center gap-8">
+                                                <div style={{ textAlign: 'right' }}>
+                                                    <div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#52525b', fontWeight: 800, marginBottom: '4px' }}>Matière</div>
+                                                    {getFabricStatusBadge(order.fabric_status)}
                                                 </div>
-                                                <div className={`px-4 py-1.5 rounded-full text-[9px] uppercase tracking-widest font-black border ${getStatusColor(item.status)}`}>
-                                                    {item.status}
+                                                <div style={{ textAlign: 'right', minWidth: '120px' }}>
+                                                    <div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#52525b', fontWeight: 800, marginBottom: '4px' }}>Production</div>
+                                                    <div className={`px-4 py-1.5 rounded-full text-[9px] uppercase tracking-widest font-black border border-gold/10 bg-gold/5 text-gold`}>
+                                                        {order.status ? order.status.replace('_', ' ') : 'PENDING'}
+                                                    </div>
                                                 </div>
                                                 <ChevronRight className="text-zinc-700 group-hover:text-gold transition-colors group-hover:translate-x-1 duration-300" />
                                             </div>
@@ -164,7 +287,7 @@ const Inquiries = () => {
                 ) : (
                     /* Inquiry Details View */
                     <div className="inquiry-detail-view animate-in">
-                        <button 
+                        <button
                             onClick={() => setSelectedInquiry(null)}
                             className="flex items-center gap-2 text-zinc-500 hover:text-ivory mb-12 transition-colors text-xs uppercase tracking-widest font-bold"
                         >
@@ -178,9 +301,9 @@ const Inquiries = () => {
                                     <div className="aspect-[4/5] bg-noir/80 border border-white/5 rounded-3xl overflow-hidden relative shadow-2xl">
                                         {selectedInquiry.scan_result?.mesh_url ? (
                                             <Viewer3D url={
-                                                selectedInquiry.scan_result.mesh_url.startsWith('http') 
-                                                ? selectedInquiry.scan_result.mesh_url 
-                                                : `${API_BASE}${selectedInquiry.scan_result.mesh_url}`
+                                                selectedInquiry.scan_result.mesh_url.startsWith('http')
+                                                    ? selectedInquiry.scan_result.mesh_url
+                                                    : `${API_BASE}${selectedInquiry.scan_result.mesh_url}`
                                             } />
                                         ) : (
                                             <div className="w-full h-full flex flex-col items-center justify-center text-zinc-800">
@@ -188,7 +311,7 @@ const Inquiries = () => {
                                                 <p className="text-[10px] uppercase tracking-widest font-black opacity-30">Scan 3D non disponible</p>
                                             </div>
                                         )}
-                                        
+
                                         <div className="absolute top-6 left-6 z-10">
                                             <div className="px-3 py-1 bg-noir/60 backdrop-blur-md rounded-full border border-white/10 flex items-center gap-2">
                                                 <div className="w-2 h-2 rounded-full bg-gold animate-pulse" />
@@ -205,7 +328,7 @@ const Inquiries = () => {
                                             <div className="inquiry-stat">
                                                 <span className="label">Morphologie</span>
                                                 <span className="value text-ivory">
-                                                    {selectedInquiry.scan_result?.morphology?.silhouette?.shape_letter 
+                                                    {selectedInquiry.scan_result?.morphology?.silhouette?.shape_letter
                                                         ? `Silhouette ${selectedInquiry.scan_result.morphology.silhouette.shape_letter}`
                                                         : (selectedInquiry.scan_result?.morphology?.silhouette?.type_fr || 'NC')}
                                                 </span>
@@ -217,17 +340,17 @@ const Inquiries = () => {
                                                         {selectedInquiry.skin_result?.name || 'NC'}
                                                     </span>
                                                     {selectedInquiry.skin_result?.detected_rgb && (
-                                                        <div 
+                                                        <div
                                                             className="w-6 h-3 rounded-full border border-white/20 shadow-sm"
-                                                            style={{ 
-                                                                backgroundColor: `rgb(${selectedInquiry.skin_result.detected_rgb.join(',')})` 
+                                                            style={{
+                                                                backgroundColor: `rgb(${selectedInquiry.skin_result.detected_rgb.join(',')})`
                                                             }}
                                                             title="Teint détecté"
                                                         />
                                                     )}
                                                 </div>
                                             </div>
-                                            
+
                                             {/* Core Measurements */}
                                             {(selectedInquiry.scan_result?.measurements?.basics || []).slice(0, 3).map(m => (
                                                 <div className="inquiry-stat" key={m.key}>
@@ -259,8 +382,8 @@ const Inquiries = () => {
                                             <div key={design.id} className={`p-4 bg-noir/40 border rounded-2xl flex items-center gap-4 ${design.is_mine ? 'border-gold/30' : 'border-white/5'}`}>
                                                 <div className="w-16 h-20 bg-zinc-900 rounded-lg overflow-hidden flex items-center justify-center border border-white/5 shadow-inner">
                                                     {design.image_url ? (
-                                                        <img 
-                                                            src={`${API_BASE.replace('/api', '')}${design.image_url}`} 
+                                                        <img
+                                                            src={`${API_BASE.replace('/api', '')}${design.image_url}`}
                                                             alt={design.title}
                                                             className="w-full h-full object-cover"
                                                         />
@@ -290,9 +413,9 @@ const Inquiries = () => {
                                         {selectedInquiry.selected_fabrics?.map(fabric => (
                                             <div key={fabric.id} className="p-4 bg-noir/40 border border-white/5 rounded-2xl flex items-center gap-4">
                                                 {fabric.color ? (
-                                                    <div 
+                                                    <div
                                                         className="w-12 h-12 rounded-full border border-white/10 shadow-lg"
-                                                        style={{ 
+                                                        style={{
                                                             backgroundColor: `rgb(${fabric.color.join(',')})`
                                                         }}
                                                     />
@@ -311,7 +434,7 @@ const Inquiries = () => {
                                 </section>
 
                                 <div className="pt-10 border-t border-white/5">
-                                    <button 
+                                    <button
                                         onClick={() => handleAcceptInquiry(selectedInquiry.id)}
                                         disabled={detailLoading}
                                         className="btn btn-primary w-full py-5 flex items-center justify-center gap-4 group"

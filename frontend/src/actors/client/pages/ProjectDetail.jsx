@@ -66,16 +66,36 @@ const ProjectDetail = () => {
 
     const currentStatus = getTrackingStatus();
 
-    const handlePayment = () => {
+    const handlePayment = async () => {
         setIsPaying(true);
-        setTimeout(() => {
+        try {
+            const res = await fetch(`http://localhost:8000/api/client/projects/${id}/pay/`, {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (res.ok) {
+                setPaymentSuccess(true);
+                // Refresh project details to update tracking bar
+                const refreshRes = await fetch(`http://localhost:8000/api/client/projects/${id}/`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (refreshRes.ok) {
+                    const newData = await refreshRes.json();
+                    setProject(newData);
+                }
+            }
+        } catch (err) {
+            console.error("Payment error:", err);
+        } finally {
             setIsPaying(false);
-            setPaymentSuccess(true);
-        }, 2000);
+        }
     };
 
     return (
-        <div className="min-h-screen bg-noir text-ivory pt-32 pb-20">
+        <div className="min-h-screen bg-noir text-ivory pb-20">
             <div className="wrapper max-w-[1000px]">
                 {/* Back Button */}
                 <button 
@@ -147,7 +167,8 @@ const ProjectDetail = () => {
                     {/* The Tracking Bar fixed by our logic */}
                     <ClientTrackingBar 
                         status={currentStatus} 
-                        onPay={(currentStatus === 'completed' && !paymentSuccess) ? handlePayment : undefined}
+                        onPay={(currentStatus === 'completed' && !project.tracking?.[0]?.is_paid) ? handlePayment : undefined}
+                        isPaid={project.tracking?.[0]?.is_paid}
                     />
                 </div>
 

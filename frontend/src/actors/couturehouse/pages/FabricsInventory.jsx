@@ -37,7 +37,7 @@ const CoutureHouseFabricsInventory = () => {
 
     const fetchImage = async (fabricId) => {
         try {
-            const response = await fetch(`http://localhost:8000/api/images/${fabricId}`, {
+            const response = await fetch(`http://localhost:8000/api/fournisseur/images/${fabricId}`, {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -76,7 +76,7 @@ const CoutureHouseFabricsInventory = () => {
 
         try {
             setLoading(true);
-            const response = await fetch("http://localhost:8000/api/fabrics", {
+            const response = await fetch("http://localhost:8000/api/fournisseur/public/fabrics", {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -96,9 +96,9 @@ const CoutureHouseFabricsInventory = () => {
 
                 const images = {};
                 for (const fabric of fabricsList) {
-                    const imageData = await fetchImage(fabric._id);
+                    const imageData = await fetchImage(fabric.id);
                     if (imageData) {
-                        images[fabric._id] = imageData;
+                        images[fabric.id] = imageData;
                     }
                 }
                 setFabricImages(images);
@@ -324,12 +324,12 @@ const CoutureHouseFabricsInventory = () => {
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {fabrics.map(fabric => (
-                                <div key={fabric._id} className="design-card group bg-noir/40 border border-white/5 rounded-2xl overflow-hidden hover:bg-noir/60 transition-colors">
+                    {fabrics.map(fabric => (
+                                <div key={fabric.id} className="design-card group bg-noir/40 border border-white/5 rounded-2xl overflow-hidden hover:bg-noir/60 transition-colors">
                                     <div className="aspect-[4/5] overflow-hidden relative bg-zinc-900 flex items-center justify-center">
-                                        {fabricImages[fabric._id] ? (
+                                        {fabricImages[fabric.id] ? (
                                             <img 
-                                                src={fabricImages[fabric._id]} 
+                                                src={fabricImages[fabric.id]} 
                                                 alt={fabric.materiel} 
                                                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-80 group-hover:opacity-100"
                                             />
@@ -511,10 +511,10 @@ const CoutureHouseFabricsInventory = () => {
                             ) : (
                                 <>
                                     <div className="flex gap-6 mb-8 p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
-                                        <div className="w-24 h-24 rounded-xl overflow-hidden bg-zinc-800">
-                                            {fabricImages[selectedFabric._id] ? (
+                                        <div className="w-24 h-24 rounded-xl overflow-hidden bg-zinc-900">
+                                            {fabricImages[selectedFabric.id] ? (
                                                 <img 
-                                                    src={fabricImages[selectedFabric._id]} 
+                                                    src={fabricImages[selectedFabric.id]} 
                                                     alt={selectedFabric.materiel} 
                                                     className="w-full h-full object-cover"
                                                 />

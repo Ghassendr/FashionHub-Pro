@@ -57,7 +57,7 @@ const PostureSpace = () => {
 
     if (!project || !project.scan_result) {
         return (
-            <div className="min-h-screen bg-noir pt-32 pb-20 px-8 text-center">
+            <div className="min-h-screen bg-noir pb-20 px-8 text-center">
                 <Activity size={48} className="text-gold/10 mx-auto mb-8" />
                 <h2 className="font-display text-2xl text-ivory/50">Aucune donnée de posture disponible</h2>
                 <p className="text-ivory/20 mt-4 max-w-md mx-auto">Veuillez effectuer une analyse 3D via le Wizard de création pour générer votre profil biométrique.</p>
@@ -72,7 +72,7 @@ const PostureSpace = () => {
     const morphology = scan_result?.morphology_type || scan_result?.morphology?.silhouette?.shape_letter || 'NC';
 
     return (
-        <div className="min-h-screen bg-noir text-ivory pt-24 pb-12">
+        <div className="min-h-screen bg-noir text-ivory pb-12">
             <div className="mx-auto w-full max-w-[1920px] px-8">
                 
                 {/* Header Strip */}

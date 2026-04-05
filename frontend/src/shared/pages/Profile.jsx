@@ -86,7 +86,7 @@ const Profile = () => {
     const { user, liked_fabrics, liked_designs } = profileData;
 
     return (
-        <div className="min-h-screen bg-noir text-ivory pt-32 pb-20">
+        <div className="min-h-screen bg-noir text-ivory pb-20">
             <div className="wrapper max-w-[1200px]">
                 
                 {/* Profile Header Block */}

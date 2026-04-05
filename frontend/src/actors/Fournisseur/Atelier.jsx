@@ -29,7 +29,7 @@ const Atelier = () => {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const response = await fetch("http://localhost:8000/api/fabrics", {
+            const response = await fetch("http://localhost:8000/api/fournisseur/fabrics", {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (response.ok) {

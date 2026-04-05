@@ -14,7 +14,6 @@ const API_BASE = "http://localhost:8000";
 
 const SupplierFabricOrders = () => {
     const navigate = useNavigate();
-    const [sidebarOpen, setSidebarOpen] = useState(true);
     const [loading, setLoading] = useState(true);
     const [orders, setOrders] = useState([]);
 
@@ -86,84 +85,24 @@ const SupplierFabricOrders = () => {
     };
 
     return (
-        <div className="flex h-screen bg-[#0A0A0A] font-inter overflow-hidden text-white">
-            {/* Atelier Sidebar (Noir/Gold Theme) */}
-            <aside className={`w-64 flex-shrink-0 border-r border-white/5 bg-black/40 backdrop-blur-2xl flex flex-col transition-all duration-500 ease-in-out ${sidebarOpen ? 'ml-0' : '-ml-64'}`}>
-                <div className="p-8 border-b border-white/5">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-[#C6A75E] to-[#8E793E] rounded-lg flex items-center justify-center text-black font-black shadow-[0_0_20px_rgba(198,167,94,0.3)]">FP</div>
-                        <span className="text-sm font-black tracking-[0.2em] text-[#C6A75E]">SUPPLIER</span>
-                    </div>
+        <div className="animate-fade-in p-6 lg:p-12 max-w-[1600px] mx-auto min-h-screen">
+            {/* Context Header */}
+            <div className="mb-12 border-b border-gold/10 pb-8">
+                <div className="flex items-center gap-4 mb-4">
+                    <span className="text-[10px] tracking-[0.3em] uppercase text-gold font-bold bg-gold/10 px-4 py-1.5 rounded-full border border-gold/20 flex items-center gap-2">
+                        <Package size={12} /> Fulfillment Center
+                    </span>
                 </div>
-                
-                <nav className="flex-1 p-6 space-y-2">
-                    <div className="text-[10px] uppercase font-black text-white/30 tracking-widest mb-4 px-4">Inventaire & Flux</div>
-                    
-                    <div onClick={() => navigate('/fournisseur/dashboard')} className="flex items-center gap-4 p-4 text-white/50 hover:text-[#C6A75E] hover:bg-white/[0.03] transition-all rounded-xl cursor-pointer group">
-                        <Layers size={18} className="group-hover:scale-110 transition-transform" />
-                        <span className="text-sm font-medium">Catalogue Matières</span>
-                    </div>
+                <h1 className="text-4xl md:text-6xl font-display text-ivory italic flex items-center gap-4">
+                    Flux & Commandes
+                </h1>
+                <p className="text-ivory/40 mt-4 max-w-2xl font-light leading-relaxed">
+                    Visualisation centralisée des flux textiles confirmés par les Maisons de Couture. 
+                    Gérez les expéditions et assurez la traçabilité de vos matières précieuses.
+                </p>
+            </div>
 
-                    <div className="flex items-center gap-4 p-4 text-[#C6A75E] bg-[#C6A75E]/10 rounded-xl border border-[#C6A75E]/20 shadow-[0_0_15px_rgba(198,167,94,0.05)]">
-                        <ShoppingCart size={18} />
-                        <span className="text-sm font-bold">Commandes Clients</span>
-                    </div>
-
-                    {/* Removed Analytiques pending future dev */}
-
-                    <div className="pt-8 text-[10px] uppercase font-black text-white/30 tracking-widest mb-4 px-4">Paramètres</div>
-                    <div onClick={() => navigate('/fournisseur/settings')} className="flex items-center gap-4 p-4 text-white/50 hover:text-[#C6A75E] hover:bg-white/[0.03] transition-all rounded-xl cursor-pointer group">
-                        <Settings size={18} className="group-hover:scale-110 transition-transform" />
-                        <span className="text-sm font-medium">Atelier Settings</span>
-                    </div>
-                </nav>
-
-                <div className="p-6 border-t border-white/5">
-                    <button onClick={() => { authService.logout(); navigate('/login'); }} className="flex items-center gap-4 p-4 w-full text-white/30 hover:text-rose-400 hover:bg-rose-500/5 transition-all rounded-xl cursor-pointer group">
-                        <LogOut size={18} className="group-hover:translate-x-1 transition-transform" />
-                        <span className="text-sm font-bold">Déconnexion</span>
-                    </button>
-                </div>
-            </aside>
-
-            {/* Main Content */}
-            <main className="flex-1 flex flex-col overflow-hidden">
-                <header className="h-20 border-b border-white/5 flex items-center justify-between px-10 bg-black/20 backdrop-blur-xl">
-                    <div className="flex items-center gap-6">
-                        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 text-white/40 hover:text-white transition-colors bg-white/5 rounded-lg border border-white/5">
-                            <Menu size={20} />
-                        </button>
-                        <div className="h-6 w-[1px] bg-white/10" />
-                        <div className="text-[11px] font-black tracking-widest text-[#C6A75E] uppercase bg-[#C6A75E]/5 px-3 py-1.5 rounded-md border border-[#C6A75E]/10">
-                            Fulfillment Center
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <div className="flex flex-col items-end">
-                            <span className="text-[10px] font-black text-white/30 tracking-widest uppercase">Authenticated Session</span>
-                            <span className="text-xs font-bold text-white/80">{userInfo?.name || "L'Artisan Textile"}</span>
-                        </div>
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#C6A75E]/20 to-transparent border border-[#C6A75E]/30 flex items-center justify-center font-black text-xs text-[#C6A75E] shadow-inner">
-                            {userInfo?.name?.[0] || "AT"}
-                        </div>
-                    </div>
-                </header>
-
-                <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
-                    {/* Hero Section */}
-                    <div className="mb-16">
-                        <div className="flex items-center gap-2 mb-4">
-                            <div className="w-8 h-[1px] bg-[#C6A75E]" />
-                            <span className="text-[11px] uppercase font-black tracking-[0.4em] text-[#C6A75E]">Ordres de Livraison</span>
-                        </div>
-                        <h1 className="text-5xl font-serif text-white leading-tight">Flux & Commandes</h1>
-                        <p className="text-white/40 mt-4 max-w-xl text-lg font-light leading-relaxed">
-                            Visualisation centralisée des flux textiles confirmés par les Maisons de Couture. 
-                            Gérez les expéditions et assurez la traçabilité de vos matières précieuses.
-                        </p>
-                    </div>
-
-                    {loading ? (
+            {loading ? (
                         <div className="py-24 flex flex-col items-center">
                             <Loader2 className="animate-spin text-[#C6A75E] mb-6" size={48} />
                             <p className="text-[#C6A75E]/50 text-[10px] font-black uppercase tracking-[0.3em]">Synchro avec le réseau logistique...</p>
@@ -326,15 +265,6 @@ const SupplierFabricOrders = () => {
                             })}
                         </div>
                     )}
-                </div>
-            </main>
-            
-            <style dangerouslySetInnerHTML={{ __html: `
-                .custom-scrollbar::-webkit-scrollbar { width: 5px; }
-                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(198,167,94,0.1); border-radius: 10px; }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(198,167,94,0.3); }
-            `}} />
         </div>
     );
 };

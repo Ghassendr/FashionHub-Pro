@@ -27,6 +27,7 @@ urlpatterns = [
     # Projects
     path('projects/', views.handle_projects, name='handle_projects'),
     path('projects/<path:project_id>/submit/', views.submit_project, name='submit_project'),
+    path('projects/<path:project_id>/pay/', views.pay_project_order, name='pay_project_order'),
     path('projects/<path:project_id>/', views.get_project_details, name='get_project_details'),
 
     # Health Check

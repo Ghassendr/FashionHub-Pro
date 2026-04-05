@@ -1,9 +1,9 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { 
-    User, Frame, Layers, History, CreditCard, 
-    Home, Package, Settings, Palette, Mail, ShieldCheck, ListChecks, Truck, 
-    LayoutGrid, Thermometer, Plus, TrendingUp
+import {
+    User, Frame, Layers, History, CreditCard,
+    Home, Package, Settings, Palette, Mail, ShieldCheck, ListChecks, Truck,
+    LayoutGrid, Thermometer, Plus, TrendingUp, Users, Clock
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -15,11 +15,10 @@ const GlobalSidebar = () => {
 
     // Helper for active styling
     const getNavClass = ({ isActive }) => {
-        return `flex items-center gap-4 px-6 py-3 text-[11px] tracking-luxury uppercase font-medium transition-all duration-300 border-l-2 ${
-            isActive 
-                ? 'border-gold text-gold bg-gold/5' 
+        return `flex items-center gap-4 px-6 py-3 text-[11px] tracking-luxury uppercase font-medium transition-all duration-300 border-l-2 ${isActive
+                ? 'border-gold text-gold bg-gold/5'
                 : 'border-transparent text-ivory/40 hover:text-ivory hover:bg-white/5'
-        }`;
+            }`;
     };
 
     const renderLinks = () => {
@@ -51,6 +50,9 @@ const GlobalSidebar = () => {
                             <div className="px-6 mb-4 text-[9px] uppercase tracking-[0.2em] text-ivory/20 font-bold">Main</div>
                             <NavLink to="/fournisseur/dashboard" end className={getNavClass}>
                                 <LayoutGrid size={16} /> Overview
+                            </NavLink>
+                            <NavLink to="/fournisseur/orders" className={getNavClass}>
+                                <ListChecks size={16} /> Client Orders
                             </NavLink>
                             <NavLink to="/fournisseur/creations" className={getNavClass}>
                                 <Package size={16} /> My Inventory
@@ -100,6 +102,12 @@ const GlobalSidebar = () => {
                         </NavLink>
                         <NavLink to="/couturehouse/inquiries" className={getNavClass}>
                             <Mail size={16} /> Inquiries
+                        </NavLink>
+                        <NavLink to="/couturehouse/orders" className={getNavClass}>
+                            <Clock size={16} /> Production & Tracking
+                        </NavLink>
+                        <NavLink to="/couturehouse/create" className={getNavClass}>
+                            <Plus size={16} /> New Creation
                         </NavLink>
                         <NavLink to="/couturehouse/bank-card" className={getNavClass}>
                             <CreditCard size={16} /> Bank Card

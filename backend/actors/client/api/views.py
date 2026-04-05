@@ -592,29 +592,35 @@ def handle_projects(request: HttpRequest):
             return JsonResponse({"error": str(e)}, status=400)
 
     elif request.method == "GET":
-        from actors.couturehouse.models.models import Order
-        
-        projects = ClientProject.objects.filter(client_id=request.user.id).order_by("-created_at")
-        results = []
-        for p in projects:
-            # Determine real tracking status by checking associated SQL orders
-            main_order = Order.objects.filter(inquiry_id=str(p.id)).first()
-            derived_status = p.status
-            if main_order:
-                # If production says completed, it's ready for shipment/payment
-                derived_status = main_order.status
-                
-            results.append({
-                "id": str(p.id),
-                "status": derived_status,
-                "original_status": p.status,
-                "created_at": p.created_at.isoformat() if p.created_at else None,
-                "summary": {
-                    "designs_count": len(p.selected_designs),
-                    "fabrics_count": len(p.selected_fabrics)
-                }
-            })
-        return JsonResponse({"projects": results})
+        try:
+            from actors.couturehouse.models.models import Order
+            
+            projects = ClientProject.objects.filter(client_id=request.user.id).order_by("-created_at")
+            results = []
+            for p in projects:
+                # Determine real tracking status by checking associated SQL orders
+                main_order = Order.objects.filter(inquiry_id=str(p.id)).first()
+                derived_status = p.status
+                if main_order:
+                    # If production says completed, it's ready for shipment/payment
+                    derived_status = main_order.status
+                    
+                results.append({
+                    "id": str(p.id),
+                    "status": derived_status,
+                    "original_status": p.status,
+                    "created_at": p.created_at.isoformat() if p.created_at else None,
+                    "summary": {
+                        "designs_count": len(p.selected_designs),
+                        "fabrics_count": len(p.selected_fabrics)
+                    }
+                })
+            return JsonResponse({"projects": results})
+        except Exception as e:
+            import traceback
+            error_trace = traceback.format_exc()
+            logger.error(f"Error in handle_projects GET: {e}\n{error_trace}")
+            return JsonResponse({"error": str(e), "traceback": error_trace}, status=500)
 
 @api_view(["GET"])
 @permission_classes([permissions.IsAuthenticated])
@@ -790,3 +796,33 @@ def submit_project(request: HttpRequest, project_id: str):
             "error": f"Erreur lors de l'envoi: {str(e)}", 
             "traceback": error_trace
         }, status=500)
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def pay_project_order(request, project_id):
+    """
+    Simulates a payment and updates the SQL Order status.
+    """
+    from actors.couturehouse.models.models import Order
+    from django.utils import timezone
+    
+    try:
+        # Find the order associated with this project/inquiry
+        order = Order.objects.filter(inquiry_id=project_id).first()
+        if not order:
+            return JsonResponse({"error": "Aucune commande associée à ce projet."}, status=404)
+        
+        # In a real app, integrate Stripe/PayPal here
+        order.is_paid = True
+        order.payment_date = timezone.now()
+        order.save()
+        
+        return JsonResponse({
+            "message": "Paiement réussi.",
+            "is_paid": True,
+            "payment_date": order.payment_date.isoformat()
+        })
+    except Exception as e:
+        logger.error(f"Payment failure: {e}")
+        return JsonResponse({"error": str(e)}, status=500)
+

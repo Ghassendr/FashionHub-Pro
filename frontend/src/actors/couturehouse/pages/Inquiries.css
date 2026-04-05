@@ -74,3 +74,45 @@
 .inquiry-3d-box .bg-noir\/80 {
   background: rgba(8, 8, 10, 0.8);
 }
+
+.tab-button {
+  padding: 10px 24px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: rgba(255, 255, 255, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.tab-button:hover {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.tab-button.active {
+  background: rgba(212, 175, 55, 0.1);
+  color: #d4af37;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.bg-black-soft {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.fabric-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.status-pending { color: #f59e0b; background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.2); }
+.status-production { color: #d4af37; background: rgba(212, 175, 55, 0.1); border-color: rgba(212, 175, 55, 0.2); }
+.status-completed { color: #10b981; background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.2); }

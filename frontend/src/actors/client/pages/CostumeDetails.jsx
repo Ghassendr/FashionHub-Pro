@@ -58,7 +58,7 @@ const CostumeDetails = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-noir flex items-center justify-center pt-32">
+            <div className="min-h-screen bg-noir flex items-center justify-center">
                 <Loader2 className="w-10 h-10 text-gold animate-spin" />
             </div>
         );
@@ -66,7 +66,7 @@ const CostumeDetails = () => {
 
     if (!project) {
         return (
-            <div className="min-h-screen bg-noir pt-32 text-center">
+            <div className="min-h-screen bg-noir text-center">
                 <h1 className="text-3xl font-display text-ivory/50">Projet introuvable</h1>
                 <button onClick={() => navigate('/client/costumes')} className="mt-8 text-gold uppercase tracking-widest text-xs">Retour</button>
             </div>
@@ -82,7 +82,7 @@ const CostumeDetails = () => {
     });
 
     return (
-        <div className="min-h-screen bg-noir text-ivory pt-32 pb-20">
+        <div className="min-h-screen bg-noir text-ivory pb-20">
             <div className="max-w-[1200px] mx-auto px-8">
                 {/* Header */}
                 <div className="mb-12">

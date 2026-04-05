@@ -625,6 +625,41 @@ def complete_order(request, id):
 
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
+def ship_order(request, id):
+    """
+    Marks a production order as 'shipped' after payment.
+    """
+    order = get_object_or_404(Order, id=id)
+    house = get_object_or_404(CoutureHouseProfile, user=request.user)
+    
+    if order.couture_house != house:
+        return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+        
+    if not order.is_paid:
+        return Response({"error": "Le paiement est requis avant l'expédition."}, status=status.HTTP_400_BAD_REQUEST)
+        
+    order.status = 'shipped'
+    order.save()
+    
+    # Sync with ClientProject if linked
+    if order.inquiry_id:
+        from actors.client.models.models import ClientProject
+        try:
+            from bson import ObjectId
+            project = ClientProject.objects.get(id=ObjectId(order.inquiry_id))
+            project.status = 'shipped'
+            project.save()
+        except Exception as e:
+            print(f"Error updating client project: {e}")
+            
+    return Response({
+        "status": "shipped",
+        "message": "Costume expédié avec succès."
+    })
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
 def confirm_fabric_receipt(request, order_id):
     """
     Finalizes a Fabric Order from the Couture House side.

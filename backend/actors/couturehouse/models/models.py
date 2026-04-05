@@ -139,6 +139,9 @@ class Order(django_models.Model):
     status = django_models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     fabric_status = django_models.CharField(max_length=20, choices=FABRIC_STATUS_CHOICES, default='available')
     
+    is_paid = django_models.BooleanField(default=False)
+    payment_date = django_models.DateTimeField(null=True, blank=True)
+    
     created_at = django_models.DateTimeField(auto_now_add=True)
     updated_at = django_models.DateTimeField(auto_now=True)
 

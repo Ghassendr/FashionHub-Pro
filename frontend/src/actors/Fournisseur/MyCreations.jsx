@@ -127,7 +127,7 @@ function Dashboard() {
     try {
       setLoading(true);
       setError("");
-      const response = await fetch("http://localhost:8000/api/fabrics", {
+      const response = await fetch("http://localhost:8000/api/fournisseur/fabrics", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -194,7 +194,7 @@ function Dashboard() {
   };
 
   const handleEditClick = (fabric) => {
-    setEditingId(fabric._id);
+    setEditingId(fabric.id || fabric._id);
     setFormData({
       imageFile: null,
       quantite: fabric.quantite,
@@ -253,8 +253,8 @@ function Dashboard() {
       setIsSubmitting(true);
       const method = editingId ? "PUT" : "POST";
       const url = editingId
-        ? `http://localhost:8000/api/fabrics/${editingId}`
-        : "http://localhost:8000/api/fabrics";
+        ? `http://localhost:8000/api/fournisseur/fabrics/${editingId}`
+        : "http://localhost:8000/api/fournisseur/fabrics";
 
       // Use FormData for file upload
       const submitData = new FormData();
@@ -308,7 +308,7 @@ function Dashboard() {
 
     try {
       setError("");
-      const response = await fetch(`http://localhost:8000/api/fabrics/${id}`, {
+      const response = await fetch(`http://localhost:8000/api/fournisseur/fabrics/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -571,10 +571,10 @@ function Dashboard() {
             </thead>
             <tbody>
               {fabrics.map((fabric) => (
-                <tr key={fabric._id}>
+                <tr key={fabric.id || fabric._id}>
                   <td>
                     <img
-                      src={`http://localhost:8000/api/images/${fabric.id || fabric._id}`}
+                      src={`http://localhost:8000/api/fournisseur/images/${fabric.id || fabric._id}`}
                       alt="Fabric"
                       className="fabric-thumbnail"
                       onError={(e) => { e.target.src = 'https://via.placeholder.com/80x100?text=No+Image'; }}

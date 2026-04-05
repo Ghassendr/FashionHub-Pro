@@ -11,7 +11,6 @@ import "./Settings.css";
 
 function Settings() {
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -91,88 +90,20 @@ function Settings() {
   };
 
   return (
-    <div className="flex h-screen bg-[#0A0A0A] font-inter text-white overflow-hidden">
-      
-      {/* Shared Atelier Sidebar */}
-      <aside className={`w-64 flex-shrink-0 border-r border-white/5 bg-black/40 backdrop-blur-2xl flex flex-col transition-all duration-500 ease-in-out ${sidebarOpen ? "ml-0" : "-ml-64"}`}>
-        <div className="p-8 border-b border-white/5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#C6A75E] to-[#8E793E] rounded-lg flex items-center justify-center text-black font-black shadow-[0_0_20px_rgba(198,167,94,0.3)]">FP</div>
-              <span className="text-sm font-black tracking-[0.2em] text-[#C6A75E]">SUPPLIER</span>
-            </div>
+    <div className="animate-fade-in p-6 lg:p-12 max-w-[1600px] mx-auto min-h-screen text-white">
+      {/* Context Header */}
+      <div className="mb-20 border-b border-gold/10 pb-12">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-8 h-[1px] bg-[#C6A75E]" />
+          <span className="text-[10px] uppercase font-black tracking-[0.4em] text-[#C6A75E]">Configuration Atelier</span>
         </div>
+        <h1 className="text-6xl font-serif text-white italic tracking-tight leading-none mb-6">Profile Identity</h1>
+        <p className="text-white/30 max-w-xl text-lg font-light leading-relaxed">
+          Maintenez vos informations à jour pour garantir la traçabilité de vos textiles. Vos détails sont visibles par les Maisons de Couture partenaires.
+        </p>
+      </div>
 
-        <nav className="flex-1 p-6 space-y-2">
-            <div className="text-[10px] uppercase font-black text-white/30 tracking-widest mb-4 px-4">Inventaire & Flux</div>
-            
-            <div onClick={() => navigate("/fournisseur/dashboard")} className="flex items-center gap-4 p-4 text-white/50 hover:text-[#C6A75E] hover:bg-white/[0.03] transition-all rounded-xl cursor-pointer group">
-                <Layers size={18} className="group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-medium">Catalogue Matières</span>
-            </div>
-
-            <div onClick={() => navigate("/fournisseur/orders")} className="flex items-center gap-4 p-4 text-white/50 hover:text-[#C6A75E] hover:bg-white/[0.03] transition-all rounded-xl cursor-pointer group">
-                <ShoppingCart size={18} className="group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-medium">Commandes Clients</span>
-            </div>
-
-            <div className="pt-8 text-[10px] uppercase font-black text-white/30 tracking-widest mb-4 px-4">Paramètres</div>
-            <div className="flex items-center gap-4 p-4 text-[#C6A75E] bg-[#C6A75E]/10 rounded-xl border border-[#C6A75E]/20 shadow-[0_0_15px_rgba(198,167,94,0.05)]">
-                <SettingsIcon size={18} />
-                <span className="text-sm font-bold">Atelier Settings</span>
-            </div>
-        </nav>
-
-        <div className="p-6 border-t border-white/5">
-            <button onClick={() => { authService.logout(); navigate("/login"); }} className="flex items-center gap-4 p-4 w-full text-white/30 hover:text-rose-400 hover:bg-rose-500/5 transition-all rounded-xl cursor-pointer group">
-                <LogOut size={18} className="group-hover:translate-x-1 transition-transform" />
-                <span className="text-sm font-bold">Déconnexion</span>
-            </button>
-        </div>
-      </aside>
-
-      {/* Settings View */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        <header className="h-20 border-b border-white/5 flex items-center justify-between px-10 bg-black/20 backdrop-blur-xl shrink-0">
-          <div className="flex items-center gap-6">
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 text-white/40 hover:text-white transition-colors bg-white/5 rounded-lg border border-white/5">
-              <Menu size={20} />
-            </button>
-            <div className="h-6 w-[1px] bg-white/10" />
-            <div className="text-[11px] font-black tracking-widest text-[#C6A75E] uppercase bg-[#C6A75E]/5 px-3 py-1.5 rounded-md border border-[#C6A75E]/10">
-              Profile Configuration
-            </div>
-          </div>
-          <div className="flex items-center gap-6">
-            <button onClick={() => navigate("/fournisseur/dashboard")} className="text-[10px] font-black tracking-widest text-white/30 uppercase hover:text-white transition-colors flex items-center gap-2 mr-4">
-              <ArrowLeft size={12}/> Retour
-            </button>
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col items-end">
-                <span className="text-[10px] font-black text-white/30 tracking-widest uppercase">Authenticated Session</span>
-                <span className="text-xs font-bold text-white/80">{userInfo?.name || "L'Artisan Textile"}</span>
-              </div>
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#C6A75E]/20 to-transparent border border-[#C6A75E]/30 flex items-center justify-center font-black text-xs text-[#C6A75E] shadow-inner">
-                  {userInfo?.name?.[0] || "AT"}
-              </div>
-            </div>
-          </div>
-        </header>
-
-        <div className="flex-1 overflow-y-auto px-16 py-12 custom-scrollbar">
-          
-          {/* Hero Section */}
-          <div className="mb-20">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-[1px] bg-[#C6A75E]" />
-              <span className="text-[10px] uppercase font-black tracking-[0.4em] text-[#C6A75E]">Configuration Atelier</span>
-            </div>
-            <h1 className="text-6xl font-serif text-white italic tracking-tight leading-none mb-6">Profil Identity</h1>
-            <p className="text-white/30 max-w-xl text-lg font-light leading-relaxed">
-              Maintenez vos informations à jour pour garantir la traçabilité de vos textiles. Vos détails sont visibles par les Maisons de Couture partenaires.
-            </p>
-          </div>
-
-          <div className="max-w-4xl space-y-12 pb-24">
+      <div className="max-w-4xl space-y-12 pb-24">
             
             {/* Messages */}
             {error && (
@@ -292,15 +223,6 @@ function Settings() {
 
             </form>
           </div>
-        </div>
-      </main>
-      
-      <style dangerouslySetInnerHTML={{ __html: `
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(198,167,94,0.1); border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(198,167,94,0.3); }
-      `}} />
     </div>
   );
 }

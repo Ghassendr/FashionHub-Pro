@@ -26,6 +26,7 @@ urlpatterns = [
     path('orders/<int:id>/update-quantity/', views.update_order_quantity, name='update_order_quantity'),
     path('orders/<int:id>/start/', views.start_production, name='start-production'),
     path('orders/<int:id>/complete/', views.complete_order, name='complete-order'),
+    path('orders/<int:id>/ship/', views.ship_order, name='ship-order'),
     path('orders/<int:order_id>/confirm-receipt/', views.confirm_fabric_receipt, name='confirm-fabric-receipt'),
 
     # Local Stock

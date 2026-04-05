@@ -2,7 +2,7 @@ import React from 'react';
 import { Package, Truck, CheckCircle, Clock, AlertCircle, Sparkles, CreditCard } from 'lucide-react';
 import './LogisticsTracking.css';
 
-const ClientTrackingBar = ({ status, onPay }) => {
+const ClientTrackingBar = ({ status, onPay, isPaid }) => {
     // Client milestone mappings: Couture House responsibility only
     const milestones = [
         {
@@ -94,7 +94,7 @@ const ClientTrackingBar = ({ status, onPay }) => {
                 </div>
                 
                 <div className="footer-action">
-                    {onPay && (
+                    {onPay && !isPaid && (
                         <button
                             className="footer-action-btn flex items-center gap-2"
                             onClick={onPay}
@@ -102,6 +102,12 @@ const ClientTrackingBar = ({ status, onPay }) => {
                             <CreditCard size={14} />
                             Payer le solde
                         </button>
+                    )}
+                    {isPaid && status !== 'shipped' && (
+                        <div className="footer-success flex items-center gap-2">
+                            <CheckCircle size={16} />
+                            Paiement Confirmé · En attente d'expédition
+                        </div>
                     )}
                 </div>
             </div>

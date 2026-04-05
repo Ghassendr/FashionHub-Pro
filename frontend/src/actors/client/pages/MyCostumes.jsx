@@ -38,7 +38,7 @@ const MyCostumes = () => {
     }, [token]);
 
     return (
-        <div className="min-h-screen bg-noir text-ivory pt-32 pb-20">
+        <div className="min-h-screen bg-noir text-ivory pb-20">
             <div className="wrapper max-w-[1200px]">
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">

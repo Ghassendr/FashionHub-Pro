@@ -119,6 +119,20 @@ const OrderDetail = () => {
         }
     };
 
+    const handleShipOrder = async () => {
+        try {
+            const response = await fetch(`${API_BASE}/api/couturehouse/orders/${id}/ship/`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                fetchOrderDetails();
+            }
+        } catch (err) {
+            console.error("Failed to ship order", err);
+        }
+    };
+
     useEffect(() => {
         if (!token) {
             navigate('/');
@@ -213,11 +227,19 @@ const OrderDetail = () => {
                                 <p className="text-zinc-500 uppercase tracking-widest text-[10px] font-bold">Dossier de Production — ORDR-{order.id.toString().padStart(4, '0')}</p>
                             </div>
                             <div className="flex flex-col items-end gap-2">
-                                <div className={`px-6 py-2 rounded-full text-[10px] uppercase tracking-widest font-black border ${order.status === 'in_production' ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/5' :
-                                        order.status === 'completed' ? 'text-blue-400 border-blue-500/20 bg-blue-500/5' :
-                                            'text-amber-400 border-amber-500/20 bg-amber-500/5'
-                                    }`}>
-                                    {order.status.replace('_', ' ')}
+                                <div className="flex items-center gap-2">
+                                    {order.is_paid && (
+                                        <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[8px] uppercase tracking-widest font-black rounded-lg flex items-center gap-1.5">
+                                            <CreditCard size={10} /> Paiement Reçu
+                                        </div>
+                                    )}
+                                    <div className={`px-6 py-2 rounded-full text-[10px] uppercase tracking-widest font-black border ${order.status === 'in_production' ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/5' :
+                                            order.status === 'completed' ? 'text-blue-400 border-blue-500/20 bg-blue-500/5' :
+                                                order.status === 'shipped' ? 'text-purple-400 border-purple-500/20 bg-purple-500/5' :
+                                                    'text-amber-400 border-amber-500/20 bg-amber-500/5'
+                                        }`}>
+                                        {order.status.replace('_', ' ')}
+                                    </div>
                                 </div>
                                 {order.status === 'in_production' && (
                                     <button
@@ -225,6 +247,17 @@ const OrderDetail = () => {
                                         className="text-[9px] uppercase tracking-widest font-black text-gold hover:text-ivory transition-colors flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/5"
                                     >
                                         <CheckCircle2 size={12} /> Terminer Production
+                                    </button>
+                                )}
+                                {order.status === 'completed' && (
+                                    <button
+                                        onClick={handleShipOrder}
+                                        disabled={!order.is_paid}
+                                        className={`text-[9px] uppercase tracking-widest font-black flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${order.is_paid 
+                                            ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20' 
+                                            : 'text-zinc-600 border-zinc-800 bg-white/5 cursor-not-allowed opacity-50'}`}
+                                    >
+                                        <Truck size={12} /> {order.is_paid ? "Confirmer Expédition" : "En attente de paiement"}
                                     </button>
                                 )}
                             </div>

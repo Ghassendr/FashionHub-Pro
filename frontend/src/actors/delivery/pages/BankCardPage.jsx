@@ -7,7 +7,7 @@ const BankCardPage = () => {
     const navigate = useNavigate();
 
     return (
-        <div className="min-h-screen bg-[#0d0d0b] text-[#f5f0e8] pt-32 pb-20 selection:bg-gold/30">
+        <div className="min-h-screen bg-[#0d0d0b] text-[#f5f0e8] pb-20 selection:bg-gold/30">
             <div className="max-w-[700px] mx-auto px-6 animate-fade-in">
                 
                 {/* Navigation Back */}
