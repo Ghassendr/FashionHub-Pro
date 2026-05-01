@@ -6,6 +6,7 @@ class Carrier(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='carrier_profile')
     company_name = models.CharField(max_length=255)
     contact_phone = models.CharField(max_length=50, blank=True)
+    address = models.TextField(blank=True)
     
     VERIFICATION_CHOICES = (
         ('pending', 'Pending'),
@@ -30,6 +31,7 @@ class Carrier(models.Model):
     insurance_document_url = models.TextField(blank=True)
     vehicle_photos_url = models.TextField(blank=True)
     luxury_reference_url = models.TextField(blank=True)
+    introduction_video = models.FileField(upload_to='carrier_videos/', blank=True, null=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     
@@ -93,8 +95,9 @@ class ShipmentRequest(models.Model):
     source_name = models.CharField(max_length=255)
     dest_name = models.CharField(max_length=255)
     
-    # Link to the underlying order (optional, could be a fabric order or a client order)
+    # Link to the underlying order
     fabric_order_id = models.IntegerField(null=True, blank=True)
+    client_order_id = models.IntegerField(null=True, blank=True)
     
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     

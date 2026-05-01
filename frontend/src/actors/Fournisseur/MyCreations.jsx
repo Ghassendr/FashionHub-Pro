@@ -28,6 +28,8 @@ function Dashboard() {
   const navigate = useNavigate();
   // sidebar state removed
   const [fabrics, setFabrics] = useState([]);
+  const [jewelry, setJewelry] = useState([]);
+  const [activeTab, setActiveTab] = useState("fabrics"); // "fabrics" or "jewelry"
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -37,6 +39,7 @@ function Dashboard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stats, setStats] = useState({
     totalFabrics: 0,
+    totalJewelry: 0,
     totalQuantity: 0,
     avgPrice: 0,
     topMaterial: "",
@@ -49,6 +52,10 @@ function Dashboard() {
     materiel: "",
     prix: "",
     description: "",
+    // Jewelry specific
+    name: "",
+    type: "",
+    fabric: "",
   });
   const [imagePreview, setImagePreview] = useState("");
 
@@ -74,6 +81,7 @@ function Dashboard() {
 
         // Token is valid, fetch data
         fetchFabrics();
+        fetchJewelry();
         fetchCardStatus();
 
         // Add debug button for troubleshooting
@@ -92,36 +100,28 @@ function Dashboard() {
 
   // Calculate statistics
   useEffect(() => {
-    if (fabrics.length > 0) {
-      const totalQuantity = fabrics.reduce(
-        (sum, f) => sum + (f.quantite || 0),
-        0,
-      );
-      const avgPrice =
-        fabrics.reduce((sum, f) => sum + (f.prix || 0), 0) / fabrics.length;
+    const totalQuantity = fabrics.reduce((sum, f) => sum + (f.quantite || 0), 0);
+    const avgPrice = fabrics.length > 0 
+      ? fabrics.reduce((sum, f) => sum + (f.prix || 0), 0) / fabrics.length 
+      : 0;
 
-      // Find most common material
-      const materials = {};
-      fabrics.forEach((f) => {
-        if (f.materiel) {
-          materials[f.materiel] = (materials[f.materiel] || 0) + 1;
-        }
-      });
-      const topMaterial =
-        Object.keys(materials).length > 0
-          ? Object.keys(materials).reduce((a, b) =>
-            materials[a] > materials[b] ? a : b,
-          )
-          : "N/A";
+    // Find most common material
+    const materials = {};
+    fabrics.forEach((f) => {
+      if (f.materiel) materials[f.materiel] = (materials[f.materiel] || 0) + 1;
+    });
+    const topMaterial = Object.keys(materials).length > 0
+      ? Object.keys(materials).reduce((a, b) => materials[a] > materials[b] ? a : b)
+      : "N/A";
 
-      setStats({
-        totalFabrics: fabrics.length,
-        totalQuantity: totalQuantity.toFixed(2),
-        avgPrice: avgPrice.toFixed(2),
-        topMaterial,
-      });
-    }
-  }, [fabrics]);
+    setStats({
+      totalFabrics: fabrics.length,
+      totalJewelry: jewelry.length,
+      totalQuantity: totalQuantity.toFixed(2),
+      avgPrice: avgPrice.toFixed(2),
+      topMaterial,
+    });
+  }, [fabrics, jewelry]);
 
   const fetchFabrics = async () => {
     try {
@@ -149,18 +149,25 @@ function Dashboard() {
         setError(errorData.error || "Failed to load fabrics");
       }
     } catch (err) {
-      console.error("=== FETCH FABRICS ERROR ===");
-      console.error("Error:", err.message || err);
-      console.error("Token:", token ? "Present" : "Missing");
-      console.error("Backend URL: http://localhost:8000/api/fabrics");
-      console.error("Frontend: http://localhost:5173");
-      console.log("\nDebugging Steps:");
-      console.log("1. Check if backend is running on port 8000");
-      console.log("2. Refresh browser (F5)");
-      console.log("3. Check Network tab for OPTIONS requests and CORS errors");
-      setError(
-        "Cannot reach backend on http://localhost:8000. Make sure backend is running.",
-      );
+      console.error("Fetch fabrics error:", err);
+      setError("Cannot reach backend. Make sure it is running.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchJewelry = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("http://localhost:8000/api/fournisseur/jewelry", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setJewelry(data.jewelry || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch jewelry:", err);
     } finally {
       setLoading(false);
     }
@@ -188,6 +195,9 @@ function Dashboard() {
       materiel: "",
       prix: "",
       description: "",
+      name: "",
+      type: "",
+      fabric: "",
     });
     setImagePreview("");
     setShowForm(true);
@@ -197,10 +207,13 @@ function Dashboard() {
     setEditingId(fabric.id || fabric._id);
     setFormData({
       imageFile: null,
-      quantite: fabric.quantite,
-      materiel: fabric.materiel,
-      prix: fabric.prix,
-      description: fabric.description,
+      quantite: item.quantite,
+      materiel: item.materiel,
+      prix: item.prix,
+      description: item.description,
+      name: item.name || "",
+      type: item.type || "",
+      fabric: item.fabric || "",
     });
     // Show existing image if available
     setImagePreview(fabric.image || "");
@@ -227,7 +240,7 @@ function Dashboard() {
 
   const validateForm = () => {
     if (!formData.imageFile && !editingId) {
-      setFormError("Fabric image is required");
+      setFormError(`${activeTab === "fabrics" ? "Fabric" : "Jewelry"} image is required`);
       return false;
     }
     if (!formData.quantite || parseFloat(formData.quantite) <= 0) {
@@ -252,9 +265,10 @@ function Dashboard() {
     try {
       setIsSubmitting(true);
       const method = editingId ? "PUT" : "POST";
+      const endpoint = activeTab === "fabrics" ? "fabrics" : "jewelry";
       const url = editingId
-        ? `http://localhost:8000/api/fournisseur/fabrics/${editingId}`
-        : "http://localhost:8000/api/fournisseur/fabrics";
+        ? `http://localhost:8000/api/fournisseur/${endpoint}/${editingId}`
+        : `http://localhost:8000/api/fournisseur/${endpoint}`;
 
       // Use FormData for file upload
       const submitData = new FormData();
@@ -265,6 +279,11 @@ function Dashboard() {
       submitData.append("materiel", formData.materiel);
       submitData.append("prix", formData.prix);
       submitData.append("description", formData.description);
+      
+      if (activeTab === "jewelry") {
+        submitData.append("name", formData.name);
+        submitData.append("type", formData.type);
+      }
 
       const response = await fetch(url, {
         method,
@@ -277,17 +296,17 @@ function Dashboard() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Failed to save fabric");
+        setError(data.error || "Failed to save item");
         return;
       }
 
       setSuccess(
         editingId
-          ? "Fabric updated successfully!"
-          : "Fabric added successfully!",
+          ? `${activeTab === "fabrics" ? "Fabric" : "Jewelry"} updated successfully!`
+          : `${activeTab === "fabrics" ? "Fabric" : "Jewelry"} added successfully!`,
       );
       setShowForm(false);
-      fetchFabrics();
+      activeTab === "fabrics" ? fetchFabrics() : fetchJewelry();
 
       setTimeout(() => setSuccess(""), 4000);
     } catch (err) {
@@ -301,21 +320,22 @@ function Dashboard() {
   const handleDelete = async (id) => {
     if (
       !window.confirm(
-        "Are you sure you want to delete this fabric? This action cannot be undone.",
+        `Are you sure you want to delete this ${activeTab === "fabrics" ? "fabric" : "jewelry"}? This action cannot be undone.`,
       )
     )
       return;
 
     try {
       setError("");
-      const response = await fetch(`http://localhost:8000/api/fournisseur/fabrics/${id}`, {
+      const endpoint = activeTab === "fabrics" ? "fabrics" : "jewelry";
+      const response = await fetch(`http://localhost:8000/api/fournisseur/${endpoint}/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
-        setSuccess("Fabric deleted successfully!");
-        fetchFabrics();
+        setSuccess(`${activeTab === "fabrics" ? "Fabric" : "Jewelry"} deleted successfully!`);
+        activeTab === "fabrics" ? fetchFabrics() : fetchJewelry();
         setTimeout(() => setSuccess(""), 4000);
       } else if (response.status === 401) {
         setError("Session expired. Please login again.");
@@ -323,7 +343,7 @@ function Dashboard() {
         navigate("/login");
       } else {
         const errorData = await response.json().catch(() => ({}));
-        setError(errorData.error || "Failed to delete fabric");
+        setError(errorData.error || `Failed to delete ${activeTab}`);
       }
     } catch (err) {
       console.error("Delete error:", err);
@@ -402,8 +422,11 @@ function Dashboard() {
             <Package size={24} />
           </div>
           <div className="stat-content">
-            <div className="stat-label">Total Fabrics</div>
-            <div className="stat-value">{stats.totalFabrics}</div>
+            <div className="stat-label">Total Assets</div>
+            <div className="stat-value">{stats.totalFabrics + stats.totalJewelry}</div>
+            <div className="text-[10px] text-ivory/40">
+              {stats.totalFabrics} Fabrics · {stats.totalJewelry} Jewelry
+            </div>
           </div>
         </div>
         <div className="stat-card">
@@ -435,12 +458,30 @@ function Dashboard() {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-4 mb-8 border-b border-gold/10 pb-4">
+        <button
+          className={`px-6 py-2 rounded-xl transition-all ${activeTab === "fabrics" ? "bg-gold text-noir font-bold" : "text-ivory/40 hover:text-ivory"}`}
+          onClick={() => setActiveTab("fabrics")}
+        >
+          Fabrics
+        </button>
+        <button
+          className={`px-6 py-2 rounded-xl transition-all ${activeTab === "jewelry" ? "bg-gold text-noir font-bold" : "text-ivory/40 hover:text-ivory"}`}
+          onClick={() => setActiveTab("jewelry")}
+        >
+          Jewelry
+        </button>
+      </div>
+
       {/* Content Header */}
       <div className="content-header mb-8">
-        <h2 className="text-2xl font-display text-ivory/80">Inventory Assets</h2>
+        <h2 className="text-2xl font-display text-ivory/80">
+          {activeTab === "fabrics" ? "Fabric Assets" : "Jewelry Collection"}
+        </h2>
         <button className="btn-primary" onClick={handleAddClick}>
           <Plus size={18} />
-          Add Fabric
+          Add {activeTab === "fabrics" ? "Fabric" : "Jewelry"}
         </button>
       </div>
 
@@ -449,7 +490,7 @@ function Dashboard() {
         <div className="modal-overlay">
           <div className="modal-card">
             <div className="modal-header">
-              <h3>{editingId ? "Edit Fabric" : "Add New Fabric"}</h3>
+              <h3>{editingId ? `Edit ${activeTab === "fabrics" ? "Fabric" : "Jewelry"}` : `Add New ${activeTab === "fabrics" ? "Fabric" : "Jewelry"}`}</h3>
               <button
                 className="modal-close"
                 onClick={() => setShowForm(false)}
@@ -468,7 +509,7 @@ function Dashboard() {
 
               {/* Image Upload Section */}
               <div className="form-group">
-                <label>Fabric Image *</label>
+                <label>{activeTab === "fabrics" ? "Fabric" : "Jewelry"} Image *</label>
                 <div className="image-upload-wrapper">
                   <input
                     type="file"
@@ -485,7 +526,7 @@ function Dashboard() {
                       ) : (
                         <>
                           <div className="upload-icon">📸</div>
-                          <p className="upload-text">Upload fabric image</p>
+                          <p className="upload-text">Upload {activeTab === "fabrics" ? "fabric" : "jewelry"} image</p>
                         </>
                       )}
                     </div>
@@ -493,8 +534,48 @@ function Dashboard() {
                 </div>
               </div>
 
+              {activeTab === "jewelry" && (
+                <>
+                  <div className="form-group">
+                    <label>Jewelry Name *</label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Type (Ring, Necklace, etc.)</label>
+                    <input
+                      type="text"
+                      name="type"
+                      value={formData.type}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Fabric Used (Optional)</label>
+                    <select
+                      name="fabric"
+                      value={formData.fabric || ""}
+                      onChange={handleInputChange}
+                      className="form-select"
+                    >
+                      <option value="">None</option>
+                      {fabrics.map((f) => (
+                        <option key={f.id || f._id} value={f.id || f._id}>
+                          {f.materiel} ({f.quantite}m available)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
+
               <div className="form-group">
-                <label>Quantity (meters) *</label>
+                <label>Quantity {activeTab === "fabrics" ? "(meters)" : "(units)"} *</label>
                 <input
                   type="number"
                   name="quantite"
@@ -515,7 +596,7 @@ function Dashboard() {
               </div>
 
               <div className="form-group">
-                <label>Price (per meter)</label>
+                <label>Price {activeTab === "fabrics" ? "(per meter)" : "(per unit)"}</label>
                 <input
                   type="number"
                   name="prix"
@@ -540,7 +621,7 @@ function Dashboard() {
                   Cancel
                 </button>
                 <button type="submit" className="btn-primary" disabled={isSubmitting}>
-                  {isSubmitting ? "Saving..." : (editingId ? "Update" : "Add") + " Fabric"}
+                  {isSubmitting ? "Saving..." : (editingId ? "Update" : "Add") + ` ${activeTab === "fabrics" ? "Fabric" : "Jewelry"}`}
                 </button>
               </div>
             </form>
@@ -548,56 +629,67 @@ function Dashboard() {
         </div>
       )}
 
-      {/* Fabrics Table */}
       <div className="table-container">
         {loading ? (
-          <p className="loading">Loading fabrics...</p>
-        ) : fabrics.length === 0 ? (
+          <p className="loading">Loading...</p>
+        ) : (activeTab === "fabrics" ? fabrics : jewelry).length === 0 ? (
           <div className="empty-state py-20 text-center border border-dashed border-gold/10">
             <Package size={48} className="mx-auto mb-4 opacity-20" />
-            <p className="text-ivory/40 italic">No fabrics yet. Add your first masterpiece!</p>
+            <p className="text-ivory/40 italic">No {activeTab} yet. Add your first masterpiece!</p>
           </div>
         ) : (
           <table className="fabrics-table w-full">
             <thead>
               <tr>
                 <th>Image</th>
-                <th>Color</th>
-                <th>Qty (m)</th>
+                {activeTab === "jewelry" && <th>Name</th>}
+                {activeTab === "fabrics" && <th>Color</th>}
+                <th>Qty</th>
                 <th>Material</th>
-                <th>Price/m</th>
+                <th>Price</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {fabrics.map((fabric) => (
-                <tr key={fabric.id || fabric._id}>
+              {(activeTab === "fabrics" ? fabrics : jewelry).map((item) => (
+                <tr key={item.id || item._id}>
                   <td>
                     <img
-                      src={`http://localhost:8000/api/fournisseur/images/${fabric.id || fabric._id}`}
-                      alt="Fabric"
+                      src={`http://localhost:8000/api/fournisseur/${activeTab === "fabrics" ? "images" : "jewelry/images"}/${item.id || item._id}`}
+                      alt="Thumbnail"
                       className="fabric-thumbnail"
                       onError={(e) => { e.target.src = 'https://via.placeholder.com/80x100?text=No+Image'; }}
                     />
                   </td>
-                  <td>
-                    {fabric.color && Array.isArray(fabric.color) && fabric.color.length === 3 ? (
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-5 h-5 rounded-full border border-white/10"
-                          style={{ backgroundColor: `rgb(${fabric.color[0]}, ${fabric.color[1]}, ${fabric.color[2]})` }}
-                        />
-                        <span className="text-[10px] text-ivory/40">RGB({fabric.color.join(',')})</span>
-                      </div>
-                    ) : "-"}
-                  </td>
-                  <td className="font-serif italic">{fabric.quantite}</td>
-                  <td>{fabric.materiel}</td>
-                  <td className="text-gold">${parseFloat(fabric.prix || 0).toFixed(2)}</td>
+                  {activeTab === "jewelry" && (
+                    <td>
+                      {item.name}
+                      {item.fabric && (
+                        <div className="text-[10px] text-gold mt-1">
+                          Uses: {fabrics.find(f => (f.id || f._id) === item.fabric)?.materiel || "Selected Fabric"}
+                        </div>
+                      )}
+                    </td>
+                  )}
+                  {activeTab === "fabrics" && (
+                    <td>
+                      {item.color && Array.isArray(item.color) && item.color.length === 3 ? (
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-5 h-5 rounded-full border border-white/10"
+                            style={{ backgroundColor: `rgb(${item.color[0]}, ${item.color[1]}, ${item.color[2]})` }}
+                          />
+                        </div>
+                      ) : "-"}
+                    </td>
+                  )}
+                  <td className="font-serif italic">{item.quantite}</td>
+                  <td>{item.materiel}</td>
+                  <td className="text-gold">${parseFloat(item.prix || 0).toFixed(2)}</td>
                   <td>
                     <div className="flex gap-2">
-                      <button className="btn-icon" onClick={() => handleEditClick(fabric)}><Edit2 size={16} /></button>
-                      <button className="btn-icon text-red-400" onClick={() => handleDelete(fabric._id)}><Trash2 size={16} /></button>
+                      <button className="btn-icon" onClick={() => handleEditClick(item)}><Edit2 size={16} /></button>
+                      <button className="btn-icon text-red-400" onClick={() => handleDelete(item.id || item._id)}><Trash2 size={16} /></button>
                     </div>
                   </td>
                 </tr>

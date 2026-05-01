@@ -10,7 +10,7 @@ import os
 
 from ..models import Design, DesignMedia, DesignLike, Order, LocalFabricStock, CoutureHouseProfile
 from .serializers import (
-    DesignSerializer, DesignWriteSerializer, DesignMediaSerializer,
+    DesignSerializer, DesignMediaSerializer,
     OrderSerializer, LocalFabricStockSerializer
 )
 
@@ -20,33 +20,96 @@ class IsFashionHouseOwner(permissions.BasePermission):
 
 # --- Designs ---
 
-class DesignListCreateView(generics.ListCreateAPIView):
-    permission_classes = [permissions.IsAuthenticated]
-    serializer_class = DesignSerializer
+@api_view(["GET", "POST"])
+@permission_classes([permissions.IsAuthenticated])
+def design_list_create(request):
+    """
+    GET: List all designs owned by this house.
+    POST: Create a new design.
+    """
+    if request.method == "GET":
+        designs = Design.objects.filter(fashion_house_id=request.user.id)
+        serializer = DesignSerializer(designs, many=True, context={'request': request})
+        return Response(serializer.data)
 
-    def get_serializer_class(self):
-        if self.request.method == "POST":
-            return DesignWriteSerializer
-        return DesignSerializer
+    # POST - create design directly without the buggy DocumentSerializer validation
+    try:
+        data = request.data
+        title = data.get('title', '').strip()
+        if not title:
+            return Response({"title": ["Ce champ est obligatoire."]}, status=status.HTTP_400_BAD_REQUEST)
 
-    def get_queryset(self):
-        return Design.objects.filter(fashion_house_id=self.request.user.id)
+        # Handle morphologies - can be a list or a comma-separated string
+        morphologies = data.get('morphologies', [])
+        if isinstance(morphologies, str):
+            morphologies = [m.strip() for m in morphologies.split(',') if m.strip()]
+        elif not isinstance(morphologies, list):
+            morphologies = []
 
-    def perform_create(self, serializer):
-        serializer.save(fashion_house_id=self.request.user.id)
+        design = Design(
+            fashion_house_id=request.user.id,
+            title=title,
+            description=data.get('description', ''),
+            category=data.get('category', 'dress'),
+            fabric_suggestions=data.get('fabric_suggestions', ''),
+            morphologies=morphologies,
+            status='draft'
+        )
+        design.save()
+        serializer = DesignSerializer(design, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    except Exception as e:
+        import traceback
+        print(f"ERROR creating design: {e}")
+        print(traceback.format_exc())
+        return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-class DesignDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [permissions.IsAuthenticated, IsFashionHouseOwner]
-    serializer_class = DesignSerializer
-    lookup_field = "id"
 
-    def get_serializer_class(self):
-        if self.request.method in ("PUT", "PATCH"):
-            return DesignWriteSerializer
-        return DesignSerializer
+@api_view(["GET", "PUT", "PATCH", "DELETE"])
+@permission_classes([permissions.IsAuthenticated])
+def design_detail(request, id):
+    """
+    GET: Retrieve a design.
+    PUT/PATCH: Update a design.
+    DELETE: Delete a design.
+    """
+    try:
+        design = Design.objects.get(id=id, fashion_house_id=request.user.id)
+    except Design.DoesNotExist:
+        return Response({"detail": "Design introuvable."}, status=status.HTTP_404_NOT_FOUND)
 
-    def get_queryset(self):
-        return Design.objects.filter(fashion_house_id=self.request.user.id)
+    if request.method == "GET":
+        return Response(DesignSerializer(design, context={'request': request}).data)
+
+    if request.method == "DELETE":
+        design.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    # PUT / PATCH — update fields directly
+    try:
+        data = request.data
+        if 'title' in data and data['title'].strip():
+            design.title = data['title'].strip()
+        if 'description' in data:
+            design.description = data['description']
+        if 'category' in data:
+            design.category = data['category']
+        if 'fabric_suggestions' in data:
+            design.fabric_suggestions = data['fabric_suggestions']
+        if 'morphologies' in data:
+            morphologies = data['morphologies']
+            if isinstance(morphologies, str):
+                morphologies = [m.strip() for m in morphologies.split(',') if m.strip()]
+            elif not isinstance(morphologies, list):
+                morphologies = []
+            design.morphologies = morphologies
+        design.save()
+        return Response(DesignSerializer(design, context={'request': request}).data)
+    except Exception as e:
+        import traceback
+        print(f"ERROR updating design: {e}")
+        print(traceback.format_exc())
+        return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
@@ -376,6 +439,16 @@ def create_order_from_inquiry(request, id):
             client_email = ""
             client_address = ""
 
+        # Recover design details if available
+        design_title = ""
+        components = []
+        if project.selected_designs:
+            try:
+                first_design = Design.objects.get(id=project.selected_designs[0])
+                design_title = first_design.title
+                components = first_design.suit_components
+            except: pass
+
         # Use the first fabric selected as primary for now
         fabric_id = project.selected_fabrics[0] if project.selected_fabrics else None
         fabric_name = "To be defined"
@@ -393,6 +466,8 @@ def create_order_from_inquiry(request, id):
             client_name=client_name,
             client_email=client_email,
             client_address=client_address,
+            design_title=design_title,
+            components=components,
             fabric_requested=fabric_name,
             fabric_id=fabric_id,
             quantity_needed=2.5, # Default estimation
@@ -502,6 +577,19 @@ def get_order_details(request, id):
                         data['design_preview_url'] = media_path
                 except:
                     pass
+        except: pass
+
+    # Fetch client shipment info if exists
+    if order.delivery_request_id:
+        from actors.delivery.models.models import ShipmentRequest
+        try:
+            shipment = ShipmentRequest.objects.get(id=order.delivery_request_id)
+            data['client_shipment'] = {
+                'id': shipment.id,
+                'status': shipment.status,
+                'carrier_name': shipment.carrier.company_name,
+                'eta_minutes': order.delivery_eta_minutes
+            }
         except: pass
 
     return Response(data)
@@ -673,6 +761,56 @@ def ship_order(request, id):
     return Response({
         "status": "shipped",
         "message": "Costume expédié avec succès."
+    })
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def request_client_delivery(request, id):
+    """
+    Creates a shipment request to deliver the finished suit to the client.
+    """
+    from actors.delivery.models.models import ShipmentRequest, Carrier, Route
+    
+    order = get_object_or_404(Order, id=id)
+    house = get_object_or_404(CoutureHouseProfile, user=request.user)
+    
+    if order.couture_house != house:
+        return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+        
+    if order.status != 'completed':
+        return Response({"error": "La production doit être terminée avant de demander une livraison."}, status=status.HTTP_400_BAD_REQUEST)
+        
+    # Check if a request already exists
+    if order.delivery_request_id:
+        return Response({"error": "Une demande de livraison existe déjà pour cette commande."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Selection of carrier
+    carrier_id = request.data.get('carrier_id')
+    if carrier_id:
+        carrier = get_object_or_404(Carrier, id=carrier_id)
+    else:
+        carrier = Carrier.objects.first()
+        
+    if not carrier:
+        return Response({"error": "Aucun transporteur disponible."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Create the shipment request
+    shipment = ShipmentRequest.objects.create(
+        carrier=carrier,
+        source_name=house.house_name,
+        dest_name=order.client_name,
+        client_order_id=order.id,
+        status='pending'
+    )
+    
+    order.delivery_request_id = shipment.id
+    order.save()
+    
+    return Response({
+        "success": True,
+        "shipment_id": shipment.id,
+        "carrier_name": carrier.company_name,
+        "status": "pending"
     })
 
 

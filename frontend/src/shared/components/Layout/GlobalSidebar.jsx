@@ -109,6 +109,14 @@ const GlobalSidebar = () => {
                         <NavLink to="/couturehouse/orders" className={getNavClass}>
                             <Clock size={16} /> Suivi Production
                         </NavLink>
+                        
+                        <div className="px-6 my-4 text-[9px] uppercase tracking-[0.2em] text-ivory/20 font-bold">Gestion Finance</div>
+                        <NavLink to="/couturehouse/bank-card" className={getNavClass}>
+                            <CreditCard size={16} /> Carte Bancaire
+                        </NavLink>
+                        <NavLink to="/couturehouse/create" className={getNavClass}>
+                            <Plus size={16} /> Nouvelle Création
+                        </NavLink>
 
                         <div className="px-6 my-4 text-[9px] uppercase tracking-[0.2em] text-ivory/20 font-bold">Configuration</div>
                         <NavLink to="/profile" className={getNavClass}>

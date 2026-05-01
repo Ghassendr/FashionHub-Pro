@@ -24,6 +24,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import FabricCard from '../components/FabricCard';
 import DesignCard from '../../actors/couturehouse/components/DesignCard';
+import LocationPicker from '../components/Common/LocationPicker';
 
 const Profile = () => {
     const navigate = useNavigate();
@@ -42,7 +43,8 @@ const Profile = () => {
         starting_price: '',
         avg_production_time: '',
         about_text: '',
-        introduction_video_url: null
+        introduction_video_url: null,
+        address: ''
     });
     const [error, setError] = useState(null);
     const [videoFile, setVideoFile] = useState(null);
@@ -71,7 +73,8 @@ const Profile = () => {
                     starting_price: atelier.starting_price || '',
                     avg_production_time: atelier.avg_production_time || '',
                     about_text: atelier.about_text || '',
-                    introduction_video_url: atelier.introduction_video_url || null
+                    introduction_video_url: atelier.introduction_video_url || null,
+                    address: user.address || atelier.address || ''
                 });
             } catch (err) {
                 console.error(err);
@@ -144,7 +147,8 @@ const Profile = () => {
                 },
                 body: JSON.stringify({
                     first_name: formData.name,
-                    info: formData.info
+                    info: formData.info,
+                    address: formData.address
                 })
             });
             
@@ -348,6 +352,39 @@ const Profile = () => {
                                         </p>
                                     )}
                                 </div>
+
+                                <div className="p-10 bg-gold/[0.02] border border-gold/5 relative group">
+                                    <div className="absolute top-0 left-0 w-8 h-[1px] bg-gold/50"></div>
+                                    <div className="absolute top-0 left-0 w-[1px] h-8 bg-gold/50"></div>
+                                    
+                                    <h3 className="text-label text-gold mb-8 uppercase tracking-[0.3em]">Adresse & Localisation</h3>
+                                    {editing ? (
+                                        <div className="space-y-4">
+                                            <input 
+                                                type="text" 
+                                                value={formData.address}
+                                                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                                className="bg-noir/40 border border-gold/20 w-full p-4 text-sm text-ivory/70 font-light focus:border-gold outline-none transition-colors"
+                                                placeholder="Adresse professionnelle..."
+                                            />
+                                            <LocationPicker 
+                                                initialAddress={formData.address}
+                                                onLocationSelect={(val) => setFormData(prev => ({ ...prev, address: val }))}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            <p className="text-sm text-ivory/60 font-light">
+                                                {formData.address || "Aucune adresse renseignée."}
+                                            </p>
+                                            {formData.address && (
+                                                <div className="h-[150px] border border-gold/10 rounded-sm overflow-hidden grayscale contrast-125 opacity-50">
+                                                     <LocationPicker initialAddress={formData.address} onLocationSelect={() => {}} />
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                                 
                                 <div className="space-y-6">
                                     <h3 className="text-[10px] tracking-luxury uppercase text-ivory/30 font-bold border-b border-gold/10 pb-4">Activité Récente</h3>
@@ -482,7 +519,10 @@ const Profile = () => {
                                                 <video 
                                                     src={videoPreview || formData.introduction_video_url} 
                                                     className="w-full h-full object-cover"
-                                                    controls
+                                                    autoPlay
+                                                    muted
+                                                    loop
+                                                    playsInline
                                                 />
                                                 {editing && (
                                                     <div className="absolute inset-0 bg-noir/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">

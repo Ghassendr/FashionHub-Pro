@@ -429,8 +429,8 @@ class AccurateSkinAnalyzer:
             "undertone": undertone,
             "undertone_confidence": confidence,
             "colors": colors,
-            "distance": round(distance, 2),
-            "accuracy": round(accuracy, 1)
+            "distance": float(round(distance, 2)),
+            "accuracy": float(round(accuracy, 1))
         }
         
         logger.info(f"✓ Analysis complete: {tone_info['name']} ({accuracy:.1f}% accuracy)")

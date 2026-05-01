@@ -19,6 +19,7 @@ const Dashboard = () => {
         likes: 0,
         reach: 0
     });
+    const [profile, setProfile] = useState(null);
     const navigate = useNavigate();
 
     const fetchDesigns = async () => {
@@ -51,8 +52,24 @@ const Dashboard = () => {
         }
     };
 
+    const fetchProfile = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch('http://localhost:8000/api/couturehouse/profile/', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setProfile(data);
+            }
+        } catch (error) {
+            console.error("Error fetching profile:", error);
+        }
+    };
+
     useEffect(() => {
         fetchDesigns();
+        fetchProfile();
     }, []);
 
     const handlePublish = async (id) => {
@@ -114,8 +131,8 @@ const Dashboard = () => {
             }
         >
             <div className="mb-12">
-                <span className="text-label text-gold block mb-4 uppercase text-[10px] tracking-[0.3em]">Workspace</span>
-                <h1 className="text-5xl font-display text-ivory">Creative Atelier</h1>
+                <span className="text-label text-gold block mb-4 uppercase text-[10px] tracking-[0.3em]">Creative Workspace</span>
+                <h1 className="text-5xl font-display text-ivory italic">{profile?.house_name || 'Creative Atelier'}</h1>
             </div>
 
             {/* Stats Grid */}

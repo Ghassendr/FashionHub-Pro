@@ -143,7 +143,7 @@ const FabricOrderWizard = ({ order, onClose, onComplete }) => {
                         </div>
                         <div className="text-right">
                             <p className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold">Total Estimation</p>
-                            <p className="text-ivory font-display text-3xl">{(wizardQty * (order.stock_analysis?.fabric_price || 45)).toFixed(2)}€</p>
+                            <p className="text-ivory font-display text-3xl">{(Number(wizardQty) * Number(order.stock_analysis?.fabric_price || 45)).toFixed(2)}€</p>
                         </div>
                     </div>
                     
@@ -254,8 +254,9 @@ const FabricOrderWizard = ({ order, onClose, onComplete }) => {
                     <p className="text-zinc-600 text-sm italic">Aucun partenaire ne dessert cette zone pour l'instant.</p>
                 </div>
             ) : (
-                <div className="space-y-4">
-                    {carriers
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8">
+                    <div className="space-y-4">
+                        {carriers
                         .map(route => {
                             // Intelligent Filtering: Find service matching Rapidity AND ALL requested natures
                             const matchedService = route.services?.find(s => 
@@ -316,7 +317,96 @@ const FabricOrderWizard = ({ order, onClose, onComplete }) => {
                         </div>
                     )}
                 </div>
-            )}
+
+                {/* Visual Route Map Column */}
+                <div className="hidden lg:block space-y-6">
+                    <div className="p-6 bg-white/[0.02] border border-white/5 rounded-3xl overflow-hidden relative group h-full flex flex-col">
+                        <div className="flex justify-between items-center mb-6">
+                            <span className="text-[9px] uppercase tracking-widest font-black text-zinc-500">Visual Route</span>
+                            <div className="flex items-center gap-1.5 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                <span className="text-[8px] text-emerald-500 font-black uppercase">Active</span>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 bg-noir/40 border border-white/5 rounded-2xl relative overflow-hidden flex items-center justify-center p-8">
+                            <div className="absolute inset-0 bg-gold/[0.02] grid-bg opacity-20" />
+                            
+                            <svg viewBox="0 0 200 300" className="w-full h-full relative z-10 drop-shadow-2xl">
+                                <style>{`
+                                    @keyframes dash {
+                                        to { stroke-dashoffset: 0; }
+                                    }
+                                    .animate-dash {
+                                        stroke-dasharray: 400;
+                                        stroke-dashoffset: 400;
+                                        animation: dash 3s linear forwards;
+                                    }
+                                `}</style>
+                                
+                                {/* Connection Line */}
+                                <path 
+                                    d="M100 240 Q140 150 100 60" 
+                                    fill="none" 
+                                    stroke="#C6A75E" 
+                                    strokeWidth="1.5" 
+                                    strokeDasharray="4 4"
+                                    className="animate-dash"
+                                />
+                                
+                                {/* Start Point (Nice) */}
+                                <g className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                                    <circle cx="100" cy="240" r="12" fill="#C6A75E" fillOpacity="0.1" />
+                                    <circle cx="100" cy="240" r="4" fill="#C6A75E" />
+                                    <text x="110" y="245" fill="#C6A75E" fontSize="10" fontWeight="bold" className="uppercase tracking-widest">Nice</text>
+                                </g>
+
+                                {/* End Point (Sousse) */}
+                                <g className="animate-fade-in" style={{ animationDelay: '0.8s' }}>
+                                    <circle cx="100" cy="60" r="12" fill="#C6A75E" fillOpacity="0.1" />
+                                    <circle cx="100" cy="60" r="4" fill="#C6A75E" />
+                                    <text x="110" y="65" fill="#C6A75E" fontSize="10" fontWeight="bold" className="uppercase tracking-widest">Sousse</text>
+                                </g>
+
+                                {/* Moving Package Indicator */}
+                                <circle cx="118" cy="150" r="3" fill="#6FCF97">
+                                    <animateMotion 
+                                        path="M100 240 Q140 150 100 60" 
+                                        dur="4s" 
+                                        repeatCount="indefinite" 
+                                    />
+                                </circle>
+                            </svg>
+
+                            <div className="absolute bottom-4 left-4 right-4 bg-noir/80 backdrop-blur-md p-3 border border-white/5 rounded-xl">
+                                <div className="flex justify-between items-center text-[8px] uppercase tracking-widest font-bold text-zinc-500 mb-1">
+                                    <span>Distance</span>
+                                    <span className="text-ivory">1,420 km</span>
+                                </div>
+                                <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                                    <div className="h-full bg-gold w-2/3" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-6 flex flex-col gap-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center text-gold">
+                                    <CarFront size={12} />
+                                </div>
+                                <span className="text-[10px] text-ivory/60 uppercase tracking-tighter">Transport Maritime / Terrestre</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center text-emerald-500">
+                                    <ShieldCheck size={12} />
+                                </div>
+                                <span className="text-[10px] text-ivory/60 uppercase tracking-tighter">Assurance Transit Incluse</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
             
             <div className="flex gap-4 mt-12">
                 <button onClick={() => setStep(2)} className="wizard-btn-prev">Précédent</button>
@@ -359,7 +449,7 @@ const FabricOrderWizard = ({ order, onClose, onComplete }) => {
                             </div>
                             <div className="text-right">
                                 <p className="text-zinc-400 text-xs">{wizardQty}m × {order.stock_analysis?.fabric_price || 45}€</p>
-                                <p className="text-ivory font-display text-lg">{(wizardQty * (order.stock_analysis?.fabric_price || 45)).toFixed(2)}€</p>
+                                <p className="text-ivory font-display text-lg">{(Number(wizardQty) * Number(order.stock_analysis?.fabric_price || 45)).toFixed(2)}€</p>
                             </div>
                         </div>
 
@@ -380,7 +470,7 @@ const FabricOrderWizard = ({ order, onClose, onComplete }) => {
                     <div className="pt-6 border-t border-gold/20 flex justify-between items-center">
                         <span className="text-[10px] uppercase tracking-[0.2em] font-black text-gold">Total HT</span>
                         <span className="text-3xl font-display text-ivory">
-                            {( (wizardQty * (order.stock_analysis?.fabric_price || 45)) + (selectedCarrier?.matchedService?.cost || 0) ).toFixed(2)}€
+                            {( (Number(wizardQty) * Number(order.stock_analysis?.fabric_price || 45)) + Number(selectedCarrier?.matchedService?.cost || 0) ).toFixed(2)}€
                         </span>
                     </div>
                 </div>

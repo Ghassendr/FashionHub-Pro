@@ -7,7 +7,11 @@ import {
     Star, 
     ShieldCheck, 
     ChevronRight,
-    Loader2
+    Loader2,
+    Truck,
+    Clock,
+    AlertCircle,
+    CreditCard
 } from 'lucide-react';
 import { useAuth } from '../../../shared/context/AuthContext';
 
@@ -16,6 +20,7 @@ const Dashboard = () => {
     const navigate = useNavigate();
     const [stats, setStats] = useState({ costumes: 0, measurements: 0 });
     const [loading, setLoading] = useState(true);
+    const [activeDelivery, setActiveDelivery] = useState(null);
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -28,6 +33,14 @@ const Dashboard = () => {
                     costumes: data.projects?.length || 0,
                     measurements: data.projects?.filter(p => p.scan_result)?.length || 0
                 });
+                
+                // Find active delivery with ETA around 15 mins
+                const activeDelivery = data.projects?.find(p => 
+                    p.delivery_info?.request_id && 
+                    !p.delivery_info?.is_paid &&
+                    p.delivery_info?.eta_minutes <= 20
+                );
+                setActiveDelivery(activeDelivery);
             } catch (err) {
                 console.error(err);
             } finally {
@@ -41,6 +54,40 @@ const Dashboard = () => {
         <div className="min-h-screen bg-noir text-ivory pt-28 pb-20">
             <div className="wrapper max-w-[1200px]">
                 {/* Hero / Welcome Section */}
+                {/* Hero / Welcome Section */}
+                {activeDelivery && (
+                    <div className="mb-12 animate-bounce">
+                        <div className="bg-gradient-to-r from-amber-500/20 to-gold/20 border border-gold/30 p-6 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-6 backdrop-blur-xl">
+                            <div className="flex items-center gap-6">
+                                <div className="w-16 h-16 rounded-2xl bg-gold/20 flex items-center justify-center text-gold relative">
+                                    <Truck size={32} />
+                                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 rounded-full flex items-center justify-center text-[10px] font-black animate-pulse">
+                                        !
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-display text-ivory mb-1">Votre livreur arrive !</h3>
+                                    <p className="text-[10px] uppercase tracking-widest text-gold font-black flex items-center gap-2">
+                                        <Clock size={12} /> Arrivée estimée : {activeDelivery.delivery_info.eta_minutes} minutes
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex flex-col md:flex-row items-center gap-4">
+                                <p className="text-[10px] text-ivory/60 uppercase tracking-widest text-center md:text-right max-w-[200px]">
+                                    Veuillez finaliser le paiement pour confirmer la réception.
+                                </p>
+                                <button 
+                                    onClick={() => navigate(`/client/costumes/${activeDelivery.id}`)}
+                                    className="px-8 py-3 bg-gold text-noir text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-ivory transition-all flex items-center gap-2"
+                                >
+                                    <CreditCard size={14} /> Payer Maintenant
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <header className="mb-20 animate-fade-up">
                     <div className="flex items-center gap-4 mb-6">
                         <div className="h-[1px] w-12 bg-gold/30"></div>

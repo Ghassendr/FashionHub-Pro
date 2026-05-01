@@ -298,13 +298,16 @@ const RegistrationModal = ({ isOpen, onClose, onSwitchToLogin }) => {
     const renderBasicInfo = () => (
         <div className="space-y-6 animate-fade-in">
             <h2 className="font-display text-3xl text-center text-ivory mb-8">Basic Information</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <Input name="fullName" label="Full Name" value={formData.fullName} onChange={handleChange} />
                 <Input name="email" type="email" label="Email Address" value={formData.email} onChange={handleChange} />
                 <Input name="phone" type="tel" label="Phone Number" value={formData.phone} onChange={handleChange} />
-                <Input name="address" label="Full Address" value={formData.address} onChange={handleChange} />
                 <Input name="password" type="password" label="Password" value={formData.password} onChange={handleChange} />
                 <Input name="passwordVerify" type="password" label="Verify Password" value={formData.passwordVerify} onChange={handleChange} />
+            </div>
+
+            <div className="space-y-2">
+                <Input name="address" label="Professional Address / Location" value={formData.address} onChange={handleChange} />
             </div>
 
             <div className="flex items-center gap-3 mt-6">

@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowRight } from 'lucide-react';
+import TripMapPicker from '../../delivery/pages/TripMapPicker';
 
 const Onboarding = () => {
     return (
@@ -57,11 +58,9 @@ const Onboarding = () => {
                     </div>
 
                     <div>
-                        <label className="text-label block mb-2">Primary Route (Origin — Destination)</label>
-                        <div className="grid grid-cols-2 gap-6">
-                            <input type="text" className="input-couture" placeholder="Paris" />
-                            <input type="text" className="input-couture" placeholder="Dubai" />
-                        </div>
+                        <label className="text-label block mb-2">Primary Route Selection</label>
+                        <p className="text-ivory/30 text-[10px] uppercase tracking-widest mb-3">Select your typical courier route on the map</p>
+                        <TripMapPicker onRouteSelected={(route) => console.log("Selected Route:", route)} />
                     </div>
 
                     <div>

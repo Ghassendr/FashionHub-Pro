@@ -134,10 +134,17 @@ const FabricCard = ({ fabric, showLikes = false }) => {
                 <h3 className="font-display text-xl text-ivory mb-4 line-clamp-1">{fabric.description || 'Premium Fabric'}</h3>
                 
                 <div className="flex items-center justify-between">
-                    <div className="flex gap-2">
-                        {fabric.color && Array.isArray(fabric.color) && fabric.color.map((c, i) => (
-                            <div key={i} className="w-3 h-3 rounded-full border border-ivory/10" style={{ backgroundColor: `rgb(${c[0]}, ${c[1]}, ${c[2]})` }}></div>
-                        ))}
+                    <div className="flex items-center gap-3">
+                        {fabric.color && Array.isArray(fabric.color) && fabric.color.length === 3 && (
+                            <div 
+                                className="w-4 h-4 rounded-full border border-ivory/20 shadow-sm" 
+                                style={{ backgroundColor: `rgb(${fabric.color[0]}, ${fabric.color[1]}, ${fabric.color[2]})` }}
+                                title={fabric.color_name}
+                            ></div>
+                        )}
+                        {fabric.color_name && (
+                            <span className="text-[10px] uppercase tracking-widest text-ivory/40">{fabric.color_name}</span>
+                        )}
                     </div>
                     {showLikes && (
                         <span className="text-[10px] tracking-widest uppercase text-ivory/30">

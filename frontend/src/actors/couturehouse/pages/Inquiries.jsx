@@ -261,10 +261,10 @@ const Inquiries = () => {
                                                     #{order.id}
                                                 </div>
                                                 <div>
-                                                    <h3 className="text-ivory font-display text-xl group-hover:text-gold transition-colors">{order.client_name}</h3>
+                                                    <h3 className="text-ivory font-display text-xl group-hover:text-gold transition-colors">{order.design_title || order.client_name}</h3>
                                                     <div className="flex items-center gap-3 text-[10px] uppercase tracking-widest text-zinc-500 mt-1">
-                                                        <Palette size={12} className="text-gold/50" />
-                                                        {order.fabric_requested} — {order.quantity_needed}m
+                                                        <User size={12} className="text-gold/50" />
+                                                        {order.client_name} — {order.fabric_requested}
                                                     </div>
                                                 </div>
                                             </div>

@@ -498,7 +498,7 @@ def analyze_skin_tone(request: HttpRequest):
                     "prix": float(fabric["prix"]),
                     "quantite": float(fabric["quantite"]),
                     "color": fabric["color"],
-                    "similarity_score": similarity_score,
+                    "similarity_score": float(similarity_score),
                     "matched_recommendation": best_match_color["name"] if best_match_color else None,
                     "image_url": f"/api/images/{fabric['id']}",
                 })
@@ -599,6 +599,7 @@ def handle_projects(request):
     elif request.method == "GET":
         try:
             from actors.couturehouse.models.models import Order
+            from actors.delivery.models.models import ShipmentRequest
             
             projects = ClientProject.objects.filter(client_id=request.user.id).order_by("-created_at")
             results = []
@@ -615,6 +616,12 @@ def handle_projects(request):
                     "status": derived_status,
                     "original_status": p.status,
                     "created_at": p.created_at,
+                    "order_id": main_order.id if main_order else None,
+                    "delivery_info": (lambda o: {
+                        "request_id": ShipmentRequest.objects.filter(client_order_id=o.id, fabric_order_id__isnull=True).exclude(status__in=['delivered', 'cancelled']).first().id if ShipmentRequest.objects.filter(client_order_id=o.id, fabric_order_id__isnull=True).exclude(status__in=['delivered', 'cancelled']).exists() else None,
+                        "eta_minutes": 15, # Mock ETA
+                        "is_paid": o.is_paid
+                    })(main_order) if main_order else None,
                     "summary": {
                         "designs_count": len(p.selected_designs),
                         "fabrics_count": len(p.selected_fabrics)
@@ -655,6 +662,9 @@ def get_project_details(request: HttpRequest, project_id: str):
                 "fabric_requested": o.fabric_requested,
                 "couture_house": o.couture_house.id if o.couture_house else None,
                 "couture_house_name": o.couture_house.house_name if o.couture_house else None,
+                "updated_at": o.updated_at.isoformat() if o.updated_at else None,
+                "is_paid": o.is_paid,
+                "client_has_card": hasattr(request.user, 'bank_card') and request.user.bank_card is not None,
                 "delivery": None
             }
             
@@ -672,12 +682,25 @@ def get_project_details(request: HttpRequest, project_id: str):
             
             if f_order:
                 shipment = ShipmentRequest.objects.filter(fabric_order_id=f_order.id).first()
-                tracking_info["delivery"] = {
+                tracking_info["fabric_delivery"] = {
                     "fabric_order_status": f_order.status,
                     "shipment_status": shipment.status if shipment else None
                 }
             
+            # Suit delivery (Client Delivery)
+            suit_shipment = ShipmentRequest.objects.filter(client_order_id=o.id, fabric_order_id__isnull=True).exclude(status='cancelled').first()
+            if suit_shipment:
+                tracking_info["delivery_info"] = {
+                    "request_id": suit_shipment.id,
+                    "status": suit_shipment.status,
+                    "carrier_name": getattr(suit_shipment.carrier, 'company_name', 'Transporteur'),
+                    "eta_minutes": 15
+                }
+            
             order_list.append(tracking_info)
+
+        # Extract general delivery_info for the whole project (based on first active order)
+        delivery_info = next((item.get("delivery_info") for item in order_list if item.get("delivery_info")), None)
 
         return JsonResponse({
             "id": str(project.id),
@@ -687,12 +710,20 @@ def get_project_details(request: HttpRequest, project_id: str):
             "selected_designs": project.selected_designs,
             "selected_fabrics": project.selected_fabrics,
             "created_at": project.created_at.isoformat() if project.created_at else None,
-            "tracking": order_list
+            "tracking": order_list,
+            "delivery_info": delivery_info
         })
     except ClientProject.DoesNotExist:
         return JsonResponse({"error": "Project not found"}, status=404)
     except Exception as e:
-        return JsonResponse({"error": str(e)}, status=500)
+        import traceback
+        error_trace = traceback.format_exc()
+        try:
+            with open('c:/xampp/htdocs/ProjetCTR/backend/error_log.txt', 'a') as f:
+                f.write(f"\n[{datetime.now()}] ERROR in get_project_details ({project_id}):\n{error_trace}\n")
+        except: pass
+        logger.error(f"Error in get_project_details: {e}\n{error_trace}")
+        return JsonResponse({"error": str(e), "traceback": error_trace}, status=500)
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
 def submit_project(request: HttpRequest, project_id: str):

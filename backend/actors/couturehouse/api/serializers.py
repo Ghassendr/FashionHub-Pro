@@ -41,9 +41,11 @@ class DesignSerializer(serializers.DocumentSerializer):
             return "Atelier"
 
 class DesignWriteSerializer(serializers.DocumentSerializer):
+    fashion_house_id = drf_serializers.IntegerField(required=False)
+    
     class Meta:
         model = Design
-        fields = ["id", "title", "description", "category", "fabric_suggestions", "morphologies"]
+        fields = ["id", "fashion_house_id", "title", "description", "category", "fabric_suggestions", "morphologies"]
         read_only_fields = ["id"]
 
 class OrderSerializer(drf_serializers.ModelSerializer):

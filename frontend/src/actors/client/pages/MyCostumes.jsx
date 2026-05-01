@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
     Clock, 
     ChevronRight, 
@@ -16,6 +16,8 @@ import { useAuth } from '../../../shared/context/AuthContext';
 const MyCostumes = () => {
     const { token } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
+    const isHistoryPage = location.pathname === '/client/history';
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -27,7 +29,15 @@ const MyCostumes = () => {
                 });
                 if (!res.ok) throw new Error("Erreur lors du chargement");
                 const data = await res.json();
-                setProjects(data.projects || []);
+                let fetchedProjects = data.projects || [];
+                
+                if (isHistoryPage) {
+                    fetchedProjects = fetchedProjects.filter(p => 
+                        ['completed', 'shipped', 'delivered'].includes(p.status)
+                    );
+                }
+                
+                setProjects(fetchedProjects);
             } catch (err) {
                 console.error(err);
             } finally {
@@ -45,7 +55,7 @@ const MyCostumes = () => {
                     <div className="animate-fade-up">
                         <p className="text-label text-gold mb-3 uppercase tracking-[0.3em]">Maison Tissue — Atelier</p>
                         <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-light text-ivory leading-tight">
-                            Mes Costumes & <br /> Designs
+                            {isHistoryPage ? 'Historique des' : 'Mes Costumes &'} <br /> {isHistoryPage ? 'Commandes' : 'Designs'}
                         </h1>
                     </div>
                     <div className="flex items-center gap-4 animate-fade-in delay-200">
@@ -74,7 +84,7 @@ const MyCostumes = () => {
                         <ShoppingBag size={48} strokeWidth={1} className="text-gold/20 mb-8" />
                         <h3 className="font-display text-2xl text-ivory/70 mb-4 font-light italic">Aucun design pour l'instant</h3>
                         <p className="text-sm text-ivory/30 mb-10 tracking-widest uppercase text-center max-w-sm">
-                            Commencez votre expérience de création assistée par IA pour voir vos costumes apparaître ici.
+                            {isHistoryPage ? "Vous n'avez pas encore de commandes terminées." : "Commencez votre expérience de création assistée par IA pour voir vos costumes apparaître ici."}
                         </p>
                         <button 
                             onClick={() => navigate('/client/create-design')}

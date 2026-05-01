@@ -30,7 +30,11 @@ function Settings() {
     nomContact: "",
     prenomContact: "",
     telephoneContact: "",
+    introduction_video_url: null
   });
+  const [videoFile, setVideoFile] = useState(null);
+  const [videoPreview, setVideoPreview] = useState(null);
+  const fileInputRef = React.useRef(null);
 
   useEffect(() => {
     fetchUserProfile();
@@ -59,6 +63,17 @@ function Settings() {
     setFormData({ ...formData, [name]: value });
   };
 
+  const handleVideoSelect = (file) => {
+    if (!file) return;
+    if (!file.type.startsWith('video/')) {
+      setError("Veuillez sélectionner un fichier vidéo valide.");
+      return;
+    }
+    if (videoPreview) URL.revokeObjectURL(videoPreview);
+    setVideoFile(file);
+    setVideoPreview(URL.createObjectURL(file));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -66,13 +81,22 @@ function Settings() {
     setIsSaving(true);
 
     try {
+      const uploadData = new FormData();
+      Object.keys(formData).forEach(key => {
+        if (formData[key] !== null && key !== 'introduction_video_url') {
+          uploadData.append(key, formData[key]);
+        }
+      });
+      if (videoFile) {
+        uploadData.append('introduction_video', videoFile);
+      }
+
       const response = await fetch(`http://localhost:8000/api/auth/user/${userId}/update`, {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: uploadData,
       });
 
       if (response.ok) {
@@ -205,6 +229,35 @@ function Settings() {
                           onChange={handleInputChange} 
                           className="w-full bg-white/[0.03] border border-white/5 rounded-3xl p-6 focus:outline-none focus:border-[#C6A75E]/30 transition-all text-sm font-light leading-relaxed min-h-[160px]"
                           placeholder="Décrivez votre expertise textile..."
+                        />
+                    </div>
+
+                    {/* Video Section */}
+                    <div className="space-y-3 group pt-4">
+                        <label className="text-[10px] uppercase font-black text-white/20 tracking-widest px-2">Vidéo d'Introduction</label>
+                        <div 
+                          onClick={() => fileInputRef.current?.click()}
+                          className="w-full aspect-video bg-white/[0.03] border border-dashed border-white/10 rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:border-[#C6A75E]/30 transition-all overflow-hidden relative"
+                        >
+                          {(videoPreview || formData.introduction_video_url) ? (
+                            <video 
+                              src={videoPreview || formData.introduction_video_url} 
+                              className="w-full h-full object-cover"
+                              controls
+                            />
+                          ) : (
+                            <div className="text-center">
+                              <Info className="mx-auto text-white/20 mb-4" size={32} />
+                              <p className="text-xs text-white/30 uppercase tracking-widest">Cliquez pour ajouter une vidéo</p>
+                            </div>
+                          )}
+                        </div>
+                        <input 
+                          type="file" 
+                          ref={fileInputRef} 
+                          className="hidden" 
+                          accept="video/*" 
+                          onChange={(e) => handleVideoSelect(e.target.files[0])} 
                         />
                     </div>
                   </div>

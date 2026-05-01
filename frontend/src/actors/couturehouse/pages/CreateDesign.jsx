@@ -121,7 +121,8 @@ const CreateDesign = () => {
                 navigate('/');
             } else {
                 console.error(err);
-                alert("Error creating design.");
+                const serverMsg = err.response?.data?.detail || err.response?.data?.title?.[0] || JSON.stringify(err.response?.data) || "Erreur inconnue.";
+                alert(`Erreur lors de la création du design:\n${serverMsg}`);
             }
         } finally {
             setLoading(false);

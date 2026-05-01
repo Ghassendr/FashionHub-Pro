@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import RegisterView, MyTokenObtainPairView, ProfileView, VerifyTokenView
-from .admin_views import AdminReviewQueueView, AdminReviewActionView, AdminStatsView
+from .admin_views import AdminReviewQueueView, AdminReviewActionView, AdminStatsView, AdminUserListView
 from .card_views import BankCardView, AdminCardStatusView
 
 urlpatterns = [
@@ -16,4 +16,5 @@ urlpatterns = [
     path('admin/review-queue/', AdminReviewQueueView.as_view(), name='admin_review_queue'),
     path('admin/review-action/<int:user_id>/', AdminReviewActionView.as_view(), name='admin_review_action'),
     path('admin/stats/', AdminStatsView.as_view(), name='admin_stats'),
+    path('admin/users/', AdminUserListView.as_view(), name='admin_user_list'),
 ]

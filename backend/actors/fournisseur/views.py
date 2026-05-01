@@ -8,7 +8,8 @@ from core.models.user import User
 from django.shortcuts import get_object_or_404
 import base64
 
-from .models import SupplierProfile, Fabric, FabricLike, FabricOrder
+from .models import SupplierProfile, Fabric, FabricLike, FabricOrder, Jewelry
+from actors.delivery.models.models import Carrier, Route, ShipmentRequest
 from .serializers import (
     SupplierProfileSerializer, CompleteSupplierSerializer, 
     FabricSerializer, FabricOrderSerializer
@@ -469,28 +470,34 @@ class CreateFabricOrderView(views.APIView):
             fabric=fabric,
             quantity=qty,
             delivery_type=data.get('delivery_type', 'standard'),
-            delivery_preference=data.get('delivery_preference', '')
+            delivery_preference=data.get('delivery_preference', ''),
+            carrier_id=data.get('carrier_id'),
+            route_id=data.get('route_id')
         )
-        
-        # 3. Create Shipment Request (for the selected carrier)
+
+        # 3. Trigger Shipment Request if a carrier was selected
         carrier_id = data.get('carrier_id')
         if carrier_id:
-            from actors.delivery.models import Carrier, ShipmentRequest, Route
             try:
                 carrier = Carrier.objects.get(id=carrier_id)
-                route = Route.objects.filter(carrier=carrier, id=data.get('route_id')).first()
+                route = Route.objects.filter(id=data.get('route_id')).first()
+                
+                # Retrieve source and destination names for the carrier's dashboard
+                source = supplier_profile.nomOrganization or "Fournisseur"
+                dest = data.get('couture_house_name', 'Couture House')
                 
                 ShipmentRequest.objects.create(
                     carrier=carrier,
                     route=route,
-                    source_name=supplier_profile.nomOrganization,
-                    dest_name=data.get('couture_house_name'),
+                    source_name=source,
+                    dest_name=dest,
                     fabric_order_id=order.id,
                     status='pending'
                 )
+                print(f"DEBUG: Created ShipmentRequest for Order #{order.id} with Carrier {carrier.company_name}")
             except Exception as e:
-                print(f"Failed to create shipment request: {str(e)}")
-
+                print(f"WARNING: Could not create ShipmentRequest: {e}")
+        
         return Response(FabricOrderSerializer(order).data, status=status.HTTP_201_CREATED)
 
 class UpdateFabricOrderStatusView(views.APIView):
@@ -514,14 +521,6 @@ class UpdateFabricOrderStatusView(views.APIView):
         order.status = new_status
         order.save()
         
-        # Resilience Logic: If Supplier cancels, auto-cancel the shipment mission
-        if new_status == 'cancelled':
-            try:
-                from actors.delivery.models import ShipmentRequest
-                ShipmentRequest.objects.filter(fabric_order_id=order.id).update(status='cancelled')
-            except Exception as e:
-                print(f"Warning: Failed to cancel shipment for order {order.id}: {e}")
-        
         # Return a safe response without relying on the full serializer
         return Response({
             'id': order.id,
@@ -533,3 +532,103 @@ class UpdateFabricOrderStatusView(views.APIView):
             'updated_at': order.updated_at.isoformat(),
         })
 
+class JewelryListView(views.APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = (MultiPartParser, FormParser)
+
+    def get(self, request):
+        jewelry = Jewelry.objects.filter(user=request.user)
+        jewelry_data = []
+        for j in jewelry:
+            jewelry_data.append({
+                '_id': j.id,
+                'id': j.id,
+                'name': j.name,
+                'fabric': j.fabric_id,
+                'quantite': j.quantite,
+                'materiel': j.materiel,
+                'prix': float(j.prix) if j.prix is not None else 0.0,
+                'type': j.type,
+                'description': j.description,
+                'likes': j.likes
+            })
+        return Response({'jewelry': jewelry_data})
+
+    def post(self, request):
+        image_file = request.FILES.get('image')
+        if not image_file:
+            return Response({'error': 'No image file provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+        jewelry = Jewelry(
+            user=request.user,
+            image=image_file,
+            name=request.data.get('name', ''),
+            fabric_id=request.data.get('fabric') if request.data.get('fabric') else None,
+            quantite=request.data.get('quantite', 0),
+            materiel=request.data.get('materiel', ''),
+            prix=request.data.get('prix', 0),
+            type=request.data.get('type', ''),
+            description=request.data.get('description', '')
+        )
+        jewelry.save()
+
+        return Response({
+            'message': 'Jewelry created successfully',
+            'jewelry': {
+                'id': jewelry.id,
+                'name': jewelry.name,
+                'fabric': jewelry.fabric_id,
+                'quantite': jewelry.quantite,
+                'materiel': jewelry.materiel,
+                'prix': float(jewelry.prix),
+                'type': jewelry.type,
+            }
+        }, status=status.HTTP_201_CREATED)
+
+class JewelryDetailView(views.APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = (MultiPartParser, FormParser)
+
+    def get(self, request, pk):
+        jewelry = get_object_or_404(Jewelry, pk=pk, user=request.user)
+        return Response({
+            'jewelry': {
+                'id': jewelry.id,
+                'name': jewelry.name,
+                'fabric': jewelry.fabric_id,
+                'quantite': jewelry.quantite,
+                'materiel': jewelry.materiel,
+                'prix': float(jewelry.prix),
+                'type': jewelry.type,
+                'description': jewelry.description,
+            }
+        })
+
+    def put(self, request, pk):
+        jewelry = get_object_or_404(Jewelry, pk=pk, user=request.user)
+        
+        image_file = request.FILES.get('image')
+        if image_file:
+            jewelry.image = image_file
+            
+        if 'name' in request.data: jewelry.name = request.data['name']
+        if 'fabric' in request.data: jewelry.fabric_id = request.data['fabric'] if request.data['fabric'] else None
+        if 'quantite' in request.data: jewelry.quantite = request.data['quantite']
+        if 'materiel' in request.data: jewelry.materiel = request.data['materiel']
+        if 'prix' in request.data: jewelry.prix = request.data['prix']
+        if 'type' in request.data: jewelry.type = request.data['type']
+        if 'description' in request.data: jewelry.description = request.data['description']
+            
+        jewelry.save()
+        return Response({'message': 'Jewelry updated'})
+
+    def delete(self, request, pk):
+        jewelry = get_object_or_404(Jewelry, pk=pk, user=request.user)
+        jewelry.delete()
+        return Response({'message': 'Jewelry deleted'})
+
+class JewelryImageView(views.APIView):
+    permission_classes = [AllowAny]
+    def get(self, request, pk):
+        jewelry = get_object_or_404(Jewelry, pk=pk)
+        return FileResponse(open(jewelry.image.path, 'rb'))

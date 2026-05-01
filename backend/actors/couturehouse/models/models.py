@@ -8,6 +8,7 @@ class CoutureHouseProfile(django_models.Model):
     specialization = django_models.CharField(max_length=255, blank=True)
     starting_price = django_models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     avg_production_time = django_models.CharField(max_length=100, blank=True)
+    address = django_models.TextField(blank=True)
     
     VERIFICATION_CHOICES = (
         ('pending', 'Pending'),
@@ -90,6 +91,7 @@ class Design(Document):
     title = fields.StringField(max_length=200, required=True)
     description = fields.StringField(blank=True)
     category = fields.StringField(choices=CATEGORY_CHOICES, default="dress")
+    suit_components = fields.ListField(fields.StringField(), default=list) # e.g. ["Veste", "Pantalon"]
     fabric_suggestions = fields.StringField(blank=True)
     status = fields.StringField(choices=STATUS_CHOICES, default="draft")
     
@@ -106,9 +108,16 @@ class Design(Document):
     # List of embedded media documents
     media = fields.EmbeddedDocumentListField(DesignMedia)
     
-    created_at = fields.DateTimeField()
-    updated_at = fields.DateTimeField()
+    created_at = fields.DateTimeField(default=lambda: __import__('django.utils.timezone').utils.timezone.now())
+    updated_at = fields.DateTimeField(default=lambda: __import__('django.utils.timezone').utils.timezone.now())
     published_at = fields.DateTimeField()
+
+    def save(self, *args, **kwargs):
+        from django.utils import timezone
+        if not self.created_at:
+            self.created_at = timezone.now()
+        self.updated_at = timezone.now()
+        return super(Design, self).save(*args, **kwargs)
 
     meta = {
         'collection': 'designs',
@@ -150,6 +159,10 @@ class Order(django_models.Model):
     client_email = django_models.EmailField(blank=True)
     client_address = django_models.TextField(blank=True)
     
+    # Suit / Design specifics
+    design_title = django_models.CharField(max_length=255, blank=True)
+    components = django_models.JSONField(default=list, blank=True) # e.g. ["Jacket", "Pants"]
+    
     # Fabric specifics
     fabric_requested = django_models.CharField(max_length=255)
     fabric_id = django_models.IntegerField(null=True, blank=True) # SQL ID if available
@@ -161,6 +174,9 @@ class Order(django_models.Model):
     
     is_paid = django_models.BooleanField(default=False)
     payment_date = django_models.DateTimeField(null=True, blank=True)
+    
+    delivery_request_id = django_models.IntegerField(null=True, blank=True)
+    delivery_eta_minutes = django_models.IntegerField(null=True, blank=True) # Used for the 15 min notification logic
     
     created_at = django_models.DateTimeField(auto_now_add=True)
     updated_at = django_models.DateTimeField(auto_now=True)

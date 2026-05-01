@@ -11,7 +11,8 @@ import {
     CheckCircle2,
     Loader2,
     AlertCircle,
-    MapPin
+    MapPin,
+    AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '../../../shared/context/AuthContext';
 import ClientTrackingBar from '../../../shared/components/Logistics/ClientTrackingBar';
@@ -59,15 +60,37 @@ const ProjectDetail = () => {
     // Determine the unified tracking status 
     // Client sees only Couture House Production Statuses
     const getTrackingStatus = () => {
-        if (project.status === 'completed') return 'completed'; // Final milestone
-        
         const mainOrder = project.tracking?.[0];
-        if (!mainOrder) return 'pending';
+        const delivery = project.delivery_info;
+        
+        // Final delivery delivered?
+        if (delivery?.status === 'delivered' || project.status === 'shipped') {
+            return 'shipped';
+        }
+        
+        // In transit or picked up?
+        if (delivery?.status === 'in_transit' || delivery?.status === 'picked_up') {
+            return 'in_delivery';
+        }
 
-        return mainOrder.status; // pending, in_production, shipped, completed
+        // Request exists but not yet in transit (accepted/pending)
+        if (delivery?.request_id) {
+            return 'in_delivery';
+        }
+
+        if (!mainOrder) return 'pending';
+        
+        if (mainOrder.status === 'completed') {
+            return 'completed';
+        }
+
+        return mainOrder.status; // pending, in_production
     };
 
     const currentStatus = getTrackingStatus();
+    console.log("DEBUG - Project Data:", project);
+    console.log("DEBUG - Current Status:", currentStatus);
+    console.log("DEBUG - Delivery Info:", project.delivery_info);
 
     const handlePayment = async () => {
         setIsPaying(true);
@@ -146,6 +169,33 @@ const ProjectDetail = () => {
                     <span className="text-[10px] uppercase tracking-widest font-bold">Retour à mes costumes</span>
                 </button>
 
+                {/* Proximity Payment Alert (15 min) */}
+                {project.delivery_info?.eta_minutes <= 15 && !project.tracking?.[0]?.is_paid && (
+                    <div className="mb-8 p-6 bg-gold/10 border border-gold/30 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 animate-pulse shadow-glow-gold/10">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-gold rounded-full flex items-center justify-center text-noir">
+                                <Truck size={24} />
+                            </div>
+                            <div>
+                                <h4 className="text-gold font-bold text-sm uppercase tracking-widest">Livreur à proximité !</h4>
+                                <p className="text-ivory/60 text-xs mt-1">Votre costume arrive dans <span className="text-gold font-bold">{project.delivery_info.eta_minutes} minutes</span>. Veuillez régler le solde pour finaliser la réception.</p>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={handlePayment}
+                            disabled={isPaying}
+                            className="w-full md:w-auto px-8 py-4 bg-gold text-noir font-black text-[10px] uppercase tracking-[0.2em] rounded-xl hover:bg-ivory transition-all shadow-lg shadow-gold/20 flex items-center justify-center gap-2"
+                        >
+                            {isPaying ? <Loader2 className="animate-spin" size={14} /> : (
+                                <>
+                                    <CreditCard size={14} />
+                                    <span>Régler Maintenant</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
+                )}
+
                 {/* Header Card */}
                 <div className="relative mb-12 p-8 md:p-12 border border-gold/10 bg-gold/[0.02] rounded-3xl overflow-hidden group">
                     <div className="absolute top-0 right-0 p-12 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity duration-1000">
@@ -166,19 +216,26 @@ const ProjectDetail = () => {
                                 </div>
                             </div>
 
-                            {currentStatus === 'completed' && !paymentSuccess && (
-                                <button 
-                                    onClick={handlePayment}
-                                    disabled={isPaying}
-                                    className="px-10 py-5 bg-gold text-noir font-bold rounded-2xl flex items-center gap-3 hover:bg-ivory hover:scale-105 transition-all duration-500 shadow-glow-gold/20"
-                                >
-                                    {isPaying ? <Loader2 className="animate-spin" size={20} /> : (
-                                        <>
-                                            <CreditCard size={20} />
-                                            <span>RÉGLER LE SOLDE</span>
-                                        </>
+                            {(currentStatus === 'completed' || currentStatus === 'in_delivery') && !project.tracking?.[0]?.is_paid && !paymentSuccess && (
+                                <div className="flex flex-col items-end gap-3">
+                                    {project.delivery_info?.eta_minutes <= 15 && (
+                                        <div className="flex items-center gap-2 text-amber-500 text-[10px] font-black uppercase tracking-widest animate-bounce">
+                                            <AlertTriangle size={14} /> Paiement Requis : Livreur à {project.delivery_info.eta_minutes} min
+                                        </div>
                                     )}
-                                </button>
+                                    <button 
+                                        onClick={handlePayment}
+                                        disabled={isPaying}
+                                        className="px-10 py-5 bg-gold text-noir font-bold rounded-2xl flex items-center gap-3 hover:bg-ivory hover:scale-105 transition-all duration-500 shadow-glow-gold/20"
+                                    >
+                                        {isPaying ? <Loader2 className="animate-spin" size={20} /> : (
+                                            <>
+                                                <CreditCard size={20} />
+                                                <span>RÉGLER LE SOLDE</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
                             )}
                         </div>
                     </div>
@@ -207,9 +264,11 @@ const ProjectDetail = () => {
                     {/* The Tracking Bar fixed by our logic */}
                     <ClientTrackingBar 
                         status={currentStatus} 
-                        onPay={(currentStatus === 'completed' && !project.tracking?.[0]?.is_paid) ? handlePayment : undefined}
+                        onPay={(currentStatus === 'completed' || currentStatus === 'in_delivery') && !project.tracking?.[0]?.is_paid ? handlePayment : undefined}
                         isPaid={project.tracking?.[0]?.is_paid}
                         hasCard={project.tracking?.[0]?.client_has_card}
+                        updatedAt={project.tracking?.[0]?.updated_at}
+                        deliveryInfo={project.delivery_info}
                     />
                     
                     {currentStatus === 'completed' && coutureHouseId && (

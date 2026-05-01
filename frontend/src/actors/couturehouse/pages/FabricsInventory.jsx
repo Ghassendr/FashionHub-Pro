@@ -11,7 +11,6 @@ import './CoutureDashboard.css';
 
 const CoutureHouseFabricsInventory = () => {
     const [fabrics, setFabrics] = useState([]);
-    const [fabricImages, setFabricImages] = useState({});
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
         total: 0,
@@ -35,24 +34,6 @@ const CoutureHouseFabricsInventory = () => {
     const navigate = useNavigate();
     const token = authService.getToken();
 
-    const fetchImage = async (fabricId) => {
-        try {
-            const response = await fetch(`http://localhost:8000/api/fournisseur/images/${fabricId}`, {
-                method: "GET",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    Accept: "application/json",
-                },
-            });
-            if (response.ok) {
-                const data = await response.json();
-                return data.image;
-            }
-        } catch (err) {
-            console.error(`Error fetching image for fabric ${fabricId}:`, err);
-        }
-        return null;
-    };
 
     const fetchUserProfile = async () => {
         try {
@@ -93,16 +74,6 @@ const CoutureHouseFabricsInventory = () => {
                 const available = fabricsList.filter(f => f.quantite > 0).length;
                 
                 setStats({ total, available });
-
-                const images = {};
-                for (const fabric of fabricsList) {
-                    const imageData = await fetchImage(fabric.id);
-                    if (imageData) {
-                        images[fabric.id] = imageData;
-                    }
-                }
-                setFabricImages(images);
-
             } else if (response.status === 401) {
                 authService.logout();
                 navigate("/login");
@@ -327,15 +298,15 @@ const CoutureHouseFabricsInventory = () => {
                     {fabrics.map(fabric => (
                                 <div key={fabric.id} className="design-card group bg-noir/40 border border-white/5 rounded-2xl overflow-hidden hover:bg-noir/60 transition-colors">
                                     <div className="aspect-[4/5] overflow-hidden relative bg-zinc-900 flex items-center justify-center">
-                                        {fabricImages[fabric.id] ? (
-                                            <img 
-                                                src={fabricImages[fabric.id]} 
-                                                alt={fabric.materiel} 
-                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-80 group-hover:opacity-100"
-                                            />
-                                        ) : (
-                                            <div className="text-xs text-zinc-600 uppercase tracking-widest">No Image</div>
-                                        )}
+                                        <img 
+                                            src={`http://localhost:8000/api/fournisseur/images/${fabric.id}`} 
+                                            alt={fabric.materiel} 
+                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-80 group-hover:opacity-100"
+                                            onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = "https://images.unsplash.com/photo-1544445837-de12def58fa1?w=800&q=80";
+                                            }}
+                                        />
                                         <div className="absolute top-4 right-4 bg-noir/90 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 flex items-center gap-1.5">
                                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                             <span className="text-[9px] uppercase tracking-widest text-ivory/70">{fabric.quantite}m Available</span>
@@ -512,15 +483,15 @@ const CoutureHouseFabricsInventory = () => {
                                 <>
                                     <div className="flex gap-6 mb-8 p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
                                         <div className="w-24 h-24 rounded-xl overflow-hidden bg-zinc-900">
-                                            {fabricImages[selectedFabric.id] ? (
-                                                <img 
-                                                    src={fabricImages[selectedFabric.id]} 
-                                                    alt={selectedFabric.materiel} 
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-[10px] uppercase text-zinc-600">No Image</div>
-                                            )}
+                                            <img 
+                                                src={`http://localhost:8000/api/fournisseur/images/${selectedFabric.id}`} 
+                                                alt={selectedFabric.materiel} 
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    e.target.onerror = null;
+                                                    e.target.src = "https://images.unsplash.com/photo-1544445837-de12def58fa1?w=800&q=80";
+                                                }}
+                                            />
                                         </div>
                                         <div>
                                             <h3 className="text-xl font-display text-ivory mb-1">{selectedFabric.materiel}</h3>

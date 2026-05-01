@@ -84,7 +84,7 @@ export const authService = {
   async getUserProfile(userId) {
     const token = this.getToken();
 
-    const response = await fetch(`${API_URL}/user/${userId}`, {
+    const response = await fetch(`${API_URL}/profile/${userId}/`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

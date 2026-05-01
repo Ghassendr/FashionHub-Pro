@@ -4,11 +4,12 @@ import {
     Palette, LayoutGrid, Plus, TrendingUp, Settings,
     LogOut, Menu, Layers, Eye, Calendar, User,
     ChevronRight, Ruler, Sparkles, CheckCircle2, Clock, Package,
-    Truck, MapPin, Mail, Phone, AlertTriangle, X, CreditCard
+    Truck, MapPin, Mail, Phone, AlertTriangle, X, CreditCard, Star
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Viewer3D from '../../client/components/Viewer3D';
 import FabricOrderWizard from '../components/FabricOrderWizard';
+import ClientDeliveryWizard from '../components/ClientDeliveryWizard';
 import CoutureLayout from '../components/CoutureLayout';
 import CoutureTrackingBar from '../../../shared/components/Logistics/CoutureTrackingBar';
 import './CoutureDashboard.css';
@@ -20,6 +21,9 @@ const OrderDetail = () => {
     const [order, setOrder] = useState(null);
     const [fabricOrders, setFabricOrders] = useState([]);
     const [showWizard, setShowWizard] = useState(false);
+    const [showCarrierModal, setShowCarrierModal] = useState(false);
+    const [carriers, setCarriers] = useState([]);
+    const [isFetchingCarriers, setIsFetchingCarriers] = useState(false);
     const [isEditingQty, setIsEditingQty] = useState(false);
     const [newQty, setNewQty] = useState('');
     const [ratingsState, setRatingsState] = useState({});
@@ -131,6 +135,45 @@ const OrderDetail = () => {
             }
         } catch (err) {
             console.error("Failed to ship order", err);
+        }
+    };
+
+    const handleRequestDelivery = async (carrierId = null) => {
+        try {
+            const response = await fetch(`${API_BASE}/api/couturehouse/orders/${id}/request-delivery/`, {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ carrier_id: carrierId })
+            });
+            if (response.ok) {
+                setShowCarrierModal(false);
+                fetchOrderDetails();
+            } else {
+                const data = await response.json();
+                alert(data.error || "Erreur lors de la demande de livraison.");
+            }
+        } catch (err) {
+            console.error("Failed to request delivery", err);
+        }
+    };
+
+    const fetchCarriers = async () => {
+        setIsFetchingCarriers(true);
+        try {
+            const res = await fetch(`${API_BASE}/api/delivery/carriers/`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setCarriers(data);
+            }
+        } catch (err) {
+            console.error("Failed to fetch carriers", err);
+        } finally {
+            setIsFetchingCarriers(false);
         }
     };
 
@@ -248,8 +291,21 @@ const OrderDetail = () => {
                     <section>
                         <div className="flex justify-between items-start mb-6">
                             <div>
-                                <h1 className="text-6xl font-display text-ivory mb-2">{order.client_name}</h1>
+                                <h1 className="text-6xl font-display text-ivory mb-2">{order.design_title || order.client_name}</h1>
+                                {order.design_title && (
+                                    <p className="text-gold text-lg font-display italic mb-4">Projet pour {order.client_name}</p>
+                                )}
                                 <p className="text-zinc-500 uppercase tracking-widest text-[10px] font-bold">Dossier de Production — ORDR-{order.id.toString().padStart(4, '0')}</p>
+                                
+                                {order.components && order.components.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mt-6">
+                                        {order.components.map((comp, i) => (
+                                            <span key={i} className="px-3 py-1 bg-white/5 border border-white/10 text-[9px] uppercase tracking-widest text-ivory/60 rounded-full">
+                                                {comp}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                             <div className="flex flex-col items-end gap-2">
                                 <div className="flex items-center gap-2">
@@ -281,15 +337,30 @@ const OrderDetail = () => {
                                     </button>
                                 )}
                                 {order.status === 'completed' && (
-                                    <button
-                                        onClick={handleShipOrder}
-                                        disabled={!order.is_paid}
-                                        className={`text-[9px] uppercase tracking-widest font-black flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${order.is_paid 
-                                            ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20' 
-                                            : 'text-zinc-600 border-zinc-800 bg-white/5 cursor-not-allowed opacity-50'}`}
-                                    >
-                                        <Truck size={12} /> {order.is_paid ? "Confirmer Expédition" : "En attente de paiement"}
-                                    </button>
+                                    <div className="flex flex-col items-end gap-2">
+                                        {!order.client_shipment ? (
+                                            <button
+                                                onClick={() => { fetchCarriers(); setShowCarrierModal(true); }}
+                                                className="text-[9px] uppercase tracking-widest font-black flex items-center gap-2 px-6 py-3 rounded-full border border-gold bg-gold/10 text-gold hover:bg-gold hover:text-noir transition-all shadow-glow-gold/20"
+                                            >
+                                                <Truck size={14} /> Choisir un Livreur
+                                            </button>
+                                        ) : (
+                                            <div className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full">
+                                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                                <span className="text-[9px] uppercase tracking-widest font-black text-ivory/60">Livreur Demandé</span>
+                                            </div>
+                                        )}
+                                        <button
+                                            onClick={handleShipOrder}
+                                            disabled={!order.is_paid}
+                                            className={`text-[9px] uppercase tracking-widest font-black flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${order.is_paid 
+                                                ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20' 
+                                                : 'text-zinc-600 border-zinc-800 bg-white/5 cursor-not-allowed opacity-50'}`}
+                                        >
+                                            <Truck size={12} /> {order.is_paid ? "Finaliser l'Expédition" : "En attente de paiement"}
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -468,7 +539,10 @@ const OrderDetail = () => {
                                 Suivi Logistique Fournisseur
                                 <div className="h-[1px] flex-1 bg-white/5" />
                             </h3>
-                            {fabricOrders.filter(fo => fo.fabric === order.fabric_id).slice(0, 1).map(latestFOrder => (
+                            {fabricOrders.filter(fo => 
+                                fo.fabric === order.fabric_id || 
+                                (fo.fabric_name && order.fabric_requested && fo.fabric_name.toLowerCase() === order.fabric_requested.toLowerCase())
+                            ).slice(0, 1).map(latestFOrder => (
                                 <div key={latestFOrder.id} className="space-y-6">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-6">
@@ -477,10 +551,15 @@ const OrderDetail = () => {
                                             </div>
                                             <div>
                                                 <p className="text-ivory font-display text-lg">
-                                                    {latestFOrder.status === 'delivered' ? 'Commande Livrée' : 'En transit : Nice → Sousse'}
+                                                    {latestFOrder.status === 'delivered' ? 'Commande Livrée' : 
+                                                     latestFOrder.status === 'in_transit' ? 'En transit : Nice → Sousse' :
+                                                     latestFOrder.status === 'ready_for_pickup' ? 'Prêt pour enlèvement' :
+                                                     'Commande en préparation'}
                                                 </p>
                                                 <p className="text-[10px] text-emerald-500 uppercase font-black tracking-widest">
-                                                    {latestFOrder.status === 'delivered' ? 'Livraison confirmée' : 'Arrivée estimée : Demain, 14:00'}
+                                                    {latestFOrder.status === 'delivered' ? 'Livraison confirmée' : 
+                                                     latestFOrder.status === 'in_transit' ? 'Arrivée estimée : Demain' :
+                                                     'Prêt pour le transporteur'}
                                                 </p>
                                             </div>
                                         </div>
@@ -497,11 +576,117 @@ const OrderDetail = () => {
                                     </div>
                                 </div>
                             ))}
-                            {!fabricOrders.some(fo => fo.fabric === order.fabric_id) && (
-                                <div className="text-zinc-500 text-sm italic">
-                                    Aucune commande de tissu associée trouvée.
+                            {!fabricOrders.some(fo => 
+                                fo.fabric === order.fabric_id || 
+                                (fo.fabric_name && order.fabric_requested && fo.fabric_name.toLowerCase() === order.fabric_requested.toLowerCase())
+                            ) && (
+                                <div className="p-10 border-2 border-dashed border-white/5 rounded-3xl flex flex-col items-center justify-center text-center">
+                                    <Package size={40} className="text-zinc-800 mb-4" />
+                                    <p className="text-zinc-500 text-sm italic max-w-xs">
+                                        Aucune expédition en cours pour cette matière. 
+                                        La commande doit être passée via le bouton "Commander le tissu" pour activer le suivi.
+                                    </p>
                                 </div>
                             )}
+                        </section>
+                    )}
+
+                    {/* Client Delivery Tracking */}
+                    {order.client_shipment && (
+                        <section className="p-8 border border-gold/20 bg-gold/[0.02] rounded-3xl relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-gold/5 blur-3xl rounded-full" />
+                            
+                            <h3 className="text-[10px] tracking-widest uppercase font-black text-gold mb-8 flex items-center gap-3 relative z-10">
+                                <Truck size={16} />
+                                Livraison au Client : {order.client_shipment.carrier_name}
+                                <div className="h-[1px] flex-1 bg-gold/10" />
+                            </h3>
+
+                            <div className="relative z-10 space-y-10">
+                                {/* Trajectory Visualization */}
+                                <div className="relative py-8">
+                                    <div className="absolute top-1/2 left-0 w-full h-[2px] bg-white/5 -translate-y-1/2" />
+                                    <div className={`absolute top-1/2 left-0 h-[2px] bg-gold -translate-y-1/2 transition-all duration-1000`} 
+                                         style={{ width: order.client_shipment.status === 'delivered' ? '100%' : 
+                                                        order.client_shipment.status === 'in_transit' ? '60%' : 
+                                                        order.client_shipment.status === 'picked_up' ? '30%' : '5%' }} />
+                                    
+                                    <div className="flex justify-between relative">
+                                        <div className="flex flex-col items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-noir border-2 border-gold flex items-center justify-center text-gold shadow-glow-gold/20">
+                                                <MapPin size={18} />
+                                            </div>
+                                            <span className="text-[8px] uppercase tracking-widest font-black text-ivory">Atelier</span>
+                                        </div>
+
+                                        <div className="absolute left-[30%] -translate-x-1/2 flex flex-col items-center gap-3">
+                                            <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${['picked_up', 'in_transit', 'delivered'].includes(order.client_shipment.status) ? 'bg-gold border-gold text-noir' : 'bg-noir border-white/10 text-zinc-700'}`}>
+                                                <Truck size={14} />
+                                            </div>
+                                            <span className="text-[7px] uppercase tracking-widest font-bold text-zinc-600">Ramassage</span>
+                                        </div>
+
+                                        <div className="absolute left-[60%] -translate-x-1/2 flex flex-col items-center gap-3">
+                                            <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${['in_transit', 'delivered'].includes(order.client_shipment.status) ? 'bg-gold border-gold text-noir' : 'bg-noir border-white/10 text-zinc-700'}`}>
+                                                <Clock size={14} />
+                                            </div>
+                                            <span className="text-[7px] uppercase tracking-widest font-bold text-zinc-600">En Route</span>
+                                        </div>
+
+                                        <div className="flex flex-col items-center gap-3">
+                                            <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all ${order.client_shipment.status === 'delivered' ? 'bg-emerald-500 border-emerald-500 text-noir' : 'bg-noir border-white/10 text-zinc-700'}`}>
+                                                <CheckCircle2 size={18} />
+                                            </div>
+                                            <span className="text-[8px] uppercase tracking-widest font-black text-ivory">Sfax</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Status Details */}
+                                <div className="flex items-center justify-between p-6 bg-noir/40 border border-white/5 rounded-2xl">
+                                    <div className="flex items-center gap-6">
+                                        <div className="w-14 h-14 bg-gold/5 rounded-2xl flex items-center justify-center text-gold border border-gold/10">
+                                            {order.client_shipment.status === 'pending' ? <Clock className="animate-pulse" /> : <Truck />}
+                                        </div>
+                                        <div>
+                                            <p className="text-ivory font-display text-xl uppercase tracking-wider">
+                                                {order.client_shipment.status === 'pending' ? 'Livreur en approche' : 
+                                                 order.client_shipment.status === 'picked_up' ? 'Colis récupéré' :
+                                                 order.client_shipment.status === 'in_transit' ? 'Transit : Sahel → Sfax' :
+                                                 'Livré à Sfax'}
+                                            </p>
+                                            <p className="text-[9px] text-gold uppercase font-black tracking-[0.2em]">
+                                                {order.client_shipment.eta_minutes ? `Arrivée dans ~${order.client_shipment.eta_minutes} min` : 'Synchronisation GPS...'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    {order.client_shipment.eta_minutes === 15 && !order.is_paid && (
+                                        <div className="px-6 py-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center gap-4 animate-bounce">
+                                            <AlertTriangle className="text-amber-500" size={20} />
+                                            <div className="text-left">
+                                                <p className="text-[9px] uppercase font-black text-amber-500 tracking-widest">Notification Client Envoyée</p>
+                                                <p className="text-[8px] text-zinc-400">Paiement requis dans 15 min</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {!order.client_shipment.eta_minutes && (
+                                        <button 
+                                            onClick={async () => {
+                                                const res = await fetch(`${API_BASE}/api/delivery/shipments/${order.client_shipment.id}/simulate_arrival/`, {
+                                                    method: 'POST',
+                                                    headers: { 'Authorization': `Bearer ${token}` }
+                                                });
+                                                if (res.ok) fetchOrderDetails();
+                                            }}
+                                            className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-[8px] uppercase tracking-widest font-black text-zinc-500 hover:text-gold hover:border-gold/30 transition-all"
+                                        >
+                                            Simuler 15 min
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
                         </section>
                     )}
                 </div>
@@ -520,6 +705,20 @@ const OrderDetail = () => {
                             }}
                         />
                     </div>
+                </div>
+            )}
+
+            {/* Client Delivery Wizard Modal */}
+            {showCarrierModal && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 backdrop-blur-2xl bg-noir/90">
+                    <ClientDeliveryWizard
+                        order={order}
+                        onClose={() => setShowCarrierModal(false)}
+                        onComplete={() => {
+                            setShowCarrierModal(false);
+                            fetchOrderDetails();
+                        }}
+                    />
                 </div>
             )}
         </CoutureLayout>

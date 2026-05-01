@@ -3,7 +3,8 @@ from .views import (
     SignupView, LoginView, VerifyTokenView, ProfileView, LogoutView,
     FabricListView, FabricDetailView, FabricImageView,
     PublicFabricListView, NewsFabricsView, TrendingFabricsView, LikeFabricView,
-    FabricOrderListView, CreateFabricOrderView, UpdateFabricOrderStatusView
+    FabricOrderListView, CreateFabricOrderView, UpdateFabricOrderStatusView,
+    JewelryListView, JewelryDetailView, JewelryImageView
 )
 
 print("DEBUG: Loading Fournisseur URLs")
@@ -37,4 +38,9 @@ urlpatterns = [
     path('orders', FabricOrderListView.as_view(), name='fournisseur-orders-received-alias'),
     path('orders/<int:order_id>/status/', UpdateFabricOrderStatusView.as_view(), name='fournisseur-orders-status'),
     path('orders/<int:order_id>/status', UpdateFabricOrderStatusView.as_view(), name='fournisseur-orders-status-alias'),
+
+    # Jewelry endpoints
+    path('jewelry', JewelryListView.as_view(), name='fournisseur-jewelry-list'),
+    path('jewelry/<int:pk>', JewelryDetailView.as_view(), name='fournisseur-jewelry-detail'),
+    path('jewelry/images/<int:pk>', JewelryImageView.as_view(), name='fournisseur-jewelry-image'),
 ]

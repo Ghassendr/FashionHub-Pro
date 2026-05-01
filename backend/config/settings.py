@@ -119,6 +119,7 @@ os.makedirs(PIPELINE_UPLOADS, exist_ok=True)
 os.makedirs(PIPELINE_RESULTS, exist_ok=True)
 os.makedirs(MEDIA_ROOT / "couturehouse" / "designs", exist_ok=True)
 os.makedirs(MEDIA_ROOT / "atelier_videos", exist_ok=True)
+os.makedirs(MEDIA_ROOT / "carrier_videos", exist_ok=True)
 
 
 CORS_ALLOW_ALL_ORIGINS = True

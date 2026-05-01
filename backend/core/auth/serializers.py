@@ -39,12 +39,15 @@ class CoutureHouseProfileSerializer(serializers.ModelSerializer):
         model = CoutureHouseProfile
         fields = (
             'id', 'house_name', 'specialization', 'starting_price', 
-            'avg_production_time', 'about_text', 'introduction_video_url'
+            'avg_production_time', 'about_text', 'address', 'introduction_video_url'
         )
 
     def get_introduction_video_url(self, obj):
         try:
             if obj.introduction_video:
+                video_str = str(obj.introduction_video)
+                if video_str.startswith('http'):
+                    return video_str
                 return obj.introduction_video.url
         except Exception:
             pass
@@ -53,12 +56,12 @@ class CoutureHouseProfileSerializer(serializers.ModelSerializer):
 class SupplierProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = SupplierProfile
-        fields = ('id', 'nomOrganization', 'typeProduct', 'specialites', 'numeroLicence', 'siteWeb', 'origin_country', 'min_price_per_meter')
+        fields = ('id', 'nomOrganization', 'typeProduct', 'specialites', 'numeroLicence', 'siteWeb', 'origin_country', 'min_price_per_meter', 'address')
 
 class CarrierProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Carrier
-        fields = ('id', 'company_name', 'contact_phone', 'service_type', 'delivery_time_guarantee', 'insurance_coverage')
+        fields = ('id', 'company_name', 'contact_phone', 'service_type', 'delivery_time_guarantee', 'insurance_coverage', 'address')
 
 class RegistrationSerializer(serializers.Serializer):
     # Form 1: Basic

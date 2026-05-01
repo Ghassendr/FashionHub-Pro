@@ -1,6 +1,8 @@
 from rest_framework import serializers
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from actors.delivery.models import Carrier, Vehicle, Route, Schedule, ShipmentRequest
+
+User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -9,10 +11,16 @@ class UserSerializer(serializers.ModelSerializer):
 
 class CarrierSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
+    introduction_video_url = serializers.SerializerMethodField()
     
     class Meta:
         model = Carrier
         fields = '__all__'
+
+    def get_introduction_video_url(self, obj):
+        if obj.introduction_video and obj.introduction_video.name:
+            return obj.introduction_video.url
+        return None
 
 class VehicleSerializer(serializers.ModelSerializer):
     class Meta:

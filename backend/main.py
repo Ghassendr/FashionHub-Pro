@@ -12,7 +12,7 @@ class Colors:
 def print_banner():
     print(f"{Colors.CYAN}{Colors.BOLD}")
     print("========================================")
-    print("      🚀 STARTING BACKEND SERVICES      ")
+    print("        STARTING BACKEND SERVICES       ")
     print("========================================")
     print(f"{Colors.RESET}")
 

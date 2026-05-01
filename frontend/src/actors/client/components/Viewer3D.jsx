@@ -59,7 +59,7 @@ export default function Viewer3D({ url }) {
                 }>
                     <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 0, 4], fov: 50 }}>
                         <Suspense fallback={null}>
-                            <Stage environment="studio" intensity={1.2}>
+                            <Stage environment={{ files: "/studio_small_03_1k.hdr" }} intensity={1.2}>
                                 <Model url={url} />
                             </Stage>
                             <OrbitControls

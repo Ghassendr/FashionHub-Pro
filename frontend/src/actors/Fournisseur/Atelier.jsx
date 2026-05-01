@@ -16,6 +16,7 @@ const Atelier = () => {
         avgPrice: 0,
         topMaterial: "N/A"
     });
+    const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -24,6 +25,7 @@ const Atelier = () => {
             return;
         }
         fetchData();
+        fetchProfile();
     }, [token, navigate]);
 
     const fetchData = async () => {
@@ -54,6 +56,20 @@ const Atelier = () => {
         }
     };
 
+    const fetchProfile = async () => {
+        try {
+            const response = await fetch(`http://localhost:8000/api/auth/user/${authService.getUserId()}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setProfile(data.user);
+            }
+        } catch (err) {
+            console.error("Error fetching profile:", err);
+        }
+    };
+
     return (
         <div className="animate-fade-in p-6 lg:p-12 max-w-[1600px] mx-auto min-h-screen">
             {/* Context Header */}
@@ -64,7 +80,7 @@ const Atelier = () => {
                     </span>
                 </div>
                 <h1 className="text-4xl md:text-6xl font-display text-ivory italic flex items-center gap-4">
-                    Command Center
+                    {profile?.nomOrganization || 'Command Center'}
                 </h1>
                 <p className="text-ivory/40 mt-4 max-w-2xl font-light leading-relaxed">
                     Welcome back to your professional space. Monitor your inventory, analyze material performance, and manage your fabric legacy.

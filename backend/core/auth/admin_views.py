@@ -62,6 +62,7 @@ def serialize_profile(user):
                 "specialization": profile.specialization,
                 "starting_price": str(profile.starting_price) if profile.starting_price else None,
                 "avg_production_time": profile.avg_production_time,
+                "address": profile.address,
                 "verification_status": profile.verification_status,
             }
             if profile.commercial_register_url:
@@ -81,6 +82,7 @@ def serialize_profile(user):
             profile_data = {
                 "company_name": profile.company_name,
                 "contact_phone": profile.contact_phone,
+                "address": profile.address,
                 "service_type": profile.service_type,
                 "delivery_time_guarantee": profile.delivery_time_guarantee,
                 "insurance_coverage": profile.insurance_coverage,
@@ -99,6 +101,23 @@ def serialize_profile(user):
 
     return profile_data, documents
 
+
+class AdminUserListView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        users = User.objects.all().order_by('-date_joined')
+        results = []
+        for user in users:
+            results.append({
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "role": user.role,
+                "status": user.account_status,
+                "date_joined": user.date_joined,
+            })
+        return Response(results)
 
 class AdminReviewQueueView(APIView):
     permission_classes = [IsAdminUser]

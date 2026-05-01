@@ -81,7 +81,9 @@ const AtelierProfileDetail = () => {
                         {atelier.introduction_video_url.includes('youtube.com') || atelier.introduction_video_url.includes('youtu.be') ? (
                             <iframe 
                                 className="w-full h-full"
-                                src={atelier.introduction_video_url.replace('watch?v=', 'embed/').split('&')[0]} 
+                                src={atelier.introduction_video_url.includes('youtu.be') 
+                                    ? `https://www.youtube.com/embed/${atelier.introduction_video_url.split('/').pop()}`
+                                    : atelier.introduction_video_url.replace('watch?v=', 'embed/').split('&')[0]} 
                                 title="Atelier Introduction"
                                 frameBorder="0" 
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
@@ -91,8 +93,11 @@ const AtelierProfileDetail = () => {
                             <video 
                                 className="w-full h-full"
                                 src={atelier.introduction_video_url} 
-                                controls
-                                preload="metadata"
+                                autoPlay
+                                muted
+                                loop
+                                playsInline
+                                preload="auto"
                                 crossOrigin="anonymous"
                                 style={{ background: '#000' }}
                                 onError={(e) => console.error('Video load error:', e.target.error)}

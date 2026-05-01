@@ -2,8 +2,8 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('designs/', views.DesignListCreateView.as_view(), name='design-list'),
-    path('designs/<str:id>/', views.DesignDetailView.as_view(), name='design-detail'),
+    path('designs/', views.design_list_create, name='design-list'),
+    path('designs/<str:id>/', views.design_detail, name='design-detail'),
     path('designs/<str:id>/publish/', views.publish_design, name='design-publish'),
     path('designs/<str:id>/archive/', views.archive_design, name='design-archive'),
     path('designs/<str:id>/media/', views.upload_design_media, name='design-media-upload'),
@@ -27,6 +27,7 @@ urlpatterns = [
     path('orders/<int:id>/start/', views.start_production, name='start-production'),
     path('orders/<int:id>/complete/', views.complete_order, name='complete-order'),
     path('orders/<int:id>/ship/', views.ship_order, name='ship-order'),
+    path('orders/<int:id>/request-delivery/', views.request_client_delivery, name='request-client-delivery'),
     path('orders/<int:order_id>/confirm-receipt/', views.confirm_fabric_receipt, name='confirm-fabric-receipt'),
 
     # Profile Management

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-    ChevronLeft, Palette, Layers, Loader2, Sparkles, User, Box
+    ChevronLeft, Palette, Layers, Loader2, Sparkles, User, Box,
+    Truck, MapPin, Clock, AlertTriangle, CheckCircle2, CreditCard
 } from 'lucide-react';
 import { useAuth } from '../../../shared/context/AuthContext';
 import Viewer3D from '../components/Viewer3D';
@@ -206,6 +207,82 @@ const CostumeDetails = () => {
                         </section>
                     </div>
                 </div>
+
+                {/* Delivery Tracking Section */}
+                {project.delivery_info?.request_id && (
+                    <section className="mt-12 p-8 border border-gold/20 bg-gold/[0.02] rounded-3xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-gold/5 blur-[100px] rounded-full" />
+                        
+                        <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-12">
+                            <div className="flex-1 space-y-8">
+                                <h3 className="text-[10px] tracking-widest uppercase font-black text-gold flex items-center gap-3">
+                                    <Truck size={16} /> Suivi de Livraison en Temps Réel
+                                </h3>
+
+                                <div className="relative py-8">
+                                    <div className="absolute top-1/2 left-0 w-full h-[2px] bg-white/5 -translate-y-1/2" />
+                                    <div className="absolute top-1/2 left-0 h-[2px] bg-gold -translate-y-1/2 transition-all duration-1000" 
+                                         style={{ width: project.status === 'shipped' ? '100%' : project.delivery_info.eta_minutes ? '75%' : '20%' }} />
+                                    
+                                    <div className="flex justify-between relative">
+                                        <div className="flex flex-col items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-noir border-2 border-gold flex items-center justify-center text-gold">
+                                                <MapPin size={18} />
+                                            </div>
+                                            <span className="text-[8px] uppercase tracking-widest font-black text-ivory">Atelier</span>
+                                        </div>
+
+                                        <div className="flex flex-col items-center gap-3">
+                                            <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all ${project.delivery_info.eta_minutes ? 'bg-gold border-gold text-noir' : 'bg-noir border-white/10 text-zinc-700'}`}>
+                                                <Truck size={18} />
+                                            </div>
+                                            <span className="text-[8px] uppercase tracking-widest font-black text-ivory">En Transit</span>
+                                        </div>
+
+                                        <div className="flex flex-col items-center gap-3">
+                                            <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all ${project.status === 'shipped' ? 'bg-emerald-500 border-emerald-500 text-noir' : 'bg-noir border-white/10 text-zinc-700'}`}>
+                                                <CheckCircle2 size={18} />
+                                            </div>
+                                            <span className="text-[8px] uppercase tracking-widest font-black text-ivory">Arrivée</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="w-full md:w-80 p-8 bg-noir/40 border border-white/5 rounded-2xl space-y-6 text-center">
+                                <div className="space-y-2">
+                                    <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Arrivée Estimée</p>
+                                    <p className="text-4xl font-display text-gold">
+                                        {project.delivery_info.eta_minutes ? `${project.delivery_info.eta_minutes} min` : 'Calcul...'}
+                                    </p>
+                                </div>
+
+                                {project.delivery_info.eta_minutes <= 15 && !project.delivery_info.is_paid && (
+                                    <div className="space-y-6 pt-6 border-t border-white/5">
+                                        <div className="flex items-center gap-3 text-amber-500 justify-center">
+                                            <AlertTriangle size={18} className="animate-pulse" />
+                                            <span className="text-[10px] uppercase font-black tracking-widest">Paiement Requis</span>
+                                        </div>
+                                        <button 
+                                            onClick={() => navigate(`/client/projects/${id}/pay/`)}
+                                            className="w-full py-4 bg-gold text-noir text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-ivory transition-all flex items-center justify-center gap-3 shadow-glow-gold/20"
+                                        >
+                                            <CreditCard size={18} /> Finaliser le Paiement
+                                        </button>
+                                    </div>
+                                )}
+                                
+                                {project.delivery_info.is_paid && (
+                                    <div className="pt-6 border-t border-white/5 text-emerald-400">
+                                        <p className="text-[10px] uppercase font-black tracking-widest flex items-center justify-center gap-2">
+                                            <CheckCircle2 size={14} /> Paiement Confirmé
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </section>
+                )}
 
                 {/* Optional Viewer */}
                 {mesh_url && (

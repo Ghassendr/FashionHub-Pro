@@ -31,9 +31,11 @@ import FournisseurSettings from './actors/Fournisseur/Settings';
 import SupplierFabricOrders from './actors/Fournisseur/SupplierFabricOrders';
 
 // Admin Pages
-import ReviewDashboard from './actors/admin/pages/ReviewDashboard';
-import AdminLayout from './actors/admin/components/AdminLayout';
 import AdminOverview from './actors/admin/pages/AdminOverview';
+import ReviewDashboard from './actors/admin/pages/ReviewDashboard';
+import UserManagement from './actors/admin/pages/UserManagement';
+import AdminSettings from './actors/admin/pages/AdminSettings';
+import AdminLayout from './actors/admin/components/AdminLayout';
 import PendingVerification from './shared/pages/PendingVerification';
 import Profile from './shared/pages/Profile';
 
@@ -81,6 +83,7 @@ function App() {
         <Route path="/client/discovery" element={<ProtectedRoute allowedRoles={['client']}><AtelierDiscovery /></ProtectedRoute>} />
         <Route path="/client/ateliers/:id" element={<ProtectedRoute allowedRoles={['client']}><AtelierProfileDetail /></ProtectedRoute>} />
         <Route path="/client/bank-card" element={<ProtectedRoute allowedRoles={['client']}><ClientBankCardPage /></ProtectedRoute>} />
+        <Route path="/client/history" element={<ProtectedRoute allowedRoles={['client']}><MyCostumes /></ProtectedRoute>} />
 
         {/* Fournisseur Sidebar Routes */}
         <Route path="/fournisseur/dashboard" element={<ProtectedRoute allowedRoles={['fournisseur']}><SupplierAtelier /></ProtectedRoute>} />
@@ -88,6 +91,7 @@ function App() {
         <Route path="/fournisseur/orders" element={<ProtectedRoute allowedRoles={['fournisseur']}><SupplierFabricOrders /></ProtectedRoute>} />
         <Route path="/fournisseur/settings" element={<ProtectedRoute allowedRoles={['fournisseur']}><FournisseurSettings /></ProtectedRoute>} />
         <Route path="/fournisseur/bank-card" element={<ProtectedRoute allowedRoles={['fournisseur']}><FournisseurBankCard /></ProtectedRoute>} />
+        <Route path="/fournisseur/history" element={<ProtectedRoute allowedRoles={['fournisseur']}><SupplierFabricOrders /></ProtectedRoute>} />
 
         {/* CoutureHouse Sidebar Routes */}
         <Route path="/couturehouse" element={<ProtectedRoute allowedRoles={['couture_house']}><CoutureAtelier /></ProtectedRoute>} />
@@ -116,6 +120,8 @@ function App() {
         <Route index element={<Navigate to="overview" replace />} />
         <Route path="overview" element={<AdminOverview />} />
         <Route path="review" element={<ReviewDashboard />} />
+        <Route path="users" element={<UserManagement />} />
+        <Route path="settings" element={<AdminSettings />} />
       </Route>
 
       {/* Fallback */}

@@ -6,7 +6,7 @@ import {
     ChevronRight, CheckCircle2, Clock, Truck, ShoppingCart,
     Hexagon, MapPin, ShieldCheck, Zap
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { authService } from '../../services/authService';
 import './Dashboard.css';
 
@@ -14,6 +14,8 @@ const API_BASE = "http://localhost:8000";
 
 const SupplierFabricOrders = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const isHistoryPage = location.pathname === '/fournisseur/history';
     const [loading, setLoading] = useState(true);
     const [orders, setOrders] = useState([]);
 
@@ -29,7 +31,15 @@ const SupplierFabricOrders = () => {
             });
             if (response.ok) {
                 const data = await response.json();
-                setOrders(data.orders || []);
+                let fetchedOrders = data.orders || [];
+                
+                if (isHistoryPage) {
+                    fetchedOrders = fetchedOrders.filter(o => 
+                        ['shipped', 'delivered', 'received'].includes(o.status)
+                    );
+                }
+                
+                setOrders(fetchedOrders);
             }
         } catch (err) {
             console.error("Failed to fetch received orders", err);
@@ -94,11 +104,13 @@ const SupplierFabricOrders = () => {
                     </span>
                 </div>
                 <h1 className="text-4xl md:text-6xl font-display text-ivory italic flex items-center gap-4">
-                    Flux & Commandes
+                    {isHistoryPage ? 'Historique des Ventes' : 'Flux & Commandes'}
                 </h1>
                 <p className="text-ivory/40 mt-4 max-w-2xl font-light leading-relaxed">
-                    Visualisation centralisée des flux textiles confirmés par les Maisons de Couture. 
-                    Gérez les expéditions et assurez la traçabilité de vos matières précieuses.
+                    {isHistoryPage 
+                        ? 'Consultez les archives de vos transactions passées et les livraisons confirmées.' 
+                        : 'Visualisation centralisée des flux textiles confirmés par les Maisons de Couture. Gérez les expéditions et assurez la traçabilité de vos matières précieuses.'
+                    }
                 </p>
             </div>
 

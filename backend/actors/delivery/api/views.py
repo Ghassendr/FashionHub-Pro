@@ -1,13 +1,16 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes, action
-from django.contrib.auth.models import User
+from django.shortcuts import get_object_or_404
+from django.contrib.auth import get_user_model
 from django.apps import apps
 from actors.delivery.models import Carrier, Vehicle, Route, Schedule, ShipmentRequest
 from .serializers import (
     CarrierSerializer, VehicleSerializer, RouteSerializer, 
     ScheduleSerializer, ShipmentRequestSerializer
 )
+
+User = get_user_model()
 
 class VehicleViewSet(viewsets.ModelViewSet):
     serializer_class = VehicleSerializer
@@ -80,6 +83,45 @@ class ShipmentRequestViewSet(viewsets.ModelViewSet):
                 print(f"Synced Shipment #{instance.id} [{instance.status}] to FabricOrder #{order.id} [{order.status}]")
             except Exception as e:
                 print(f"Sync failed for Shipment #{instance.id}: {e}")
+
+        # Sync with Client Order if this is a client shipment
+        if instance.client_order_id:
+            try:
+                Order = apps.get_model('couturehouse', 'Order')
+                order = Order.objects.get(id=instance.client_order_id)
+                
+                # Logic: If picked up or in transit, update Order status if needed
+                # (usually Order status stays 'completed' until final 'shipped' confirmation by House,
+                # but we can track progress)
+                
+                # If delivered, we can auto-mark as shipped if paid
+                if instance.status == 'delivered' and order.is_paid:
+                    order.status = 'shipped'
+                    order.save()
+            except Exception as e:
+                print(f"Sync failed for Client Order: {e}")
+
+    @action(detail=True, methods=['post'])
+    def simulate_arrival(self, request, pk=None):
+        """
+        Simulates that the courier is 15 minutes away from the client.
+        """
+        instance = self.get_object()
+        if not instance.client_order_id:
+            return Response({"error": "This is not a client delivery."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        Order = apps.get_model('couturehouse', 'Order')
+        order = Order.objects.get(id=instance.client_order_id)
+        
+        order.delivery_eta_minutes = 15
+        order.save()
+        
+        # Advance shipment status to 'in_transit' if it's still 'pending' or 'accepted'
+        if instance.status in ['pending', 'accepted', 'picked_up']:
+            instance.status = 'in_transit'
+            instance.save()
+
+        return Response({"success": True, "message": "Simulation: Livreur à 15 minutes."})
 
     @action(detail=True, methods=['patch'], url_path='status')
     def update_status(self, request, pk=None):
@@ -220,3 +262,52 @@ def rate_carrier(request, id):
         })
     except Exception as e:
         return Response({"error": str(e)}, status=500)
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def list_available_carriers(request):
+    """
+    Returns a list of all active carriers.
+    """
+    carriers = Carrier.objects.all()
+    serializer = CarrierSerializer(carriers, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET', 'POST'])
+@permission_classes([permissions.IsAuthenticated])
+def carrier_profile_view(request):
+    """
+    GET: Retrieve the current carrier profile.
+    POST: Update the current carrier profile (supports multipart for video).
+    """
+    try:
+        # Use the related name for cleaner access
+        carrier = getattr(request.user, 'carrier_profile', None)
+        
+        if carrier is None:
+            # Fallback: create if missing
+            carrier, created = Carrier.objects.get_or_create(
+                user=request.user, 
+                defaults={'company_name': request.user.username or request.user.email}
+            )
+        
+        if request.method == 'POST':
+            data = request.data
+            carrier.company_name = data.get('company_name', carrier.company_name)
+            carrier.contact_phone = data.get('contact_phone', carrier.contact_phone)
+            carrier.service_type = data.get('service_type', carrier.service_type)
+            carrier.insurance_coverage = data.get('insurance_coverage', carrier.insurance_coverage)
+            carrier.delivery_time_guarantee = data.get('delivery_time_guarantee', carrier.delivery_time_guarantee)
+            
+            if 'introduction_video' in request.FILES:
+                carrier.introduction_video = request.FILES['introduction_video']
+            
+            carrier.save()
+            
+        serializer = CarrierSerializer(carrier, context={'request': request})
+        return Response(serializer.data)
+    except Exception as e:
+        import traceback
+        error_msg = traceback.format_exc()
+        print(f"ERROR in carrier_profile_view: {error_msg}")
+        return Response({'error': str(e), 'details': error_msg}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

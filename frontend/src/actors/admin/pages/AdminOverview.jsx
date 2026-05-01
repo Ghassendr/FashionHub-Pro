@@ -113,7 +113,7 @@ const AdminOverview = () => {
     }, []);
 
     const overviewCards = [
-        { icon: Users, label: 'Total Users', value: stats.users.total, accent: 'bg-gold/10' },
+        { icon: Users, label: 'Total Users', value: stats.users.total, accent: 'bg-gold/10', onClick: () => navigate('/admin/users') },
         { icon: Clock, label: 'Pending Review', value: stats.users.status.pending, accent: 'bg-amber-500/10', onClick: () => navigate('/admin/review') },
         { icon: LayoutGrid, label: 'Designs in App', value: stats.catalogue.designs, accent: 'bg-blue-500/10' },
         { icon: Truck, label: 'Vehicles Active', value: stats.logistics.vehicles, accent: 'bg-purple-500/10' },
@@ -126,10 +126,12 @@ const AdminOverview = () => {
                 <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden max-w-[100px]">
                     <div 
                         className="h-full bg-gold" 
-                        style={{ width: `${Math.min(100, (row.count / stats.logistics.total_routes) * 100)}%` }}
+                        style={{ width: `${stats.logistics.total_routes > 0 ? Math.min(100, (row.count / stats.logistics.total_routes) * 100) : 0}%` }}
                     />
                 </div>
-                <span className="text-[10px] font-mono text-gold">{row.count} routes</span>
+                <span className="text-[10px] text-gold font-mono">
+                    {stats.logistics.total_routes > 0 ? Math.round((row.count / stats.logistics.total_routes) * 100) : 0}%
+                </span>
             </div>
         )}
     ];
